@@ -1,0 +1,40 @@
+apiVersion: ai.example.com/v1alpha1
+kind: AiAgent
+metadata:
+  name: customer-support-agent
+  namespace: default
+spec:
+  providerRef:
+    name: "openai-provider"
+    namespace: "default"
+  model: "gpt-4o"
+  systemPrompt: |
+    You are an expert enterprise customer support AI assistant.
+    Always be concise, accurate, polite, and execute relevant tools/skills when required.
+  userPrompt: "Calculate 150 * 4 and check weather in Istanbul."
+  skills:
+    - name: "calculator"
+      description: "Perform math calculations"
+      enabled: true
+    - name: "web-search"
+      description: "Search web for real-time information"
+      enabled: true
+    - name: "weather"
+      description: "Fetch weather data"
+      enabled: true
+    - name: "custom-db-skill"
+      description: "Query internal customer database"
+      enabled: true
+      parameters:
+        table: "customers"
+        limit: "10"
+  ingress:
+    enabled: true
+    host: "ai-agent.example.com"
+    path: "/"
+    pathType: "Prefix"
+    ingressClassName: "nginx"
+    annotations:
+      kubernetes.io/ingress.class: "nginx"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  replicas: 1

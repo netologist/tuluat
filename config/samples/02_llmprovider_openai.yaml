@@ -1,0 +1,14 @@
+apiVersion: ai.example.com/v1alpha1
+kind: LlmProvider
+metadata:
+  name: openai-provider
+  namespace: default
+spec:
+  providerType: "OPENAI"
+  baseUrl: "https://api.openai.com/v1"
+  apiKeySecretRef:
+    name: "openai-secret"
+    key: "api-key"
+  defaultModel: "gpt-4o"
+  temperature: 0.7
+  maxTokens: 2048

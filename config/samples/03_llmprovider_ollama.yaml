@@ -1,0 +1,11 @@
+apiVersion: ai.example.com/v1alpha1
+kind: LlmProvider
+metadata:
+  name: ollama-provider
+  namespace: default
+spec:
+  providerType: "OLLAMA"
+  baseUrl: "http://ollama-service.default.svc.cluster.local:11434"
+  defaultModel: "llama3.2"
+  temperature: 0.5
+  maxTokens: 1024
