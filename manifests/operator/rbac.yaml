@@ -9,7 +9,7 @@ kind: ClusterRole
 metadata:
   name: k8s-ai-operator-role
 rules:
-  - apiGroups: ["ai.example.com"]
+  - apiGroups: ["ai.tuluat.com"]
     resources: ["llmproviders", "llmproviders/status", "aiagents", "aiagents/status"]
     verbs: ["*"]
   - apiGroups: ["apps"]

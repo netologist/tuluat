@@ -1,4 +1,4 @@
-apiVersion: ai.example.com/v1alpha1
+apiVersion: ai.tuluat.com/v1alpha1
 kind: LlmProvider
 metadata:
   name: openai-provider

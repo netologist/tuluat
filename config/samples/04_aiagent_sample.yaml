@@ -1,13 +1,13 @@
-apiVersion: ai.example.com/v1alpha1
+apiVersion: ai.tuluat.com/v1alpha1
 kind: AiAgent
 metadata:
   name: customer-support-agent
   namespace: default
 spec:
   providerRef:
-    name: "openai-provider"
+    name: "deepseek-provider"
     namespace: "default"
-  model: "gpt-4o"
+  model: "deepseek-chat"
   systemPrompt: |
     You are an expert enterprise customer support AI assistant.
     Always be concise, accurate, polite, and execute relevant tools/skills when required.
@@ -30,7 +30,7 @@ spec:
         limit: "10"
   ingress:
     enabled: true
-    host: "ai-agent.example.com"
+    host: "ai-agent.tuluat.com"
     path: "/"
     pathType: "Prefix"
     ingressClassName: "nginx"
