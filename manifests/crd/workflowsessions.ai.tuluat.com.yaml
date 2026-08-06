@@ -31,8 +31,7 @@ spec:
                   type: string
                 parameters:
                   type: object
-                  additionalProperties:
-                    type: string
+                  x-kubernetes-preserve-unknown-fields: true
             status:
               type: object
               properties:
