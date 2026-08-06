@@ -1,0 +1,32 @@
+apiVersion: ai.tuluat.com/v1alpha1
+kind: AiWorkflow
+metadata:
+  name: multi-agent-researcher
+  namespace: default
+spec:
+  description: "Research and Summarization Multi-Agent Workflow"
+  initialNode: "researcher-node"
+  nodes:
+    - id: "researcher-node"
+      type: "AGENT"
+      agentRef: "sample-ai-agent"
+      inputTemplate: "Research the following topic: {{input}}"
+      outputKey: "research_data"
+    - id: "evaluator-node"
+      type: "CONDITION"
+      expression: "#data['research_data'] != null"
+    - id: "writer-node"
+      type: "AGENT"
+      agentRef: "sample-ai-agent"
+      inputTemplate: "Summarize the research: {{research_data}}"
+      outputKey: "final_report"
+  edges:
+    - from: "researcher-node"
+      to: "evaluator-node"
+    - from: "evaluator-node"
+      to: "writer-node"
+      condition: "true"
+  memoryConfig:
+    shortMemorySize: 20
+    enableLongMemory: true
+    vectorTableName: "session_long_memory"

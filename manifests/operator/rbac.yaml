@@ -10,7 +10,15 @@ metadata:
   name: k8s-ai-operator-role
 rules:
   - apiGroups: ["ai.tuluat.com"]
-    resources: ["llmproviders", "llmproviders/status", "aiagents", "aiagents/status"]
+    resources:
+      - llmproviders
+      - llmproviders/status
+      - aiagents
+      - aiagents/status
+      - aiworkflows
+      - aiworkflows/status
+      - workflowsessions
+      - workflowsessions/status
     verbs: ["*"]
   - apiGroups: ["apps"]
     resources: ["deployments"]
