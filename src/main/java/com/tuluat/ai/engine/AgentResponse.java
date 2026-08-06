@@ -1,21 +1,24 @@
 package com.tuluat.ai.engine;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.tuluat.ai.engine.skill.SkillResult;
 import java.util.List;
 
 /**
- * Record representing the complete answer from an AI Agent execution.
+ * Record representing the complete answer from an AI Agent execution including usage statistics and cost.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record AgentResponse(
-    String agentName,
-    String model,
-    String systemPrompt,
-    String answer,
-    List<SkillResult> executedSkills,
-    long latencyMs,
-    String timestamp
+    @JsonProperty("agentName") String agentName,
+    @JsonProperty("model") String model,
+    @JsonProperty("systemPrompt") String systemPrompt,
+    @JsonProperty("answer") String answer,
+    @JsonProperty("executedSkills") List<SkillResult> executedSkills,
+    @JsonProperty("usage") UsageStats usage,
+    @JsonProperty("timestamp") String timestamp
 ) {
-    public static AgentResponse create(String agentName, String model, String systemPrompt, String answer, List<SkillResult> skills, long latencyMs) {
-        return new AgentResponse(agentName, model, systemPrompt, answer, skills, latencyMs, java.time.Instant.now().toString());
+    public static AgentResponse create(String agentName, String model, String systemPrompt, String answer, List<SkillResult> skills, UsageStats usage) {
+        return new AgentResponse(agentName, model, systemPrompt, answer, skills, usage, java.time.Instant.now().toString());
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -26,12 +27,12 @@ public class AgentExecutionService {
     private static final Logger log = LoggerFactory.getLogger(AgentExecutionService.class);
 
     private final SkillRegistry skillRegistry;
-    private final ChatModel chatModel; // Nullable if running without live API key
+    private final ChatModel chatModel;
 
     @Autowired
     public AgentExecutionService(
             SkillRegistry skillRegistry,
-            @Autowired(required = false) @org.springframework.beans.factory.annotation.Qualifier("openAiChatModel") ChatModel chatModel) {
+            @Autowired(required = false) @Qualifier("openAiChatModel") ChatModel chatModel) {
         this.skillRegistry = skillRegistry;
         this.chatModel = chatModel;
     }
@@ -49,7 +50,7 @@ public class AgentExecutionService {
             ? spec.model()
             : (provider != null && provider.getSpec() != null && provider.getSpec().defaultModel() != null)
                 ? provider.getSpec().defaultModel()
-                : "gpt-4o";
+                : "deepseek-chat";
 
         // Determine user input (request input or manifest default user prompt)
         String query = (customInput != null && !customInput.isBlank())
@@ -73,24 +74,51 @@ public class AgentExecutionService {
 
         // Step 3: Invoke LLM via Spring AI (or simulated engine if no Spring AI model bean present)
         String aiAnswer;
+        int inputTokens = 0;
+        int outputTokens = 0;
+
         if (chatModel != null) {
             try {
                 log.info("Calling Spring AI ChatModel [{}] for agent '{}'", model, agentName);
                 var systemMsg = new SystemMessage(effectiveSystemPrompt);
                 var userMsg = new UserMessage(query);
                 var prompt = new Prompt(List.of(systemMsg, userMsg));
-                aiAnswer = chatModel.call(prompt).getResult().getOutput().getText();
+                var response = chatModel.call(prompt);
+                
+                aiAnswer = response.getResult().getOutput().getText();
+                
+                // Extract tokens from Spring AI response metadata if available
+                if (response.getMetadata() != null && response.getMetadata().getUsage() != null) {
+                    var usage = response.getMetadata().getUsage();
+                    inputTokens = usage.getPromptTokens().intValue();
+                    outputTokens = usage.getCompletionTokens().intValue();
+                } else {
+                    inputTokens = estimateTokens(effectiveSystemPrompt + query);
+                    outputTokens = estimateTokens(aiAnswer);
+                }
             } catch (Exception e) {
                 log.warn("Spring AI call failed, falling back to simulated execution: {}", e.getMessage());
                 aiAnswer = generateSimulatedResponse(agentName, model, effectiveSystemPrompt, query, skillResults);
+                inputTokens = estimateTokens(effectiveSystemPrompt + query);
+                outputTokens = estimateTokens(aiAnswer);
             }
         } else {
             log.info("Spring AI ChatModel bean not bound. Generating simulated response for agent '{}'", agentName);
             aiAnswer = generateSimulatedResponse(agentName, model, effectiveSystemPrompt, query, skillResults);
+            inputTokens = estimateTokens(effectiveSystemPrompt + query);
+            outputTokens = estimateTokens(aiAnswer);
         }
 
         long latency = System.currentTimeMillis() - startTime;
-        return AgentResponse.create(agentName, model, effectiveSystemPrompt, aiAnswer, skillResults, latency);
+        UsageStats usageStats = UsageStats.calculate(inputTokens, outputTokens, model, latency);
+
+        return AgentResponse.create(agentName, model, effectiveSystemPrompt, aiAnswer, skillResults, usageStats);
+    }
+
+    private int estimateTokens(String text) {
+        if (text == null || text.isBlank()) return 0;
+        // Standard approximation: ~4 characters per token
+        return Math.max(1, (int) Math.ceil(text.length() / 4.0));
     }
 
     private String generateSimulatedResponse(String agentName, String model, String systemPrompt, String query, List<SkillResult> skills) {

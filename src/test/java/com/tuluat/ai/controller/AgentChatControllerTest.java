@@ -8,6 +8,7 @@ import com.tuluat.ai.crd.provider.LlmProvider;
 import com.tuluat.ai.engine.AgentExecutionService;
 import com.tuluat.ai.engine.AgentResponse;
 import com.tuluat.ai.engine.skill.SkillResult;
+import com.tuluat.ai.engine.UsageStats;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
@@ -88,7 +89,7 @@ class AgentChatControllerTest {
 
         var expectedResponse = AgentResponse.create(
             "support-agent", "gpt-4o", "System prompt", "42 is the answer",
-            List.of(SkillResult.success("calculator", "42")), 15L
+            List.of(SkillResult.success("calculator", "42")), UsageStats.calculate(10, 10, "gpt-4o", 15L)
         );
         when(agentExecutionService.processAgentPrompt(any(), any(), anyString()))
             .thenReturn(expectedResponse);

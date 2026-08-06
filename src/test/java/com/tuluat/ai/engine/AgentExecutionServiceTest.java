@@ -29,7 +29,7 @@ class AgentExecutionServiceTest {
     }
 
     @Test
-    @DisplayName("Should process agent prompt with model override and active skills")
+    @DisplayName("Should process agent prompt with model override, active skills, and token usage stats")
     void testProcessAgentPrompt() {
         // Build AiAgent CR
         var agent = new AiAgent();
@@ -58,5 +58,12 @@ class AgentExecutionServiceTest {
         assertEquals(1, response.executedSkills().size());
         assertEquals("calculator", response.executedSkills().get(0).skillName());
         assertTrue(response.answer().contains("Hello! I am AI Agent [test-agent]"));
+
+        // Verify UsageStats (inputTokens, outputTokens, totalTokens, estimatedCostUsd)
+        assertNotNull(response.usage());
+        assertTrue(response.usage().inputTokens() > 0);
+        assertTrue(response.usage().outputTokens() > 0);
+        assertEquals(response.usage().inputTokens() + response.usage().outputTokens(), response.usage().totalTokens());
+        assertTrue(response.usage().estimatedCostUsd() >= 0.0);
     }
 }

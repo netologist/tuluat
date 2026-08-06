@@ -4,6 +4,7 @@ import com.tuluat.ai.crd.agent.AiAgent;
 import com.tuluat.ai.crd.provider.LlmProvider;
 import com.tuluat.ai.engine.AgentExecutionService;
 import com.tuluat.ai.engine.AgentResponse;
+import com.tuluat.ai.engine.UsageStats;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +57,7 @@ public class AgentChatController {
         if (agent == null) {
             log.error("AiAgent CR '{}/{}' not found", ns, agentName);
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(AgentResponse.create(agentName, "unknown", "N/A", "Error: AiAgent '" + agentName + "' not found", List.of(), 0));
+                .body(AgentResponse.create(agentName, "unknown", "N/A", "Error: AiAgent '" + agentName + "' not found", List.of(), UsageStats.calculate(0, 0, "unknown", 0)));
         }
 
         // Fetch referenced LlmProvider
