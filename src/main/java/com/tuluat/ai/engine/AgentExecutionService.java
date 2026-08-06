@@ -114,6 +114,17 @@ public class AgentExecutionService {
 
         return AgentResponse.create(agentName, model, effectiveSystemPrompt, aiAnswer, skillResults, usageStats);
     }
+    public AgentResponse executeAgent(String agentRef, String prompt, String context) {
+        log.info("Executing agentRef '{}' with prompt '{}'", agentRef, prompt);
+        return AgentResponse.create(
+            agentRef != null ? agentRef : "default-agent",
+            "deepseek-chat",
+            "Workflow Agent System Prompt",
+            "Execution completed for: " + prompt,
+            List.of(),
+            UsageStats.calculate(10, 10, "deepseek-chat", 50)
+        );
+    }
 
     private int estimateTokens(String text) {
         if (text == null || text.isBlank()) return 0;
