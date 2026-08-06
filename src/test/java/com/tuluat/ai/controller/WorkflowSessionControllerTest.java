@@ -4,6 +4,8 @@ import com.tuluat.ai.crd.workflow.AiWorkflow;
 import com.tuluat.ai.crd.workflow.AiWorkflowSpec;
 import com.tuluat.ai.engine.workflow.WorkflowExecutionService;
 import com.tuluat.ai.entity.WorkflowSessionEntity;
+import com.tuluat.ai.entity.WorkflowSessionLogEntity;
+import com.tuluat.ai.repository.WorkflowSessionLogRepository;
 import com.tuluat.ai.repository.WorkflowSessionRepository;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
@@ -15,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,6 +30,7 @@ class WorkflowSessionControllerTest {
 
     private WorkflowExecutionService executionService;
     private WorkflowSessionRepository sessionRepository;
+    private WorkflowSessionLogRepository logRepository;
     private KubernetesClient kubernetesClient;
     private WorkflowSessionController controller;
 
@@ -39,6 +43,7 @@ class WorkflowSessionControllerTest {
     void setUp() {
         executionService = mock(WorkflowExecutionService.class);
         sessionRepository = mock(WorkflowSessionRepository.class);
+        logRepository = mock(WorkflowSessionLogRepository.class);
         kubernetesClient = mock(KubernetesClient.class);
 
         workflowsMock = mock(MixedOperation.class);
@@ -49,7 +54,7 @@ class WorkflowSessionControllerTest {
         when(workflowsMock.inNamespace(anyString())).thenReturn(workflowNsMock);
         when(workflowNsMock.withName(anyString())).thenReturn(workflowResMock);
 
-        controller = new WorkflowSessionController(executionService, sessionRepository, kubernetesClient);
+        controller = new WorkflowSessionController(executionService, sessionRepository, logRepository, kubernetesClient);
     }
 
     @Test
@@ -102,5 +107,23 @@ class WorkflowSessionControllerTest {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("RUNNING", response.getBody().getStatus());
+    }
+
+    @Test
+    @DisplayName("Should get session execution logs by session ID")
+    void testGetSessionLogs() {
+        UUID sessionId = UUID.randomUUID();
+        WorkflowSessionLogEntity log1 = new WorkflowSessionLogEntity();
+        log1.setSessionId(sessionId);
+        log1.setMessage("Executing node-1");
+
+        when(logRepository.findBySessionIdOrderByCreatedAtAsc(sessionId)).thenReturn(List.of(log1));
+
+        ResponseEntity<List<WorkflowSessionLogEntity>> response = controller.getSessionLogs(sessionId);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().size());
+        assertEquals("Executing node-1", response.getBody().get(0).getMessage());
     }
 }

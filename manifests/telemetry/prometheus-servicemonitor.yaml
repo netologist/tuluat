@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: k8s-ai-operator-telemetry
+  namespace: default
+  labels:
+    app: k8s-crd-ai-operator
+spec:
+  selector:
+    matchLabels:
+      app: k8s-crd-ai-operator
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 15s

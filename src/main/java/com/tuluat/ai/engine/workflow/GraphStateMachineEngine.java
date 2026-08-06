@@ -7,9 +7,13 @@ import com.tuluat.ai.crd.workflow.EdgeDefinition;
 import com.tuluat.ai.crd.workflow.NodeDefinition;
 import com.tuluat.ai.engine.AgentExecutionService;
 import com.tuluat.ai.engine.AgentResponse;
+import com.tuluat.ai.engine.telemetry.WorkflowTelemetryService;
 import com.tuluat.ai.entity.WorkflowSessionEntity;
+import com.tuluat.ai.entity.WorkflowSessionLogEntity;
+import com.tuluat.ai.repository.WorkflowSessionLogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
@@ -23,18 +27,34 @@ public class GraphStateMachineEngine {
 
     private static final Logger log = LoggerFactory.getLogger(GraphStateMachineEngine.class);
     private final AgentExecutionService agentExecutionService;
+    private final WorkflowSessionLogRepository logRepository;
+    private final WorkflowTelemetryService telemetryService;
     private final ExpressionParser parser = new SpelExpressionParser();
     private final ObjectMapper mapper = new ObjectMapper();
 
     public GraphStateMachineEngine(AgentExecutionService agentExecutionService) {
+        this(agentExecutionService, null, null);
+    }
+
+    @Autowired
+    public GraphStateMachineEngine(AgentExecutionService agentExecutionService,
+                                   @Autowired(required = false) WorkflowSessionLogRepository logRepository,
+                                   @Autowired(required = false) WorkflowTelemetryService telemetryService) {
         this.agentExecutionService = agentExecutionService;
+        this.logRepository = logRepository;
+        this.telemetryService = telemetryService;
     }
 
     public WorkflowSessionEntity executeNextStep(AiWorkflowSpec workflowSpec, WorkflowSessionEntity session, int maxLoops) {
         if (session.getLoopCount() >= maxLoops) {
-            log.error("Session {} exceeded max loops ({})", session.getSessionId(), maxLoops);
+            String errorMsg = String.format("Session %s exceeded max loops (%d)", session.getSessionId(), maxLoops);
+            log.error(errorMsg);
+            recordSessionLog(session.getSessionId(), session.getCurrentNodeId(), "ERROR", errorMsg);
             session.setStatus("FAILED");
             session.setUpdatedAt(OffsetDateTime.now());
+            if (telemetryService != null) {
+                telemetryService.recordSessionCompleted(session.getWorkflowName(), "FAILED");
+            }
             return session;
         }
 
@@ -52,25 +72,47 @@ public class GraphStateMachineEngine {
 
         Map<String, Object> contextData = parseContext(session.getContextData());
 
-        log.info("Executing session {} node {} (type: {})", session.getSessionId(), currentNode.getId(), currentNode.getType());
+        String infoMsg = String.format("Executing node '%s' (type: %s) for session %s", currentNode.getId(), currentNode.getType(), session.getSessionId());
+        log.info(infoMsg);
+        recordSessionLog(session.getSessionId(), currentNode.getId(), "INFO", infoMsg);
+
+        if (telemetryService != null) {
+            telemetryService.recordNodeExecuted(session.getWorkflowName(), currentNode.getType(), currentNode.getId());
+        }
 
         if ("AGENT".equalsIgnoreCase(currentNode.getType())) {
             String prompt = resolvePromptTemplate(currentNode.getInputTemplate(), contextData);
+            recordSessionLog(session.getSessionId(), currentNode.getId(), "INFO", "Executing Agent '" + currentNode.getAgentRef() + "' with prompt: " + prompt);
+            
             AgentResponse response = agentExecutionService.executeAgent(currentNode.getAgentRef(), prompt, null);
             contextData.put(currentNode.getOutputKey(), response.answer());
             session.setContextData(writeContext(contextData));
 
+            recordSessionLog(session.getSessionId(), currentNode.getId(), "INFO", "Agent '" + currentNode.getAgentRef() + "' output saved to key '" + currentNode.getOutputKey() + "'");
+
             String nextNodeId = resolveNextNodeId(workflowSpec, currentNode.getId(), true);
             if (nextNodeId == null) {
+                log.info("No next node found for session {}. Marking COMPLETED.", session.getSessionId());
+                recordSessionLog(session.getSessionId(), currentNode.getId(), "INFO", "Workflow execution completed.");
                 session.setStatus("COMPLETED");
+                if (telemetryService != null) {
+                    telemetryService.recordSessionCompleted(session.getWorkflowName(), "COMPLETED");
+                }
             } else {
                 session.setCurrentNodeId(nextNodeId);
             }
         } else if ("CONDITION".equalsIgnoreCase(currentNode.getType())) {
             boolean result = evaluateCondition(currentNode.getExpression(), contextData);
+            recordSessionLog(session.getSessionId(), currentNode.getId(), "INFO", "Condition expression '" + currentNode.getExpression() + "' evaluated to: " + result);
+
             String nextNodeId = resolveNextNodeId(workflowSpec, currentNode.getId(), result);
             if (nextNodeId == null) {
+                log.info("No next node found after condition for session {}. Marking COMPLETED.", session.getSessionId());
+                recordSessionLog(session.getSessionId(), currentNode.getId(), "INFO", "Workflow execution completed after condition.");
                 session.setStatus("COMPLETED");
+                if (telemetryService != null) {
+                    telemetryService.recordSessionCompleted(session.getWorkflowName(), "COMPLETED");
+                }
             } else {
                 session.setCurrentNodeId(nextNodeId);
             }
@@ -96,6 +138,21 @@ public class GraphStateMachineEngine {
                 .map(EdgeDefinition::getTo)
                 .findFirst()
                 .orElse(null);
+    }
+
+    private void recordSessionLog(UUID sessionId, String nodeId, String level, String message) {
+        if (logRepository != null && sessionId != null) {
+            try {
+                WorkflowSessionLogEntity entity = new WorkflowSessionLogEntity();
+                entity.setSessionId(sessionId);
+                entity.setNodeId(nodeId);
+                entity.setLogLevel(level);
+                entity.setMessage(message);
+                logRepository.save(entity);
+            } catch (Exception e) {
+                log.warn("Failed to record session log to database: {}", e.getMessage());
+            }
+        }
     }
 
     private String resolvePromptTemplate(String template, Map<String, Object> contextData) {
