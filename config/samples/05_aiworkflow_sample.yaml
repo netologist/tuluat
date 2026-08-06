@@ -4,12 +4,12 @@ metadata:
   name: multi-agent-researcher
   namespace: default
 spec:
-  description: "Research and Summarization Multi-Agent Workflow"
+  description: "Research and Report Multi-Agent Workflow (Researcher -> Evaluator -> Writer)"
   initialNode: "researcher-node"
   nodes:
     - id: "researcher-node"
       type: "AGENT"
-      agentRef: "sample-ai-agent"
+      agentRef: "web-researcher-agent"
       inputTemplate: "Research the following topic: {{input}}"
       outputKey: "research_data"
     - id: "evaluator-node"
@@ -17,8 +17,8 @@ spec:
       expression: "#data['research_data'] != null"
     - id: "writer-node"
       type: "AGENT"
-      agentRef: "sample-ai-agent"
-      inputTemplate: "Summarize the research: {{research_data}}"
+      agentRef: "report-writer-agent"
+      inputTemplate: "Analyze the following research findings and produce a final executive report:\n\n{{research_data}}"
       outputKey: "final_report"
   edges:
     - from: "researcher-node"

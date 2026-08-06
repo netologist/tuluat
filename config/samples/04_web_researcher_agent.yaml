@@ -1,0 +1,19 @@
+apiVersion: ai.tuluat.com/v1alpha1
+kind: AiAgent
+metadata:
+  name: web-researcher-agent
+  namespace: default
+spec:
+  providerRef:
+    name: "deepseek-provider"
+    namespace: "default"
+  model: "deepseek-chat"
+  systemPrompt: |
+    You are an expert AI Researcher Agent.
+    Your job is to perform deep technical research on assigned topics and return structured findings.
+  userPrompt: "Research Kubernetes CRD Operator patterns."
+  skills:
+    - name: "web-search"
+      description: "Search web for real-time information"
+      enabled: true
+  replicas: 1

@@ -23,6 +23,8 @@ kubectl apply -f config/samples/01_secret_deepseek.yaml -n "$NAMESPACE"
 kubectl apply -f config/samples/02_llmprovider_openai.yaml -n "$NAMESPACE"
 kubectl apply -f config/samples/03_llmprovider_deepseek.yaml -n "$NAMESPACE"
 kubectl apply -f config/samples/04_aiagent_sample.yaml -n "$NAMESPACE"
+kubectl apply -f config/samples/04_web_researcher_agent.yaml -n "$NAMESPACE"
+kubectl apply -f config/samples/04_report_writer_agent.yaml -n "$NAMESPACE"
 kubectl apply -f config/samples/05_aiworkflow_sample.yaml -n "$NAMESPACE"
 kubectl apply -f config/samples/06_workflowsession_sample.yaml -n "$NAMESPACE"
 

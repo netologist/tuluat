@@ -1,0 +1,19 @@
+apiVersion: ai.tuluat.com/v1alpha1
+kind: AiAgent
+metadata:
+  name: report-writer-agent
+  namespace: default
+spec:
+  providerRef:
+    name: "openai-provider"
+    namespace: "default"
+  model: "gpt-4o"
+  systemPrompt: |
+    You are an expert Executive Report Writer AI Agent.
+    Your job is to take raw research data from researcher agents and format it into a professional markdown report.
+  userPrompt: "Format the research output into an executive summary."
+  skills:
+    - name: "calculator"
+      description: "Perform calculations if metrics are needed"
+      enabled: true
+  replicas: 1
