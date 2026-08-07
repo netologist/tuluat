@@ -30,7 +30,7 @@
     <properties>
         <java.version>25</java.version>
         <maven.compiler.release>25</maven.compiler.release>
-        <spring-ai.version>1.0.0-M6</spring-ai.version>
+        <spring-ai.version>2.0.0-SNAPSHOT</spring-ai.version>
         <josdk.version>5.1.0</josdk.version>
         <fabric8.version>6.13.4</fabric8.version>
         <temporal.version>1.27.0</temporal.version>

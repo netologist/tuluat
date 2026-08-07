@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wiremock-stubs
+  namespace: tuluat-system
+data:
+  openai-chat-completion.json: |
+    {
+      "request": {
+        "method": "POST",
+        "urlPathPattern": "/v1/chat/completions"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "id": "chatcmpl-wiremock-stub-001",
+          "object": "chat.completion",
+          "created": 1700000000,
+          "model": "wiremock-gpt-4o",
+          "choices": [
+            {
+              "index": 0,
+              "message": {
+                "role": "assistant",
+                "content": "WireMock Stub LLM Response: Agent execution completed successfully."
+              },
+              "finish_reason": "stop"
+            }
+          ],
+          "usage": {
+            "prompt_tokens": 20,
+            "completion_tokens": 15,
+            "total_tokens": 35
+          }
+        }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wiremock-stub
+  namespace: tuluat-system
+  labels:
+    app: wiremock-stub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wiremock-stub
+  template:
+    metadata:
+      labels:
+        app: wiremock-stub
+    spec:
+      containers:
+        - name: wiremock
+          image: wiremock/wiremock:3.9.1
+          args:
+            - "--verbose"
+          ports:
+            - containerPort: 8080
+              name: http
+          volumeMounts:
+            - name: stub-mappings
+              mountPath: /home/wiremock/mappings
+      volumes:
+        - name: stub-mappings
+          configMap:
+            name: wiremock-stubs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wiremock-service
+  namespace: tuluat-system
+  labels:
+    app: wiremock-stub
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  selector:
+    app: wiremock-stub

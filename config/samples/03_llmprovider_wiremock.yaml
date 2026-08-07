@@ -1,0 +1,14 @@
+apiVersion: ai.tuluat.com/v1alpha1
+kind: LlmProvider
+metadata:
+  name: wiremock-provider
+  namespace: tuluat-system
+spec:
+  providerType: "OPENAI"
+  baseUrl: "http://wiremock-service.tuluat-system.svc.cluster.local:8080/v1"
+  apiKeySecretRef:
+    name: "openai-secret"
+    key: "api-key"
+  defaultModel: "wiremock-gpt-4o"
+  temperature: 0.7
+  maxTokens: 2048

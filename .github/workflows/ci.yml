@@ -171,8 +171,8 @@ jobs:
         run: |
           kubectl rollout status deployment/postgres-pgvector -n tuluat-system --timeout=120s
           kubectl rollout status deployment/temporal-server -n tuluat-system --timeout=180s
+          kubectl rollout status deployment/wiremock-stub -n tuluat-system --timeout=120s
           kubectl rollout status deployment/tuluat-operator -n tuluat-system --timeout=180s
-
       - name: Run E2E Smoke & Acceptance Test Suite
         run: |
           PORT=8089

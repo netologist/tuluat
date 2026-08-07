@@ -9,9 +9,9 @@ echo "=========================================================="
 echo " 🚀 Tuluat AI Operator (Spring Boot 4.1 / Java 25 LTS): Build, Deploy & E2E"
 echo "=========================================================="
 
-echo "1. Building Production Docker Image (${IMAGE_NAME})..."
-DOCKER_BUILDKIT=0 docker build -f Dockerfile.local -t "${IMAGE_NAME}" .
-
+echo "1. Building Fat JAR & Production Docker Image (${IMAGE_NAME})..."
+./mvnw package -DskipTests ${MAVEN_ARGS:-} || ./mvnw package -DskipTests -Dmaven.compiler.release=24
+docker build -f Dockerfile.local -t "${IMAGE_NAME}" .
 echo "2. Loading Docker Image into Kind Cluster (${CLUSTER_NAME})..."
 kind load docker-image "${IMAGE_NAME}" --name "${CLUSTER_NAME}"
 

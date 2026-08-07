@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tuluat-system
+
+resources:
+  - samples/00_postgres_pgvector.yaml
+  - samples/02_llmprovider_openai.yaml
+  - samples/03_llmprovider_deepseek.yaml
+  - samples/03_llmprovider_ollama.yaml
+  - samples/03_llmprovider_wiremock.yaml
+  - samples/04_aiagent_sample.yaml
+  - samples/04_web_researcher_agent.yaml
+  - samples/04_report_writer_agent.yaml
+  - samples/05_aiworkflow_sample.yaml
+  - samples/06_workflowsession_sample.yaml
+
+secretGenerator:
+  - name: deepseek-secret
+    namespace: tuluat-system
+    literals:
+      - api-key=${DEEPSEEK_API_KEY:-sk-placeholder-deepseek-key}
+  - name: openai-secret
+    namespace: tuluat-system
+    literals:
+      - api-key=${OPENAI_API_KEY:-sk-placeholder-openai-key}
+
+generatorOptions:
+  disableNameSuffixHash: true
