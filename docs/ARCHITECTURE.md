@@ -202,3 +202,30 @@ erDiagram
 - **Transactional Node State:** Her düğüm geçişinde oturum durumu PostgreSQL veritabanında `@Transactional` olarak güncellenir.
 - **Crash Recovery:** Operator pod'u herhangi bir nedenle kapanıp tekrar açıldığında, `workflow_sessions` tablosunda `RUNNING` veya `PENDING` olan oturumlar sorgulanır ve kalınan `current_node_id` üzerinden akış kaldığı yerden devam ettirilir.
 - **Loop Guards:** Graf içinde oluşabilecek sonsuz döngülere karşı varsayılan `maxLoops` (örn. 10) kontrolü ile oturum güvenle `FAILED` durumuna çekilir.
+
+---
+
+## 7. Service Connections & Port-Forwarding Guide
+
+The application connects to infrastructure services as follows:
+- **PostgreSQL Database (`postgres-service:5432`):** Connected via `spring.datasource.url` for session state, chat history, and vector embeddings.
+- **Prometheus Telemetry:** Exposes metrics on `/actuator/prometheus` scraped by Prometheus Server (`prometheus-service:9090`).
+- **Temporal Engine (`temporal-service:7233`):** Connected via `spring.temporal.target` for durable execution and human approval signals.
+
+### Port-Forward Commands
+```bash
+# Operator REST API & Telemetry (8080)
+kubectl port-forward svc/k8s-ai-operator-service 8080:8080 -n default
+
+# Temporal Web UI (8233)
+kubectl port-forward svc/temporal-ui-service 8233:8233 -n default
+
+# Grafana Dashboard (3000)
+kubectl port-forward svc/grafana-service 3000:3000 -n default
+
+# Prometheus Metrics Server (9090)
+kubectl port-forward svc/prometheus-service 9090:9090 -n default
+
+# PostgreSQL + Pgvector Database (5432)
+kubectl port-forward svc/postgres-service 5432:5432 -n default
+```
