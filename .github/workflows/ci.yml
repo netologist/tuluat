@@ -126,7 +126,7 @@ jobs:
 
       - name: Build & Test Sub-Module
         run: |
-          ./mvnw test -pl tuluat-${{ matrix.module }} -Denable-preview
+          ./mvnw test -pl tuluat-${{ matrix.module }} -am -Denable-preview
 
   # ── 3. Fan-In: KinD Cluster & E2E Acceptance Tests ─────────────────────────
   e2e-kind:
@@ -158,12 +158,10 @@ jobs:
             --selector=app.kubernetes.io/component=controller \
             --timeout=180s || echo "Ingress setup continuing..."
 
-      - name: Build Fat JAR & Container Image
+      - name: Build & Load Container Image into KinD
         run: |
-          ./mvnw clean package -DskipTests
           docker build -t tuluat-operator:latest .
           kind load docker-image tuluat-operator:latest --name tuluat-cluster
-
       - name: Deploy Operator, Infrastructure & Custom Resources
         run: |
           ./scripts/deploy-operator.sh tuluat-system

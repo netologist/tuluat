@@ -23,13 +23,22 @@ assert_fail() {
 
 # 1. Healthcheck Assertion
 echo "1. Asserting Operator Health Status..."
-HEALTH_RESP=$(curl -s "${HOST}/actuator/health" || true)
-if echo "${HEALTH_RESP}" | grep -q '"status":"UP"'; then
+HEALTH_OK=false
+HEALTH_RESP=""
+for i in {1..20}; do
+  HEALTH_RESP=$(curl -s "${HOST}/actuator/health" 2>/dev/null || true)
+  if echo "${HEALTH_RESP}" | grep -q '"status":"UP"'; then
+    HEALTH_OK=true
+    break
+  fi
+  sleep 2
+done
+
+if [ "${HEALTH_OK}" = "true" ]; then
   assert_ok "Spring Boot Actuator Health is UP (PostgreSQL DB connected)"
 else
   assert_fail "Healthcheck failed or DB unreachable: ${HEALTH_RESP}"
 fi
-
 # 2. Telemetry Assertion
 echo "2. Asserting Prometheus Telemetry Endpoint..."
 METRICS_RESP=$(curl -s "${HOST}/actuator/prometheus" || true)
