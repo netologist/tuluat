@@ -21,7 +21,7 @@ public class WorkflowSessionTemporalWorkflowImpl implements WorkflowSessionTempo
     );
 
     private boolean approvalReceived = false;
-    private boolean approvedState = false;
+    private ApprovalSignal latestSignal = new ApprovalSignal(true, null, null);
 
     @Override
     public Map<String, Object> runSession(UUID sessionId, String workflowName, AiWorkflowSpec spec, String input, int maxLoops) {
@@ -49,8 +49,18 @@ public class WorkflowSessionTemporalWorkflowImpl implements WorkflowSessionTempo
             } else if ("HUMAN_APPROVAL".equalsIgnoreCase(currentNode.getType())) {
                 activities.recordLog(sessionId, currentNode.getId(), "INFO", "Waiting for human approval signal...");
                 Workflow.await(() -> approvalReceived);
-                activities.recordLog(sessionId, currentNode.getId(), "INFO", "Approval signal received: " + approvedState);
-                currentNodeId = resolveNextNodeId(spec, currentNode.getId(), approvedState);
+
+                if (latestSignal.getFeedback() != null && !latestSignal.getFeedback().isBlank()) {
+                    contextData.put("approval_feedback", latestSignal.getFeedback());
+                }
+                if (latestSignal.getMetadata() != null) {
+                    contextData.put("approval_metadata", latestSignal.getMetadata());
+                }
+
+                activities.recordLog(sessionId, currentNode.getId(), "INFO",
+                        "Approval signal received: approved=" + latestSignal.isApproved() + ", feedback=" + latestSignal.getFeedback());
+
+                currentNodeId = resolveNextNodeId(spec, currentNode.getId(), latestSignal.isApproved());
                 approvalReceived = false;
             }
 
@@ -62,8 +72,8 @@ public class WorkflowSessionTemporalWorkflowImpl implements WorkflowSessionTempo
     }
 
     @Override
-    public void signalApproval(boolean approved) {
-        this.approvedState = approved;
+    public void signalApproval(ApprovalSignal signal) {
+        this.latestSignal = signal != null ? signal : new ApprovalSignal(true, null, null);
         this.approvalReceived = true;
     }
 

@@ -15,5 +15,5 @@ public interface WorkflowSessionTemporalWorkflow {
     Map<String, Object> runSession(UUID sessionId, String workflowName, AiWorkflowSpec spec, String input, int maxLoops);
 
     @SignalMethod
-    void signalApproval(boolean approved);
+    void signalApproval(ApprovalSignal signal);
 }
