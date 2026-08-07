@@ -1,6 +1,7 @@
 package com.tuluat.ai.controller;
 
 import com.tuluat.ai.crd.workflow.AiWorkflow;
+import com.tuluat.ai.engine.temporal.ApprovalSignal;
 import com.tuluat.ai.engine.workflow.WorkflowExecutionService;
 import com.tuluat.ai.entity.WorkflowSessionEntity;
 import com.tuluat.ai.entity.WorkflowSessionLogEntity;
@@ -79,10 +80,17 @@ public class WorkflowSessionController {
     public ResponseEntity<Map<String, Object>> approveSessionStep(@PathVariable UUID sessionId,
                                                                  @RequestBody Map<String, Object> request) {
         boolean approved = Boolean.parseBoolean(String.valueOf(request.getOrDefault("approved", true)));
+        String feedback = (String) request.get("feedback");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> metadata = (Map<String, Object>) request.get("metadata");
+
+        ApprovalSignal signal = new ApprovalSignal(approved, feedback, metadata);
+
         return ResponseEntity.ok(Map.of(
                 "sessionId", sessionId.toString(),
                 "status", "SIGNAL_SENT",
-                "approved", approved
+                "approved", signal.isApproved(),
+                "feedback", signal.getFeedback() != null ? signal.getFeedback() : ""
         ));
     }
 }

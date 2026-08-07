@@ -128,13 +128,20 @@ class WorkflowSessionControllerTest {
     }
 
     @Test
-    @DisplayName("Should send approval signal for human-in-the-loop node")
-    void testApproveSessionStep() {
+    @DisplayName("Should send free-form approval signal for human-in-the-loop node")
+    void testApproveSessionStepWithFreeFormFeedback() {
         UUID sessionId = UUID.randomUUID();
-        ResponseEntity<Map<String, Object>> response = controller.approveSessionStep(sessionId, Map.of("approved", true));
+        Map<String, Object> body = Map.of(
+                "approved", true,
+                "feedback", "Add security analysis section",
+                "metadata", Map.of("reviewer", "admin")
+        );
+
+        ResponseEntity<Map<String, Object>> response = controller.approveSessionStep(sessionId, body);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("SIGNAL_SENT", response.getBody().get("status"));
         assertEquals(true, response.getBody().get("approved"));
+        assertEquals("Add security analysis section", response.getBody().get("feedback"));
     }
 }
