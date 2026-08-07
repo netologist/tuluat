@@ -2,7 +2,7 @@ apiVersion: ai.tuluat.com/v1alpha1
 kind: LlmProvider
 metadata:
   name: deepseek-provider
-  namespace: default
+  namespace: tuluat-system
 spec:
   providerType: "DEEPSEEK"
   baseUrl: "https://api.deepseek.com"

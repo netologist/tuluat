@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: temporal-server
-  namespace: default
+  namespace: tuluat-system
 spec:
   replicas: 1
   selector:
@@ -27,8 +27,6 @@ spec:
               value: postgres
             - name: POSTGRES_PWD
               value: postgres
-            - name: DYNAMIC_CONFIG_FILE_PATH
-              value: config/dynamicconfig/development-sql.yaml
           ports:
             - containerPort: 7233
 ---
@@ -36,7 +34,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: temporal-service
-  namespace: default
+  namespace: tuluat-system
 spec:
   selector:
     app: temporal-server
@@ -49,7 +47,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: temporal-ui
-  namespace: default
+  namespace: tuluat-system
 spec:
   replicas: 1
   selector:
@@ -75,7 +73,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: temporal-ui-service
-  namespace: default
+  namespace: tuluat-system
 spec:
   selector:
     app: temporal-ui

@@ -2,11 +2,11 @@ apiVersion: ai.tuluat.com/v1alpha1
 kind: AiAgent
 metadata:
   name: web-researcher-agent
-  namespace: default
+  namespace: tuluat-system
 spec:
   providerRef:
     name: "deepseek-provider"
-    namespace: "default"
+    namespace: "tuluat-system"
   model: "deepseek-chat"
   systemPrompt: |
     You are an expert AI Researcher Agent.

@@ -26,6 +26,13 @@ spec:
           env:
             - name: SPRING_THREADS_VIRTUAL_ENABLED
               value: "true"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 3
+            failureThreshold: 20
           resources:
             requests:
               cpu: "100m"

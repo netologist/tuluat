@@ -44,14 +44,24 @@ public class WorkflowSessionController {
 
     @PostMapping("/workflows/{workflowName}/sessions")
     public ResponseEntity<WorkflowSessionEntity> createSession(@PathVariable String workflowName,
+                                                                @RequestParam(required = false) String namespace,
                                                                 @RequestBody Map<String, Object> request) {
         String input = (String) request.getOrDefault("input", "");
         int maxLoops = (int) request.getOrDefault("maxLoops", 10);
 
+        String targetNamespace = (namespace != null && !namespace.isBlank()) ? namespace : "tuluat-system";
+
         AiWorkflow workflow = kubernetesClient.resources(AiWorkflow.class)
-                .inNamespace("default")
+                .inNamespace(targetNamespace)
                 .withName(workflowName)
                 .get();
+
+        if (workflow == null) {
+            workflow = kubernetesClient.resources(AiWorkflow.class)
+                    .inNamespace("default")
+                    .withName(workflowName)
+                    .get();
+        }
 
         if (workflow == null) {
             return ResponseEntity.notFound().build();

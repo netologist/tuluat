@@ -2,10 +2,10 @@ apiVersion: ai.tuluat.com/v1alpha1
 kind: LlmProvider
 metadata:
   name: ollama-provider
-  namespace: default
+  namespace: tuluat-system
 spec:
   providerType: "OLLAMA"
-  baseUrl: "http://ollama-service.default.svc.cluster.local:11434"
+  baseUrl: "http://ollama-service.tuluat-system.svc.cluster.local:11434"
   defaultModel: "llama3.2"
   temperature: 0.5
   maxTokens: 1024

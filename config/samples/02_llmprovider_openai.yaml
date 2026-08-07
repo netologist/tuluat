@@ -2,7 +2,7 @@ apiVersion: ai.tuluat.com/v1alpha1
 kind: LlmProvider
 metadata:
   name: openai-provider
-  namespace: default
+  namespace: tuluat-system
 spec:
   providerType: "OPENAI"
   baseUrl: "https://api.openai.com/v1"

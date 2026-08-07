@@ -2,7 +2,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: k8s-ai-operator-telemetry
-  namespace: default
+  namespace: tuluat-system
   labels:
     app: k8s-crd-ai-operator
 spec:

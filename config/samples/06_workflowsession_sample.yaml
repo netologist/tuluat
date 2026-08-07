@@ -2,7 +2,7 @@ apiVersion: ai.tuluat.com/v1alpha1
 kind: WorkflowSession
 metadata:
   name: research-session-001
-  namespace: default
+  namespace: tuluat-system
 spec:
   workflowRef: "multi-agent-researcher"
   input: "Kubernetes Custom Resource Operators Best Practices"

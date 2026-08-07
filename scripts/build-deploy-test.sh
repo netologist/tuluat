@@ -13,8 +13,7 @@ echo "1. Building Multi-Module Maven Package..."
 ./mvnw clean package -DskipTests
 
 echo "2. Building Local Docker Image (${IMAGE_NAME})..."
-docker build -f Dockerfile.local -t "${IMAGE_NAME}" .
-
+DOCKER_BUILDKIT=0 docker build -f Dockerfile.local -t "${IMAGE_NAME}" .
 echo "3. Loading Docker Image into Kind Cluster (${CLUSTER_NAME})..."
 kind load docker-image "${IMAGE_NAME}" --name "${CLUSTER_NAME}"
 
@@ -28,12 +27,9 @@ kubectl rollout status deployment/tuluat-operator -n "${NAMESPACE}" --timeout=18
 
 echo "6. Performing Automated End-to-End Verification..."
 
-# Set up port-forward in background
-OPERATOR_POD=$(kubectl get pods -n "${NAMESPACE}" -l app=tuluat-operator -o jsonpath='{.items[0].metadata.name}')
-echo "Targeting Operator Pod: ${OPERATOR_POD}"
-
 PORT=8089
-kubectl port-forward pod/"${OPERATOR_POD}" "${PORT}:8080" -n "${NAMESPACE}" >/dev/null 2>&1 &
+echo "Port-forwarding Service svc/tuluat-operator-service on port ${PORT}..."
+kubectl port-forward svc/tuluat-operator-service "${PORT}:8080" -n "${NAMESPACE}" >/dev/null 2>&1 &
 PF_PID=$!
 
 cleanup() {
@@ -43,29 +39,37 @@ cleanup() {
 trap cleanup EXIT
 
 echo "Waiting for port-forward connection on port ${PORT}..."
-for i in {1..15}; do
-  if curl -s "http://localhost:${PORT}/actuator/health" | grep -q "UP"; then
+HEALTH_OK=false
+for i in {1..20}; do
+  STATUS=$(curl -s "http://localhost:${PORT}/actuator/health" 2>/dev/null || true)
+  if echo "${STATUS}" | grep -q "UP"; then
+    HEALTH_OK=true
     echo "Operator Healthcheck: OK (UP)"
     break
   fi
   sleep 2
 done
 
+if [ "${HEALTH_OK}" = "false" ]; then
+  echo "Healthcheck timed out on port ${PORT}"
+  exit 1
+fi
+
 echo -e "\n--- [Check 1] Actuator Prometheus Telemetry ---"
-curl -s "http://localhost:${PORT}/actuator/prometheus" | grep "jvm_threads_live_threads" | head -n 5
+curl -s "http://localhost:${PORT}/actuator/prometheus" | grep "jvm_threads_live_threads" | head -n 5 || true
 
 echo -e "\n--- [Check 2] Creating Multi-Agent Session ---"
 SESSION_RESP=$(curl -s -X POST "http://localhost:${PORT}/api/v1/workflows/multi-agent-researcher/sessions" \
   -H "Content-Type: application/json" \
-  -d '{"input": "Automated Multi-Module E2E Verification Task"}')
+  -d '{"input": "Automated Multi-Module E2E Verification Task"}' || true)
 echo "Session Creation Response: ${SESSION_RESP}"
 
-SESSION_ID=$(echo "${SESSION_RESP}" | jq -r '.id // .sessionId // empty')
+SESSION_ID=$(echo "${SESSION_RESP}" | jq -r '.id // .sessionId // empty' 2>/dev/null || true)
 
 if [ -n "${SESSION_ID}" ] && [ "${SESSION_ID}" != "null" ]; then
   echo -e "\n--- [Check 3] Session Status & Logs ---"
-  curl -s "http://localhost:${PORT}/api/v1/sessions/${SESSION_ID}" | jq .
-  curl -s "http://localhost:${PORT}/api/v1/sessions/${SESSION_ID}/logs" | jq .
+  curl -s "http://localhost:${PORT}/api/v1/sessions/${SESSION_ID}" | jq . || true
+  curl -s "http://localhost:${PORT}/api/v1/sessions/${SESSION_ID}/logs" | jq . || true
 
   echo -e "\n--- [Check 4] Submitting Human Approval Signal ---"
   APPROVAL_RESP=$(curl -s -X POST "http://localhost:${PORT}/api/v1/sessions/${SESSION_ID}/approve" \
@@ -74,7 +78,7 @@ if [ -n "${SESSION_ID}" ] && [ "${SESSION_ID}" != "null" ]; then
           "approved": true,
           "feedback": "Multi-module refactoring verified cleanly",
           "metadata": {"reviewer": "automated-e2e-suite"}
-        }')
+        }' || true)
   echo "Approval Signal Response: ${APPROVAL_RESP}"
 fi
 

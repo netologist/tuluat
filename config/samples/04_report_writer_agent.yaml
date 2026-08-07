@@ -2,11 +2,11 @@ apiVersion: ai.tuluat.com/v1alpha1
 kind: AiAgent
 metadata:
   name: report-writer-agent
-  namespace: default
+  namespace: tuluat-system
 spec:
   providerRef:
     name: "openai-provider"
-    namespace: "default"
+    namespace: "tuluat-system"
   model: "gpt-4o"
   systemPrompt: |
     You are an expert Executive Report Writer AI Agent.

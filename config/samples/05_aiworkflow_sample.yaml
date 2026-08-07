@@ -2,7 +2,7 @@ apiVersion: ai.tuluat.com/v1alpha1
 kind: AiWorkflow
 metadata:
   name: multi-agent-researcher
-  namespace: default
+  namespace: tuluat-system
 spec:
   description: "Research and Report Multi-Agent Workflow (Researcher -> Evaluator -> Writer)"
   initialNode: "researcher-node"
