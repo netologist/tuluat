@@ -12,3 +12,9 @@ spec:
   defaultModel: "gpt-4o"
   temperature: 0.7
   maxTokens: 2048
+  costPer1kInputTokens: 0.0025
+  costPer1kOutputTokens: 0.0100
+  fallbacks:
+    - providerName: "deepseek-provider"
+      namespace: "tuluat-system"
+      model: "deepseek-chat"

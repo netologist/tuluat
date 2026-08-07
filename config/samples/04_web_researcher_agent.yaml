@@ -16,4 +16,24 @@ spec:
     - name: "web-search"
       description: "Search web for real-time information"
       enabled: true
+  skillSources:
+    - type: "FOLDER"
+      path: "/opt/tuluat/skills"
+      watch: true
+  mcpServers:
+    - name: "postgres-mcp"
+      namespace: "tuluat-system"
+  guardrails:
+    piiMasking:
+      enabled: true
+      modes: ["EMAIL", "CREDIT_CARD", "SSN", "PHONE"]
+      replacementToken: "[REDACTED]"
+    promptInjection:
+      enabled: true
+      strategy: "BLOCK"
+    outputValidation:
+      enabled: true
+      minConfidence: 0.5
+  a2a:
+    enabled: false
   replicas: 1

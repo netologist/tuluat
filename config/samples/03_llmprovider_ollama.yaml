@@ -9,3 +9,6 @@ spec:
   defaultModel: "llama3.2"
   temperature: 0.5
   maxTokens: 1024
+  costPer1kInputTokens: 0.0
+  costPer1kOutputTokens: 0.0
+  fallbacks: []
