@@ -41,6 +41,9 @@ public class WorkflowSessionController {
         this.logRepository = logRepository;
         this.kubernetesClient = kubernetesClient;
     }
+    public ResponseEntity<WorkflowSessionEntity> createSession(String workflowName, Map<String, Object> request) {
+        return createSession(workflowName, "tuluat-system", request);
+    }
 
     @PostMapping("/workflows/{workflowName}/sessions")
     public ResponseEntity<WorkflowSessionEntity> createSession(@PathVariable String workflowName,
