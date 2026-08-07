@@ -1,0 +1,11 @@
+apiVersion: ai.tuluat.com/v1alpha1
+kind: McpServer
+metadata:
+  name: postgres-mcp
+  namespace: tuluat-system
+spec:
+  endpoint: "http://postgres-mcp-server.tuluat-system.svc.cluster.local:8080/sse"
+  transport: "SSE"
+  authType: "NONE"
+  timeoutSeconds: 30
+  description: "PostgreSQL MCP server exposing database query tools to agents"

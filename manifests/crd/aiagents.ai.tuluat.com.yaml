@@ -56,6 +56,63 @@ spec:
                         type: object
                         additionalProperties:
                           type: string
+                skillSources:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        enum: ["FOLDER", "JAR", "CONFIGMAP"]
+                      path:
+                        type: string
+                      watch:
+                        type: boolean
+                mcpServers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                guardrails:
+                  type: object
+                  properties:
+                    piiMasking:
+                      type: object
+                      properties:
+                        enabled:
+                          type: boolean
+                        modes:
+                          type: array
+                          items:
+                            type: string
+                        replacementToken:
+                          type: string
+                    promptInjection:
+                      type: object
+                      properties:
+                        enabled:
+                          type: boolean
+                        strategy:
+                          type: string
+                          enum: ["BLOCK", "SANITIZE"]
+                    outputValidation:
+                      type: object
+                      properties:
+                        enabled:
+                          type: boolean
+                        minConfidence:
+                          type: number
+                a2a:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    remoteDiscovery:
+                      type: string
                 ingress:
                   type: object
                   properties:

@@ -7,6 +7,7 @@ public class NodeDefinition {
     private String inputTemplate;
     private String outputKey;
     private String expression;
+    private String outputSchema;
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -20,4 +21,6 @@ public class NodeDefinition {
     public void setOutputKey(String outputKey) { this.outputKey = outputKey; }
     public String getExpression() { return expression; }
     public void setExpression(String expression) { this.expression = expression; }
+    public String getOutputSchema() { return outputSchema; }
+    public void setOutputSchema(String outputSchema) { this.outputSchema = outputSchema; }
 }

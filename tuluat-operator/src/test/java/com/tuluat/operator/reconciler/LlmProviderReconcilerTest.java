@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -55,7 +56,7 @@ class LlmProviderReconcilerTest {
 
         var provider = new LlmProvider();
         provider.setMetadata(new ObjectMetaBuilder().withName("openai-provider").withNamespace("default").withGeneration(1L).build());
-        provider.setSpec(new LlmProviderSpec("OPENAI", "https://api.openai.com/v1", new SecretKeyRef("openai-secret", "api-key"), "gpt-4o", 0.7, 2048));
+        provider.setSpec(new LlmProviderSpec("OPENAI", "https://api.openai.com/v1", new SecretKeyRef("openai-secret", "api-key"), "gpt-4o", 0.7, 2048, 0.0, 0.0, List.of()));
 
         UpdateControl<LlmProvider> control = reconciler.reconcile(provider, null);
 
@@ -72,7 +73,7 @@ class LlmProviderReconcilerTest {
 
         var provider = new LlmProvider();
         provider.setMetadata(new ObjectMetaBuilder().withName("missing-sec-provider").withNamespace("default").withGeneration(1L).build());
-        provider.setSpec(new LlmProviderSpec("OPENAI", "https://api.openai.com/v1", new SecretKeyRef("non-existent-secret", "api-key"), "gpt-4o", 0.7, 2048));
+        provider.setSpec(new LlmProviderSpec("OPENAI", "https://api.openai.com/v1", new SecretKeyRef("non-existent-secret", "api-key"), "gpt-4o", 0.7, 2048, 0.0, 0.0, List.of()));
 
         UpdateControl<LlmProvider> control = reconciler.reconcile(provider, null);
 

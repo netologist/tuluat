@@ -2,6 +2,7 @@ package com.tuluat.crd.provider;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 
 /**
  * Spec record for LLM Provider CRD.
@@ -13,7 +14,10 @@ public record LlmProviderSpec(
     @JsonProperty("apiKeySecretRef") SecretKeyRef apiKeySecretRef,
     @JsonProperty("defaultModel") String defaultModel,
     @JsonProperty("temperature") Double temperature,
-    @JsonProperty("maxTokens") Integer maxTokens
+    @JsonProperty("maxTokens") Integer maxTokens,
+    @JsonProperty("costPer1kInputTokens") Double costPer1kInputTokens,
+    @JsonProperty("costPer1kOutputTokens") Double costPer1kOutputTokens,
+    @JsonProperty("fallbacks") List<ModelFallback> fallbacks
 ) {
     public LlmProviderSpec {
         if (providerType == null || providerType.isBlank()) {
@@ -24,6 +28,15 @@ public record LlmProviderSpec(
         }
         if (maxTokens == null) {
             maxTokens = 2048;
+        }
+        if (costPer1kInputTokens == null) {
+            costPer1kInputTokens = 0.0;
+        }
+        if (costPer1kOutputTokens == null) {
+            costPer1kOutputTokens = 0.0;
+        }
+        if (fallbacks == null) {
+            fallbacks = List.of();
         }
     }
 }

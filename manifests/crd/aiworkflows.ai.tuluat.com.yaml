@@ -46,6 +46,9 @@ spec:
                         type: string
                       expression:
                         type: string
+                      outputSchema:
+                        type: string
+                        description: "JSON Schema (as string) that this node's output must satisfy"
                 edges:
                   type: array
                   items:

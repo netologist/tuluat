@@ -82,7 +82,11 @@ class AgentChatControllerTest {
             "System prompt",
             "User prompt",
             List.of(new SkillDefinition("calculator", "Math", true, Map.of())),
-            null,
+            List.of(),   // skillSources
+            List.of(),   // mcpServers
+            null,        // guardrails
+            null,        // a2a
+            null,        // ingress
             1
         ));
         when(agentResMock.get()).thenReturn(agent);

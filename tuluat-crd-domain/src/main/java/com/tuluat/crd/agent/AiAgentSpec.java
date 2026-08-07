@@ -14,12 +14,22 @@ public record AiAgentSpec(
     @JsonProperty("systemPrompt") String systemPrompt,
     @JsonProperty("userPrompt") String userPrompt,
     @JsonProperty("skills") List<SkillDefinition> skills,
+    @JsonProperty("skillSources") List<SkillSource> skillSources,
+    @JsonProperty("mcpServers") List<McpServerRef> mcpServers,
+    @JsonProperty("guardrails") GuardrailsConfig guardrails,
+    @JsonProperty("a2a") A2aConfig a2a,
     @JsonProperty("ingress") IngressSpec ingress,
     @JsonProperty("replicas") Integer replicas
 ) {
     public AiAgentSpec {
         if (skills == null) {
             skills = List.of();
+        }
+        if (skillSources == null) {
+            skillSources = List.of();
+        }
+        if (mcpServers == null) {
+            mcpServers = List.of();
         }
         if (replicas == null) {
             replicas = 1;

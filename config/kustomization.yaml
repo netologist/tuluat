@@ -14,6 +14,7 @@ resources:
   - samples/04_report_writer_agent.yaml
   - samples/05_aiworkflow_sample.yaml
   - samples/06_workflowsession_sample.yaml
+  - samples/07_mcpserver_postgres.yaml
 
 secretGenerator:
   - name: deepseek-secret

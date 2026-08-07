@@ -81,7 +81,7 @@ class AiAgentReconcilerTest {
 
         var provider = new LlmProvider();
         provider.setMetadata(new ObjectMetaBuilder().withName("openai-provider").withNamespace("default").build());
-        provider.setSpec(new LlmProviderSpec("OPENAI", "https://api.openai.com/v1", null, "gpt-4o", 0.7, 2048));
+        provider.setSpec(new LlmProviderSpec("OPENAI", "https://api.openai.com/v1", null, "gpt-4o", 0.7, 2048, 0.0, 0.0, List.of()));
         doReturn(provider).when(llmResMock).get();
     }
 
@@ -96,6 +96,10 @@ class AiAgentReconcilerTest {
             "System prompt test",
             "User query test",
             List.of(new SkillDefinition("calculator", "Math", true, Map.of())),
+            List.of(),   // skillSources
+            List.of(),   // mcpServers
+            null,        // guardrails
+            null,        // a2a
             new IngressSpec(true, "agent.tuluat.com", "/", "Prefix", "nginx", Map.of(), null),
             1
         ));

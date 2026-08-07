@@ -12,3 +12,9 @@ spec:
   defaultModel: "wiremock-gpt-4o"
   temperature: 0.7
   maxTokens: 2048
+  costPer1kInputTokens: 0.0
+  costPer1kOutputTokens: 0.0
+  fallbacks:
+    - providerName: "deepseek-provider"
+      namespace: "tuluat-system"
+      model: "deepseek-chat"

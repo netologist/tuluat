@@ -1,10 +1,13 @@
 package com.tuluat.engine.skill;
 
 import com.tuluat.crd.agent.SkillDefinition;
+import com.tuluat.crd.agent.SkillSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -14,19 +17,52 @@ import java.util.concurrent.Executors;
 
 /**
  * Service managing skill registry and execution using Java Virtual Threads and Streams.
+ * Skills are contributed by {@link SkillProvider} implementations: compiled-in
+ * (builtin provider) or external JARs loaded from {@code skillSources} folders.
  */
 @Service
 public class SkillRegistry {
     private static final Logger log = LoggerFactory.getLogger(SkillRegistry.class);
     
     private final Map<String, Skill> registeredSkills = new ConcurrentHashMap<>();
+    private final Map<String, List<SkillJarLoader.LoadedProvider>> loadedProviders = new ConcurrentHashMap<>();
     private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     public SkillRegistry() {
-        // Register default skills
-        register(new CalculatorSkill());
-        register(new WebSearchSkill());
-        register(new WeatherSkill());
+        // Register compiled-in skills via the builtin provider (ADR 007)
+        registerProvider(new BuiltinSkillProvider());
+    }
+
+    /**
+     * Register all skills from a provider.
+     */
+    public void registerProvider(SkillProvider provider) {
+        for (Skill skill : provider.provideSkills()) {
+            register(skill);
+        }
+        log.info("Registered skill provider [{}] with {} skill(s)",
+            provider.providerName(), provider.provideSkills().size());
+    }
+
+    /**
+     * Load skills from declared {@link SkillSource} entries (FOLDER / JAR).
+     */
+    public void loadSkillSources(List<SkillSource> sources) {
+        if (sources == null || sources.isEmpty()) {
+            return;
+        }
+        for (SkillSource source : sources) {
+            if (source == null || source.path() == null || source.path().isBlank()) {
+                continue;
+            }
+            if ("CONFIGMAP".equalsIgnoreCase(source.type()) || "FOLDER".equalsIgnoreCase(source.type())
+                    || "JAR".equalsIgnoreCase(source.type())) {
+                List<SkillJarLoader.LoadedProvider> found =
+                    SkillJarLoader.loadFromFolder(Paths.get(source.path()));
+                loadedProviders.put(source.path(), found);
+                found.forEach(lp -> registerProvider(lp.provider()));
+            }
+        }
     }
 
     public void register(Skill skill) {
@@ -79,5 +115,18 @@ public class SkillRegistry {
 
     public List<String> getAvailableSkillNames() {
         return registeredSkills.keySet().stream().sorted().toList();
+    }
+
+    /** Compiled-in skills (Calculator, Web Search, Weather). */
+    public static final class BuiltinSkillProvider implements SkillProvider {
+        @Override
+        public String providerName() {
+            return "builtin";
+        }
+
+        @Override
+        public List<Skill> provideSkills() {
+            return List.of(new CalculatorSkill(), new WebSearchSkill(), new WeatherSkill());
+        }
     }
 }

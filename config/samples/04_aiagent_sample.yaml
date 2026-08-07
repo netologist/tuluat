@@ -28,6 +28,26 @@ spec:
       parameters:
         table: "customers"
         limit: "10"
+  skillSources:
+    - type: "FOLDER"
+      path: "/opt/tuluat/skills"
+      watch: true
+  mcpServers:
+    - name: "postgres-mcp"
+      namespace: "tuluat-system"
+  guardrails:
+    piiMasking:
+      enabled: true
+      modes: ["EMAIL", "CREDIT_CARD", "SSN", "PHONE"]
+      replacementToken: "[REDACTED]"
+    promptInjection:
+      enabled: true
+      strategy: "BLOCK"
+    outputValidation:
+      enabled: true
+      minConfidence: 0.6
+  a2a:
+    enabled: false
   ingress:
     enabled: true
     host: "ai-agent.tuluat.com"

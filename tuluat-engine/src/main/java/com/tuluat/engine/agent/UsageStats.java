@@ -45,4 +45,12 @@ public record UsageStats(
 
         return new UsageStats(inputTokens, outputTokens, total, roundedCost, latencyMs);
     }
+
+    /**
+     * Returns a copy of these stats with the gateway-computed cost (USD) instead
+     * of the built-in model-rate estimate.
+     */
+    public UsageStats withCostUsd(double costUsd) {
+        return new UsageStats(inputTokens, outputTokens, totalTokens, costUsd, latencyMs);
+    }
 }

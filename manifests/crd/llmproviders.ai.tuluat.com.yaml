@@ -45,6 +45,24 @@ spec:
                   type: number
                 maxTokens:
                   type: integer
+                costPer1kInputTokens:
+                  type: number
+                  description: "USD per 1k input tokens (pricing metadata for Model Gateway)"
+                costPer1kOutputTokens:
+                  type: number
+                  description: "USD per 1k output tokens (pricing metadata for Model Gateway)"
+                fallbacks:
+                  type: array
+                  description: "Ordered fallback route list for the Model Gateway"
+                  items:
+                    type: object
+                    properties:
+                      providerName:
+                        type: string
+                      namespace:
+                        type: string
+                      model:
+                        type: string
             status:
               type: object
               properties:
