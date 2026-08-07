@@ -13,11 +13,17 @@ kubectl apply -f manifests/crd/aiagents.ai.tuluat.com.yaml
 kubectl apply -f manifests/crd/aiworkflows.ai.tuluat.com.yaml
 kubectl apply -f manifests/crd/workflowsessions.ai.tuluat.com.yaml
 
-echo "2. Applying RBAC, ServiceAccount, and Database..."
+echo "2. Applying RBAC, ServiceAccount, Database, and Services..."
 kubectl apply -f manifests/operator/rbac.yaml -n "$NAMESPACE"
+kubectl apply -f manifests/operator/service.yaml -n "$NAMESPACE"
 kubectl apply -f config/samples/00_postgres_pgvector.yaml -n "$NAMESPACE"
 
-echo "3. Applying Sample Custom Resources..."
+echo "3. Applying Telemetry & Temporal Infrastructure..."
+kubectl apply -f manifests/telemetry/prometheus-grafana.yaml -n "$NAMESPACE"
+kubectl apply -f manifests/telemetry/prometheus-servicemonitor.yaml -n "$NAMESPACE" || true
+kubectl apply -f manifests/temporal/temporal-cluster.yaml -n "$NAMESPACE"
+
+echo "4. Applying Sample Custom Resources..."
 kubectl apply -f config/samples/01_secret_openai.yaml -n "$NAMESPACE"
 kubectl apply -f config/samples/01_secret_deepseek.yaml -n "$NAMESPACE"
 kubectl apply -f config/samples/02_llmprovider_openai.yaml -n "$NAMESPACE"
@@ -28,7 +34,7 @@ kubectl apply -f config/samples/04_report_writer_agent.yaml -n "$NAMESPACE"
 kubectl apply -f config/samples/05_aiworkflow_sample.yaml -n "$NAMESPACE"
 kubectl apply -f config/samples/06_workflowsession_sample.yaml -n "$NAMESPACE"
 
-echo "4. Checking status of CRDs and Custom Resources..."
+echo "5. Checking status of CRDs and Custom Resources..."
 kubectl get crds | grep ai.tuluat.com || true
 kubectl get llmproviders -n "$NAMESPACE" || true
 kubectl get aiagents -n "$NAMESPACE" || true
