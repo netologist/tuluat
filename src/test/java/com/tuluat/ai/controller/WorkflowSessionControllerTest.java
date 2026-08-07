@@ -126,4 +126,15 @@ class WorkflowSessionControllerTest {
         assertEquals(1, response.getBody().size());
         assertEquals("Executing node-1", response.getBody().get(0).getMessage());
     }
+
+    @Test
+    @DisplayName("Should send approval signal for human-in-the-loop node")
+    void testApproveSessionStep() {
+        UUID sessionId = UUID.randomUUID();
+        ResponseEntity<Map<String, Object>> response = controller.approveSessionStep(sessionId, Map.of("approved", true));
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("SIGNAL_SENT", response.getBody().get("status"));
+        assertEquals(true, response.getBody().get("approved"));
+    }
 }

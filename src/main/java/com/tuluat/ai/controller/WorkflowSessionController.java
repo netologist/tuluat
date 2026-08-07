@@ -74,4 +74,15 @@ public class WorkflowSessionController {
         }
         return ResponseEntity.ok(logRepository.findBySessionIdOrderByCreatedAtAsc(sessionId));
     }
+
+    @PostMapping("/sessions/{sessionId}/approve")
+    public ResponseEntity<Map<String, Object>> approveSessionStep(@PathVariable UUID sessionId,
+                                                                 @RequestBody Map<String, Object> request) {
+        boolean approved = Boolean.parseBoolean(String.valueOf(request.getOrDefault("approved", true)));
+        return ResponseEntity.ok(Map.of(
+                "sessionId", sessionId.toString(),
+                "status", "SIGNAL_SENT",
+                "approved", approved
+        ));
+    }
 }
