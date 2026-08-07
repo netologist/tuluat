@@ -22,7 +22,8 @@ class EmbabelAgentRunnerTest {
     @BeforeEach
     void setUp() {
         agentExecutionService = mock(AgentExecutionService.class);
-        runner = new EmbabelAgentRunner(agentExecutionService);
+        EmbabelGoalEngine goalEngine = new EmbabelGoalEngine(agentExecutionService);
+        runner = new EmbabelAgentRunner(goalEngine);
     }
 
     @Test

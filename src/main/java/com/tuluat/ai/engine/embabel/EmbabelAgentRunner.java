@@ -1,31 +1,39 @@
 package com.tuluat.ai.engine.embabel;
 
-import com.tuluat.ai.engine.AgentExecutionService;
 import com.tuluat.ai.engine.AgentResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.tuluat.ai.engine.UsageStats;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
 public class EmbabelAgentRunner {
 
-    private static final Logger log = LoggerFactory.getLogger(EmbabelAgentRunner.class);
-    private final AgentExecutionService agentExecutionService;
+    private final EmbabelGoalEngine goalEngine;
 
-    public EmbabelAgentRunner(AgentExecutionService agentExecutionService) {
-        this.agentExecutionService = agentExecutionService;
+    public EmbabelAgentRunner(EmbabelGoalEngine goalEngine) {
+        this.goalEngine = goalEngine;
     }
 
     public AgentResponse executeGoal(String agentName, String goalDescription, Map<String, Object> goalContext) {
-        log.info("Embabel Goal Runner: Planning goal '{}' for agent '{}'", goalDescription, agentName);
+        EmbabelGoal goal = new EmbabelGoal("goal-1", goalDescription, "final_result");
+        EmbabelAction action = new EmbabelAction(
+                "execute-goal-action",
+                agentName,
+                "Goal: " + goalDescription + "\nContext: {{context}}",
+                "final_result",
+                List.of()
+        );
 
-        StringBuilder promptBuilder = new StringBuilder();
-        promptBuilder.append("Goal: ").append(goalDescription).append("\n");
-        promptBuilder.append("Context: ").append(goalContext.toString()).append("\n");
-        promptBuilder.append("Formulate a step-by-step goal execution plan and produce final result.");
+        EmbabelBlackboard blackboard = new EmbabelBlackboard();
+        blackboard.put("context", goalContext != null ? goalContext.toString() : "{}");
 
-        return agentExecutionService.executeAgent(agentName, promptBuilder.toString(), null);
+        blackboard = goalEngine.executeGoal(goal, List.of(action), blackboard);
+
+        String answer = (String) blackboard.get("final_result");
+        if (answer == null) answer = "Goal failed to produce final result";
+
+        return AgentResponse.create(agentName, "embabel-model", "DEEPSEEK", answer, List.of(), UsageStats.calculate(10, 10, "embabel-model", 100L));
     }
 }
