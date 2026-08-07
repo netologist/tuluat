@@ -73,6 +73,13 @@
             <artifactId>temporal-sdk</artifactId>
         </dependency>
 
+        <!-- Object Storage (MinIO / S3-compatible) for RAG documents -->
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>8.5.12</version>
+        </dependency>
+
         <!-- Test Dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
