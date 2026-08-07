@@ -1,0 +1,239 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      build_modules:
+        description: 'Build & Test Maven Sub-Modules + Run KinD E2E'
+        type: boolean
+        default: true
+      deploy_docs:
+        description: 'Build & Deploy MkDocs Documentation'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  # ── 1. Detect Changed Maven Modules ───────────────────────────────────────
+  detect-changes:
+    name: Detect Changed Sub-Modules
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      has_changes: ${{ steps.set-matrix.outputs.has_changes }}
+      shared_changed: ${{ steps.filter.outputs.shared }}
+      docs_changed: ${{ steps.set-matrix.outputs.docs_changed }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            shared:
+              - 'pom.xml'
+              - 'Dockerfile*'
+              - 'manifests/**'
+              - 'config/**'
+              - 'scripts/**'
+            docs:
+              - 'docs/**'
+              - 'mkdocs.yml'
+            crd-domain:
+              - 'tuluat-crd-domain/**'
+            guardrails:
+              - 'tuluat-guardrails/**'
+            protocols:
+              - 'tuluat-protocols/**'
+            engine:
+              - 'tuluat-engine/**'
+            operator:
+              - 'tuluat-operator/**'
+            app:
+              - 'tuluat-app/**'
+
+      - name: Compute Build Matrix
+        id: set-matrix
+        run: |
+          EVENT_NAME="${{ github.event_name }}"
+          FORCE_MODULES="${{ inputs.build_modules }}"
+          FORCE_DOCS="${{ inputs.deploy_docs }}"
+          SHARED="${{ steps.filter.outputs.shared }}"
+          CHANGES='${{ steps.filter.outputs.changes }}'
+          DOCS_FILTER="${{ steps.filter.outputs.docs }}"
+          ALL='["crd-domain","guardrails","protocols","engine","operator","app"]'
+
+          # Manual trigger handling
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            if [ "$FORCE_MODULES" = "true" ]; then
+              echo "matrix=$ALL" >> $GITHUB_OUTPUT
+              echo "has_changes=true" >> $GITHUB_OUTPUT
+            else
+              echo "matrix=[]" >> $GITHUB_OUTPUT
+              echo "has_changes=false" >> $GITHUB_OUTPUT
+            fi
+
+            if [ "$FORCE_DOCS" = "true" ]; then
+              echo "docs_changed=true" >> $GITHUB_OUTPUT
+            else
+              echo "docs_changed=false" >> $GITHUB_OUTPUT
+            fi
+            exit 0
+          fi
+
+          # Automatic trigger handling (Push / Pull Request)
+          echo "docs_changed=$DOCS_FILTER" >> $GITHUB_OUTPUT
+
+          MOD_CHANGES=$(echo "$CHANGES" | jq -c --argjson all "$ALL" '[.[] | select(. as $c | $all | index($c))]')
+
+          if [ "$SHARED" = "true" ]; then
+            echo "matrix=$ALL" >> $GITHUB_OUTPUT
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          elif [ "$MOD_CHANGES" != "[]" ] && [ -n "$MOD_CHANGES" ]; then
+            echo "matrix=$MOD_CHANGES" >> $GITHUB_OUTPUT
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "matrix=[]" >> $GITHUB_OUTPUT
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+  # ── 2. Fan-Out Matrix: Unit Test Changed Sub-Modules ───────────────────────
+  build-module:
+    name: Unit Test (tuluat-${{ matrix.module }})
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.has_changes == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 25 LTS
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build & Test Sub-Module
+        run: |
+          ./mvnw test -pl tuluat-${{ matrix.module }} -Denable-preview
+
+  # ── 3. Fan-In: KinD Cluster & E2E Acceptance Tests ─────────────────────────
+  e2e-kind:
+    name: KinD Cluster E2E Acceptance Test
+    needs: [detect-changes, build-module]
+    if: needs.detect-changes.outputs.has_changes == 'true' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 25 LTS
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Create KinD Cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: tuluat-cluster
+          wait: 120s
+
+      - name: Deploy NGINX Ingress Controller
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+          kubectl wait --namespace ingress-nginx \
+            --for=condition=ready pod \
+            --selector=app.kubernetes.io/component=controller \
+            --timeout=180s || echo "Ingress setup continuing..."
+
+      - name: Build Fat JAR & Container Image
+        run: |
+          ./mvnw clean package -DskipTests
+          docker build -t tuluat-operator:latest .
+          kind load docker-image tuluat-operator:latest --name tuluat-cluster
+
+      - name: Deploy Operator, Infrastructure & Custom Resources
+        run: |
+          ./scripts/deploy-operator.sh tuluat-system
+          kubectl apply -f manifests/operator/deployment.yaml -n tuluat-system
+
+      - name: Wait for Operator & Infrastructure Pod Readiness
+        run: |
+          kubectl rollout status deployment/postgres-pgvector -n tuluat-system --timeout=120s
+          kubectl rollout status deployment/temporal-server -n tuluat-system --timeout=180s
+          kubectl rollout status deployment/tuluat-operator -n tuluat-system --timeout=180s
+
+      - name: Run E2E Smoke & Acceptance Test Suite
+        run: |
+          PORT=8089
+          kubectl port-forward svc/tuluat-operator-service "${PORT}:8080" -n tuluat-system &
+          PF_PID=$!
+          trap 'kill $PF_PID 2>/dev/null || true' EXIT
+          sleep 5
+
+          ./scripts/e2e-acceptance-test.sh "http://localhost:${PORT}" "tuluat-system"
+
+      - name: Debug Pods on Failure
+        if: failure()
+        run: |
+          kubectl get pods,svc,crd -n tuluat-system -o wide
+          kubectl logs deployment/tuluat-operator -n tuluat-system --tail=150 || true
+          kubectl logs deployment/temporal-server -n tuluat-system --tail=100 || true
+          kubectl logs deployment/postgres-pgvector -n tuluat-system --tail=50 || true
+
+  # ── 4. MkDocs Build & GitHub Pages Deploy ─────────────────────────────────
+  build-docs:
+    name: Build & Deploy MkDocs Documentation
+    needs: detect-changes
+    if: needs.detect-changes.outputs.docs_changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: "pages-${{ github.ref }}"
+      cancel-in-progress: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install MkDocs & Material Theme
+        run: |
+          pip install mkdocs mkdocs-material pymdown-extensions
+
+      - name: Build MkDocs Site
+        env:
+          NO_MKDOCS_2_WARNING: "1"
+        run: |
+          mkdocs build --strict
+
+      - name: Upload Pages Artifact
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+        id: deployment
+        uses: actions/deploy-pages@v4

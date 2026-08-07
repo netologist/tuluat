@@ -36,50 +36,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "Waiting for port-forward connection on port ${PORT}..."
-HEALTH_OK=false
-for i in {1..20}; do
-  STATUS=$(curl -s "http://localhost:${PORT}/actuator/health" 2>/dev/null || true)
-  if echo "${STATUS}" | grep -q "UP"; then
-    HEALTH_OK=true
-    echo "Operator Healthcheck: OK (UP)"
-    break
-  fi
-  sleep 2
-done
-
-if [ "${HEALTH_OK}" = "false" ]; then
-  echo "Healthcheck timed out on port ${PORT}"
-  exit 1
-fi
-
-echo -e "\n--- [Check 1] Actuator Prometheus Telemetry ---"
-curl -s "http://localhost:${PORT}/actuator/prometheus" | grep "jvm_threads_live_threads" | head -n 5 || true
-
-echo -e "\n--- [Check 2] Creating Multi-Agent Session ---"
-SESSION_RESP=$(curl -s -X POST "http://localhost:${PORT}/api/v1/workflows/multi-agent-researcher/sessions" \
-  -H "Content-Type: application/json" \
-  -d '{"input": "Java 24 Multi-Module E2E Verification Task"}' || true)
-echo "Session Creation Response: ${SESSION_RESP}"
-
-SESSION_ID=$(echo "${SESSION_RESP}" | jq -r '.id // .sessionId // empty' 2>/dev/null || true)
-
-if [ -n "${SESSION_ID}" ] && [ "${SESSION_ID}" != "null" ]; then
-  echo -e "\n--- [Check 3] Session Status & Logs ---"
-  curl -s "http://localhost:${PORT}/api/v1/sessions/${SESSION_ID}" | jq . || true
-  curl -s "http://localhost:${PORT}/api/v1/sessions/${SESSION_ID}/logs" | jq . || true
-
-  echo -e "\n--- [Check 4] Submitting Human Approval Signal ---"
-  APPROVAL_RESP=$(curl -s -X POST "http://localhost:${PORT}/api/v1/sessions/${SESSION_ID}/approve" \
-    -H "Content-Type: application/json" \
-    -d '{
-          "approved": true,
-          "feedback": "Java 24 runtime verified cleanly",
-          "metadata": {"reviewer": "automated-e2e-suite"}
-        }' || true)
-  echo "Approval Signal Response: ${APPROVAL_RESP}"
-fi
-
+./scripts/e2e-acceptance-test.sh "http://localhost:${PORT}" "${NAMESPACE}"
 echo -e "\n=========================================================="
 echo " ✅ Java 24 Build, Deploy, and E2E Verification Completed!"
 echo "=========================================================="
