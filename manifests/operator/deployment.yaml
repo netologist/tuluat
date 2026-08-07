@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: k8s-ai-operator
-  namespace: default
+  name: tuluat-operator
+  namespace: tuluat-system
   labels:
-    app: k8s-ai-operator
+    app: tuluat-operator
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: k8s-ai-operator
+      app: tuluat-operator
   template:
     metadata:
       labels:
-        app: k8s-ai-operator
+        app: tuluat-operator
     spec:
-      serviceAccountName: k8s-ai-operator-sa
+      serviceAccountName: tuluat-operator-sa
       containers:
         - name: operator
-          image: k8s-crd-ai-operator:latest
+          image: tuluat-operator:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

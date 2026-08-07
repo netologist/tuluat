@@ -48,3 +48,4 @@ nav:
       - "ADR 003: MCP & A2A Protocols": adrs/003-mcp-and-a2a-protocols.md
       - "ADR 004: Guardrails & Verification": adrs/004-guardrails-and-verification.md
       - "ADR 005: Visual Builder & HITL GUI": adrs/005-visual-builder-and-hitl-gui.md
+      - "ADR 006: Multi-Module Architecture and Tuluat Rebranding": adrs/006-multi-module-architecture-and-tuluat-rebranding.md

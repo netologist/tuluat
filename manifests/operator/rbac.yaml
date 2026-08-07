@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: k8s-ai-operator-sa
-  namespace: default
+  name: tuluat-operator-sa
+  namespace: tuluat-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: k8s-ai-operator-role
+  name: tuluat-operator-role
 rules:
   - apiGroups: ["ai.tuluat.com"]
     resources:
@@ -33,12 +33,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: k8s-ai-operator-rolebinding
+  name: tuluat-operator-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: k8s-ai-operator-role
+  name: tuluat-operator-role
 subjects:
   - kind: ServiceAccount
-    name: k8s-ai-operator-sa
-    namespace: default
+    name: tuluat-operator-sa
+    namespace: tuluat-system

@@ -5,7 +5,10 @@ echo "=========================================="
 echo " Deploying K8s AI Operator & Custom Resources"
 echo "=========================================="
 
-NAMESPACE=${1:-default}
+NAMESPACE=${1:-tuluat-system}
+
+echo "0. Creating Namespace..."
+kubectl apply -f manifests/operator/namespace.yaml
 
 echo "1. Applying Custom Resource Definitions (CRDs)..."
 kubectl apply -f manifests/crd/llmproviders.ai.tuluat.com.yaml

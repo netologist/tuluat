@@ -4,11 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.tuluat.ai</groupId>
-    <artifactId>k8s-crd-ai-operator</artifactId>
+    <groupId>com.tuluat</groupId>
+    <artifactId>tuluat-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>k8s-crd-ai-operator</name>
-    <description>Kubernetes Custom Operator using Java 26, Virtual Threads, Records, Spring AI, and Java Operator SDK</description>
+    <name>tuluat-parent</name>
+    <description>Tuluat Kubernetes AI Operator &amp; Workflow Runtime Parent POM</description>
+    <packaging>pom</packaging>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -17,16 +18,54 @@
         <relativePath/>
     </parent>
 
+    <modules>
+        <module>tuluat-crd-domain</module>
+        <module>tuluat-guardrails</module>
+        <module>tuluat-protocols</module>
+        <module>tuluat-engine</module>
+        <module>tuluat-operator</module>
+        <module>tuluat-app</module>
+    </modules>
+
     <properties>
         <java.version>24</java.version>
         <maven.compiler.release>24</maven.compiler.release>
         <spring-ai.version>1.0.0-M6</spring-ai.version>
         <josdk.version>5.1.0</josdk.version>
         <fabric8.version>6.13.4</fabric8.version>
+        <temporal.version>1.27.0</temporal.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- Internal Sub-Modules -->
+            <dependency>
+                <groupId>com.tuluat</groupId>
+                <artifactId>tuluat-crd-domain</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.tuluat</groupId>
+                <artifactId>tuluat-guardrails</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.tuluat</groupId>
+                <artifactId>tuluat-protocols</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.tuluat</groupId>
+                <artifactId>tuluat-engine</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.tuluat</groupId>
+                <artifactId>tuluat-operator</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- BOM Imports -->
             <dependency>
                 <groupId>io.fabric8</groupId>
                 <artifactId>kubernetes-client-bom</artifactId>
@@ -48,118 +87,36 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <!-- Temporal SDK -->
+            <dependency>
+                <groupId>io.temporal</groupId>
+                <artifactId>temporal-sdk</artifactId>
+                <version>${temporal.version}</version>
+            </dependency>
+
+            <!-- Java Operator SDK Spring Starter -->
+            <dependency>
+                <groupId>io.javaoperatorsdk</groupId>
+                <artifactId>operator-framework-spring-boot-starter</artifactId>
+                <version>${josdk.version}</version>
+            </dependency>
+
+            <!-- Test Dependencies -->
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-server-mock</artifactId>
+                <version>${fabric8.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.javaoperatorsdk</groupId>
+                <artifactId>operator-framework-junit-5</artifactId>
+                <version>${josdk.version}</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <dependencies>
-        <!-- Spring Boot Starters -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-validation</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
-        <!-- Java Operator SDK -->
-        <dependency>
-            <groupId>io.javaoperatorsdk</groupId>
-            <artifactId>operator-framework-spring-boot-starter</artifactId>
-            <version>${josdk.version}</version>
-        </dependency>
-
-        <!-- Fabric8 Kubernetes Client & Model Annotations -->
-        <dependency>
-            <groupId>io.fabric8</groupId>
-            <artifactId>kubernetes-client</artifactId>
-            <version>${fabric8.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.fabric8</groupId>
-            <artifactId>kubernetes-model-core</artifactId>
-            <version>${fabric8.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.fabric8</groupId>
-            <artifactId>kubernetes-client-api</artifactId>
-            <version>${fabric8.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.fabric8</groupId>
-            <artifactId>crd-generator-apt</artifactId>
-            <version>${fabric8.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- Spring AI Starters -->
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-ollama-spring-boot-starter</artifactId>
-        </dependency>
-
-        <!-- Jackson for JSON parsing -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-        </dependency>
-
-        <!-- Temporal SDK for Durable Workflow Execution -->
-        <dependency>
-            <groupId>io.temporal</groupId>
-            <artifactId>temporal-sdk</artifactId>
-            <version>1.27.0</version>
-        </dependency>
-
-        <!-- Testing Dependencies -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.fabric8</groupId>
-            <artifactId>kubernetes-server-mock</artifactId>
-            <version>${fabric8.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.javaoperatorsdk</groupId>
-            <artifactId>operator-framework-junit-5</artifactId>
-            <version>${josdk.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
 
     <repositories>
         <repository>
@@ -189,13 +146,6 @@
                     <compilerArgs>
                         <arg>--enable-preview</arg>
                     </compilerArgs>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <jvmArguments>--enable-preview</jvmArguments>
                 </configuration>
             </plugin>
         </plugins>

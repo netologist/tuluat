@@ -2,7 +2,7 @@
 set -euo pipefail
 
 CLUSTER_NAME="tuluat-cluster"
-IMAGE_NAME="k8s-crd-ai-operator:latest"
+IMAGE_NAME="tuluat-operator:latest"
 
 echo "=========================================================="
 echo " Setting up Kind Kubernetes Cluster: ${CLUSTER_NAME}"
@@ -64,10 +64,10 @@ kind load docker-image "${IMAGE_NAME}" --name "${CLUSTER_NAME}"
 
 # 6. Deploy CRDs, RBAC, Operator, and Custom Resources
 echo "5. Deploying CRDs, RBAC, and Custom Resources..."
-./scripts/deploy-operator.sh default
+./scripts/deploy-operator.sh tuluat-system
 
 echo "6. Deploying Operator in Kubernetes..."
-kubectl apply -f manifests/operator/deployment.yaml
+kubectl apply -f manifests/operator/deployment.yaml -n tuluat-system
 
 echo "=========================================================="
 echo " Kind Cluster Setup Completed Successfully!"

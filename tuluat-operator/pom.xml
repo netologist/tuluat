@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.tuluat</groupId>
+        <artifactId>tuluat-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>tuluat-operator</artifactId>
+    <name>tuluat-operator</name>
+    <description>Java Operator SDK Reconcilers &amp; Kubernetes Resource Lifecycle</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.tuluat</groupId>
+            <artifactId>tuluat-crd-domain</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tuluat</groupId>
+            <artifactId>tuluat-engine</artifactId>
+        </dependency>
+
+        <!-- Java Operator SDK -->
+        <dependency>
+            <groupId>io.javaoperatorsdk</groupId>
+            <artifactId>operator-framework-spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- Fabric8 Kubernetes Client -->
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-client</artifactId>
+        </dependency>
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-server-mock</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.javaoperatorsdk</groupId>
+            <artifactId>operator-framework-junit-5</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

@@ -3,7 +3,7 @@ WORKDIR /app
 
 RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 
-COPY target/k8s-crd-ai-operator-1.0.0-SNAPSHOT.jar app.jar
+COPY tuluat-app/target/tuluat-app-1.0.0-SNAPSHOT.jar app.jar
 RUN chown -R appuser:appgroup /app
 
 USER appuser
