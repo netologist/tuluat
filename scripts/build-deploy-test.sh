@@ -6,26 +6,24 @@ IMAGE_NAME="tuluat-operator:latest"
 NAMESPACE="tuluat-system"
 
 echo "=========================================================="
-echo " 🚀 Tuluat AI Operator: Build, Deploy & E2E Verification"
+echo " 🚀 Tuluat AI Operator (Java 24): Build, Deploy & E2E"
 echo "=========================================================="
 
-echo "1. Building Multi-Module Maven Package..."
-./mvnw clean package -DskipTests
-
-echo "2. Building Local Docker Image (${IMAGE_NAME})..."
+echo "1. Building Production Docker Image (${IMAGE_NAME})..."
 DOCKER_BUILDKIT=0 docker build -f Dockerfile.local -t "${IMAGE_NAME}" .
-echo "3. Loading Docker Image into Kind Cluster (${CLUSTER_NAME})..."
+
+echo "2. Loading Docker Image into Kind Cluster (${CLUSTER_NAME})..."
 kind load docker-image "${IMAGE_NAME}" --name "${CLUSTER_NAME}"
 
-echo "4. Deploying Kubernetes Manifests to Namespace: ${NAMESPACE}..."
+echo "3. Deploying Kubernetes Manifests to Namespace: ${NAMESPACE}..."
 ./scripts/deploy-operator.sh "${NAMESPACE}"
 kubectl apply -f manifests/operator/deployment.yaml -n "${NAMESPACE}"
 
-echo "5. Restarting Operator Deployment & Waiting for Pod Readiness..."
+echo "4. Restarting Operator Deployment & Waiting for Pod Readiness..."
 kubectl rollout restart deployment/tuluat-operator -n "${NAMESPACE}"
 kubectl rollout status deployment/tuluat-operator -n "${NAMESPACE}" --timeout=180s
 
-echo "6. Performing Automated End-to-End Verification..."
+echo "5. Performing Automated End-to-End Verification..."
 
 PORT=8089
 echo "Port-forwarding Service svc/tuluat-operator-service on port ${PORT}..."
@@ -61,7 +59,7 @@ curl -s "http://localhost:${PORT}/actuator/prometheus" | grep "jvm_threads_live_
 echo -e "\n--- [Check 2] Creating Multi-Agent Session ---"
 SESSION_RESP=$(curl -s -X POST "http://localhost:${PORT}/api/v1/workflows/multi-agent-researcher/sessions" \
   -H "Content-Type: application/json" \
-  -d '{"input": "Automated Multi-Module E2E Verification Task"}' || true)
+  -d '{"input": "Java 24 Multi-Module E2E Verification Task"}' || true)
 echo "Session Creation Response: ${SESSION_RESP}"
 
 SESSION_ID=$(echo "${SESSION_RESP}" | jq -r '.id // .sessionId // empty' 2>/dev/null || true)
@@ -76,12 +74,12 @@ if [ -n "${SESSION_ID}" ] && [ "${SESSION_ID}" != "null" ]; then
     -H "Content-Type: application/json" \
     -d '{
           "approved": true,
-          "feedback": "Multi-module refactoring verified cleanly",
+          "feedback": "Java 24 runtime verified cleanly",
           "metadata": {"reviewer": "automated-e2e-suite"}
         }' || true)
   echo "Approval Signal Response: ${APPROVAL_RESP}"
 fi
 
 echo -e "\n=========================================================="
-echo " ✅ Build, Deploy, and E2E Verification Completed!"
+echo " ✅ Java 24 Build, Deploy, and E2E Verification Completed!"
 echo "=========================================================="
