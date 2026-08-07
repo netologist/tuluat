@@ -1,5 +1,5 @@
 # Stage 1: Build stage
-FROM eclipse-temurin:24-jdk AS builder
+FROM eclipse-temurin:25-jdk AS builder
 WORKDIR /build
 
 # Copy Parent POM, wrapper scripts, and sub-module source codes
@@ -17,7 +17,7 @@ COPY tuluat-app ./tuluat-app
 RUN chmod +x ./mvnw && ./mvnw package -DskipTests
 
 # Stage 2: Runtime stage
-FROM eclipse-temurin:24-jre AS runner
+FROM eclipse-temurin:25-jre AS runner
 WORKDIR /app
 
 # Create non-root system user for Kubernetes security compliance
