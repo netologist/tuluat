@@ -6,7 +6,7 @@ IMAGE_NAME="tuluat-operator:latest"
 NAMESPACE="tuluat-system"
 
 echo "=========================================================="
-echo " 🚀 Tuluat AI Operator (Java 24): Build, Deploy & E2E"
+echo " 🚀 Tuluat AI Operator (Spring Boot 4.1 / Java 25 LTS): Build, Deploy & E2E"
 echo "=========================================================="
 
 echo "1. Building Production Docker Image (${IMAGE_NAME})..."

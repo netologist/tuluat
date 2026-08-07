@@ -1,6 +1,6 @@
 # Kubernetes AI Operator & Workflow Runtime Platform
 
-A Kubernetes-native AI Operator and Orchestration Runtime built with **Java 24 (Virtual Threads)**, **Spring Boot 3.4.x**, **Spring AI**, **Temporal SDK**, **Embabel Goal Engine**, and **PostgreSQL + Pgvector**.
+A Kubernetes-native AI Operator and Orchestration Runtime built with **Java 25 LTS (Virtual Threads)**, **Spring Boot 4.1.0-SNAPSHOT (Spring 7 Framework)**, **Spring AI**, **Temporal SDK**, **Embabel Goal Engine**, and **PostgreSQL + Pgvector**.
 
 ---
 
