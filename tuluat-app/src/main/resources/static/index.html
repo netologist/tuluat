@@ -946,6 +946,9 @@ ${nodesYaml}`;
                 }
             } catch (e) {
                 alert(`Trigger failed: ${e.message}`);
+            }
+        }
+
         async function inspectNodeDetail(wfName, nodeId) {
             try {
                 const res = await fetch(`/api/v1/workflows/${wfName}`);
@@ -970,6 +973,8 @@ ${nodesYaml}`;
                 console.error("Inspect node detail error", e);
             }
         }
+
+        function openNodeModal(data) {
             const modal = document.getElementById('node-modal');
             const title = document.getElementById('modal-title');
             const badge = document.getElementById('modal-type-badge');
