@@ -136,12 +136,12 @@ class WorkflowSessionControllerTest {
 
         when(sessionRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of(entity));
 
-        ResponseEntity<List<WorkflowSessionEntity>> response = controller.getSessions(null);
+        ResponseEntity<List<Map<String, Object>>> response = controller.getSessions(null);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
-        assertEquals("order-processing-workflow", response.getBody().get(0).getWorkflowName());
+        assertEquals("order-processing-workflow", response.getBody().get(0).get("workflowName"));
     }
 
     @Test

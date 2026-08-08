@@ -20,14 +20,27 @@ public class ApprovalController {
     private final WorkflowSessionRepository sessionRepository;
     private final WorkflowExecutionService executionService;
     private final WorkflowEventPublisher eventPublisher;
+    private final io.fabric8.kubernetes.client.KubernetesClient kubernetesClient;
 
+    public ApprovalController(WorkflowSessionRepository sessionRepository,
+                              WorkflowExecutionService executionService) {
+        this(sessionRepository, executionService, null, null);
+    }
+
+    public ApprovalController(WorkflowSessionRepository sessionRepository,
+                              WorkflowExecutionService executionService,
+                              WorkflowEventPublisher eventPublisher) {
+        this(sessionRepository, executionService, eventPublisher, null);
+    }
     @Autowired
     public ApprovalController(WorkflowSessionRepository sessionRepository,
                               WorkflowExecutionService executionService,
-                              @Autowired(required = false) WorkflowEventPublisher eventPublisher) {
+                              @Autowired(required = false) WorkflowEventPublisher eventPublisher,
+                              @Autowired(required = false) io.fabric8.kubernetes.client.KubernetesClient kubernetesClient) {
         this.sessionRepository = sessionRepository;
         this.executionService = executionService;
         this.eventPublisher = eventPublisher;
+        this.kubernetesClient = kubernetesClient;
     }
 
     @GetMapping
@@ -80,6 +93,27 @@ public class ApprovalController {
 
         ApprovalSignal signal = new ApprovalSignal(approved, feedback, metadata);
         executionService.sendApprovalSignal(sessionId.toString(), signal);
+
+        // Resume state machine loop if kubernetesClient & spec can be resolved
+        Optional<WorkflowSessionEntity> opt = sessionRepository.findById(sessionId);
+        if (opt.isPresent() && kubernetesClient != null) {
+            WorkflowSessionEntity session = opt.get();
+            try {
+                com.tuluat.crd.workflow.AiWorkflow wf = kubernetesClient.resources(com.tuluat.crd.workflow.AiWorkflow.class)
+                        .inNamespace("tuluat-system")
+                        .withName(session.getWorkflowName())
+                        .get();
+                if (wf == null) {
+                    wf = kubernetesClient.resources(com.tuluat.crd.workflow.AiWorkflow.class)
+                            .inNamespace("default")
+                            .withName(session.getWorkflowName())
+                            .get();
+                }
+                if (wf != null && wf.getSpec() != null) {
+                    executionService.processApprovalSignal(sessionId, wf.getSpec(), approved, feedback, 10);
+                }
+            } catch (Exception ignored) { }
+        }
 
         if (eventPublisher != null) {
             eventPublisher.publishApprovalResolved(sessionId, approved, feedback);

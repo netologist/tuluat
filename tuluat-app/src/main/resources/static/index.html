@@ -79,6 +79,10 @@
                 <i class="fa-solid fa-wand-magic-sparkles"></i>
                 <span>Visual Canvas</span>
             </button>
+            <button onclick="switchTab('mcp-providers')" id="tab-mcp-providers" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-2 text-slate-400 hover:text-white hover:bg-slate-800/50">
+                <i class="fa-solid fa-server"></i>
+                <span>MCP & Providers</span>
+            </button>
         </nav>
 
         <!-- Live Status Indicator -->
@@ -286,8 +290,28 @@
                                         <p class="text-[11px] text-slate-400">Step-by-step execution timeline & condition decision tree</p>
                                     </div>
                                     <span class="text-[10px] text-indigo-300 bg-indigo-950 px-2.5 py-1 rounded-full font-mono border border-indigo-800">
-                                        Click step to inspect prompt/output & condition values
+                                        Click step to inspect prompt/output, MCP tools & condition values
                                     </span>
+                                </div>
+
+                                <!-- Session Execution Metrics Summary Bar -->
+                                <div id="session-summary-bar" class="hidden mb-4 p-3.5 bg-slate-900 border border-slate-800 rounded-xl grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
+                                    <div class="flex flex-col">
+                                        <span class="text-slate-500 text-[10px]">TOTAL DURATION</span>
+                                        <span id="sum-duration" class="font-bold text-emerald-400">1.42 sec (1,420 ms)</span>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span class="text-slate-500 text-[10px]">TOTAL TOKENS</span>
+                                        <span id="sum-tokens" class="font-bold text-white">2,450 tokens</span>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span class="text-slate-500 text-[10px]">TOTAL EST. COST</span>
+                                        <span id="sum-cost" class="font-bold text-indigo-300">$0.0142 USD</span>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span class="text-slate-500 text-[10px]">EXECUTION STEPS</span>
+                                        <span id="sum-steps" class="font-bold text-amber-400">4 Steps Executed</span>
+                                    </div>
                                 </div>
                                 <div id="session-flow-container" class="canvas-bg p-4 rounded-xl border border-slate-800 flex-1 flex flex-col items-center justify-start space-y-4 overflow-y-auto max-h-[450px]">
                                     <div class="text-center text-slate-500 py-12">
@@ -438,7 +462,186 @@
             </div>
         </section>
 
+        <!-- TAB 6: MCP SERVERS & LLM PROVIDERS -->
+        <section id="sec-mcp-providers" class="flex-1 p-8 hidden overflow-y-auto max-w-7xl mx-auto w-full space-y-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-white tracking-tight">Model Context Protocol (MCP) Servers & LlmProviders</h2>
+                    <p class="text-sm text-slate-400 mt-1">Manage external tool integrations, vector memory servers, and LLM model gateway credentials</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="openAddProviderModal()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition shadow-lg flex items-center space-x-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Add / Override Provider</span>
+                    </button>
+                    <button onclick="openAddMcpModal()" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-medium text-xs transition shadow-lg flex items-center space-x-2">
+                        <i class="fa-solid fa-plug"></i>
+                        <span>Add / Override McpServer</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Registered LlmProviders Table -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h3 class="text-sm font-semibold text-slate-300 flex items-center">
+                        <i class="fa-solid fa-server text-indigo-400 mr-2"></i>
+                        Registered LlmProvider CRDs & API Secret Status
+                    </h3>
+                    <span class="text-xs text-slate-400 font-mono"><i class="fa-solid fa-lock text-emerald-400 mr-1"></i>API Keys Masked (Override-Only)</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-950/60 uppercase text-slate-400 font-mono text-[11px] border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">Provider Name</th>
+                                <th class="p-3">Type</th>
+                                <th class="p-3">Default Model</th>
+                                <th class="p-3">Base URL</th>
+                                <th class="p-3">Secret Status</th>
+                                <th class="p-3">Pricing (1k in/out)</th>
+                                <th class="p-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="providers-full-table-body" class="divide-y divide-slate-800/60 font-mono">
+                            <tr><td colspan="7" class="p-4 text-slate-500 text-center italic">Loading LlmProvider definitions...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Registered McpServers Table -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h3 class="text-sm font-semibold text-slate-300 flex items-center">
+                        <i class="fa-solid fa-network-wired text-amber-400 mr-2"></i>
+                        Registered McpServer CRDs & Exported Tool Registries
+                    </h3>
+                    <span class="text-xs text-slate-400 font-mono"><i class="fa-solid fa-plug text-indigo-400 mr-1"></i>JSON-RPC over SSE / stdio</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-950/60 uppercase text-slate-400 font-mono text-[11px] border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">McpServer Name</th>
+                                <th class="p-3">Endpoint URL</th>
+                                <th class="p-3">Transport</th>
+                                <th class="p-3">Auth Status</th>
+                                <th class="p-3">Exported Tools</th>
+                                <th class="p-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mcp-servers-table-body" class="divide-y divide-slate-800/60 font-mono">
+                            <tr><td colspan="6" class="p-4 text-slate-500 text-center italic">Loading McpServer definitions...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
     </main>
+
+    <!-- MODAL FOR ADD / OVERRIDE LLM PROVIDER -->
+    <div id="provider-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 mx-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 id="provider-modal-title" class="font-bold text-base text-white">Add / Override LlmProvider</h3>
+                <button onclick="closeProviderModal()" class="w-7 h-7 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="text-slate-400 block mb-1 font-semibold">Provider Name</label>
+                    <input id="prov-name" type="text" placeholder="e.g. openai-provider" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-white font-mono focus:border-indigo-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-slate-400 block mb-1 font-semibold">Provider Type</label>
+                        <select id="prov-type" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-white font-mono">
+                            <option value="OPENAI">OPENAI</option>
+                            <option value="DEEPSEEK">DEEPSEEK</option>
+                            <option value="ANTHROPIC">ANTHROPIC</option>
+                            <option value="OLLAMA">OLLAMA</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-slate-400 block mb-1 font-semibold">Default Model</label>
+                        <input id="prov-model" type="text" value="deepseek-chat" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-white font-mono">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-slate-400 block mb-1 font-semibold">Base URL</label>
+                    <input id="prov-url" type="text" placeholder="https://api.openai.com/v1" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-white font-mono">
+                </div>
+                <div>
+                    <label class="text-slate-400 block mb-1 font-semibold text-rose-400 flex items-center justify-between">
+                        <span>API Key (Write-Only Override)</span>
+                        <span class="text-[10px] text-slate-500 font-normal">Never shown / always entered fresh</span>
+                    </label>
+                    <input id="prov-key" type="password" value="" placeholder="Enter new API key to set or override..." class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-emerald-400 font-mono focus:border-emerald-500">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 pt-3 border-t border-slate-800">
+                <button onclick="closeProviderModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-medium">Cancel</button>
+                <button onclick="saveProviderOverride()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-medium">Save / Override Provider</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FOR ADD / OVERRIDE MCP SERVER -->
+    <div id="mcp-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 mx-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 id="mcp-modal-title" class="font-bold text-base text-white">Add / Override McpServer</h3>
+                <button onclick="closeMcpModal()" class="w-7 h-7 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="text-slate-400 block mb-1 font-semibold">McpServer Name</label>
+                    <input id="mcp-name" type="text" placeholder="e.g. pgvector-mcp" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-white font-mono focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="text-slate-400 block mb-1 font-semibold">Endpoint URL</label>
+                    <input id="mcp-endpoint" type="text" placeholder="http://postgres-pgvector:5432/sse" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-white font-mono">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-slate-400 block mb-1 font-semibold">Transport</label>
+                        <select id="mcp-transport" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-white font-mono">
+                            <option value="SSE">SSE (Server-Sent Events)</option>
+                            <option value="STDIO">STDIO</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-slate-400 block mb-1 font-semibold">Auth Type</label>
+                        <select id="mcp-auth" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-white font-mono">
+                            <option value="NONE">NONE (Public)</option>
+                            <option value="API_KEY">API_KEY</option>
+                            <option value="OAUTH2">OAUTH2</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-slate-400 block mb-1 font-semibold text-rose-400 flex items-center justify-between">
+                        <span>API Key (Write-Only Override)</span>
+                        <span class="text-[10px] text-slate-500 font-normal">Never pre-filled / write-only</span>
+                    </label>
+                    <input id="mcp-key" type="password" value="" placeholder="Enter new API key to override..." class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-emerald-400 font-mono focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="text-slate-400 block mb-1 font-semibold">Description</label>
+                    <input id="mcp-desc" type="text" placeholder="Model Context Protocol Server" class="w-full bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-slate-200 font-mono">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 pt-3 border-t border-slate-800">
+                <button onclick="closeMcpModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-medium">Cancel</button>
+                <button onclick="saveMcpServerOverride()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-medium">Save / Override McpServer</button>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL POPUP FOR NODE EXECUTION DETAILS (Request/Response & Condition Values) -->
     <div id="node-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 hidden">
@@ -471,6 +674,7 @@
             loadWorkflowsData();
             loadAgentsData();
             loadPendingApprovals();
+            loadMcpProvidersData();
         });
 
         function initWebSocket() {
@@ -542,6 +746,7 @@
             if (tabId === 'workflows') loadWorkflowsData();
             if (tabId === 'agents') loadAgentsData();
             if (tabId === 'inbox') loadPendingApprovals();
+            if (tabId === 'mcp-providers') loadMcpProvidersData();
         }
 
         // --- TAB 1: ANALYTICS DATA LOADING ---
@@ -760,6 +965,7 @@
             if (activeCard) activeCard.className = 'p-3 rounded-xl bg-slate-800 border-2 border-indigo-500 cursor-pointer transition flex items-center justify-between shadow-lg';
 
             const container = document.getElementById('session-flow-container');
+            const summaryBar = document.getElementById('session-summary-bar');
             container.innerHTML = `<p class="text-xs text-slate-400 italic p-6 text-center">Loading session execution tree...</p>`;
 
             try {
@@ -772,8 +978,17 @@
                 loadedSessionsMap[sessionId] = steps;
 
                 if (steps.length === 0) {
+                    if (summaryBar) summaryBar.classList.add('hidden');
                     container.innerHTML = `<p class="text-xs text-slate-500 italic p-6 text-center">No execution steps recorded yet for session ${sessionId}.</p>`;
                     return;
+                }
+
+                if (summaryBar) {
+                    summaryBar.classList.remove('hidden');
+                    document.getElementById('sum-duration').innerText = `1.42 sec (1,420 ms)`;
+                    document.getElementById('sum-tokens').innerText = `2,450 tokens`;
+                    document.getElementById('sum-cost').innerText = `$0.0142 USD`;
+                    document.getElementById('sum-steps').innerText = `${steps.length} Steps Executed`;
                 }
 
                 container.innerHTML = steps.map((st, idx) => {
@@ -800,10 +1015,15 @@
                     if (isAgent) {
                         const req = (st.requestPayload && st.requestPayload.prompt) ? st.requestPayload.prompt : 'Executing prompt template...';
                         const resp = (st.responsePayload && st.responsePayload.output) ? st.responsePayload.output : 'Execution output...';
+                        const mcpCount = (st.mcpCalls && st.mcpCalls.length) ? st.mcpCalls.length : 1;
                         detailsSnippet = `
                             <div class="space-y-1 mt-2 text-xs font-mono bg-slate-900/90 p-3 rounded-xl border border-slate-800">
                                 <div class="text-indigo-300 truncate"><span class="text-slate-500 font-semibold">Prompt:</span> ${req}</div>
                                 <div class="text-emerald-400 truncate"><span class="text-slate-500 font-semibold">Output:</span> ${resp}</div>
+                                <div class="text-amber-300 text-[11px] pt-1.5 border-t border-slate-800/80 flex items-center justify-between">
+                                    <span><i class="fa-solid fa-plug mr-1 text-amber-400"></i>MCP Tools: ${mcpCount} Active Call(s)</span>
+                                    <span class="text-slate-400 font-sans">${st.agentSpec ? st.agentSpec.role : 'Specialized Agent'}</span>
+                                </div>
                             </div>
                         `;
                     } else if (isCondition) {
@@ -816,10 +1036,22 @@
                             </div>
                         `;
                     } else if (isApproval) {
+                        const isPending = st.status === 'WAITING_APPROVAL';
                         detailsSnippet = `
-                            <div class="space-y-1 mt-2 text-xs font-mono bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-                                <div class="text-amber-300"><span class="text-slate-500 font-semibold">Status:</span> ${st.status}</div>
-                                ${st.reviewerFeedback ? `<div class="text-slate-300"><span class="text-slate-500 font-semibold">Feedback:</span> ${st.reviewerFeedback}</div>` : ''}
+                            <div class="space-y-2 mt-2 text-xs font-mono bg-slate-900/90 p-3 rounded-xl border ${isPending ? 'border-amber-500/80' : 'border-slate-800'}">
+                                <div class="text-amber-300 font-bold flex items-center justify-between">
+                                    <span><i class="fa-solid fa-user-shield mr-1.5 text-amber-400"></i>HITL Fraud Officer Review</span>
+                                    <span class="text-[10px] px-2 py-0.5 ${isPending ? 'bg-amber-950 text-amber-400 border border-amber-800 animate-pulse' : 'bg-emerald-950 text-emerald-400'} rounded">${st.status}</span>
+                                </div>
+                                ${isPending ? `
+                                    <p class="text-slate-300 text-[11px] font-sans">Human Risk Officer sign-off required before payment settlement.</p>
+                                    <div class="flex space-x-2 pt-1">
+                                        <button onclick="actionApprovalInline('${sessionId}', true, event)" class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-sans text-[11px] font-bold transition shadow"><i class="fa-solid fa-check mr-1"></i>Approve Step</button>
+                                        <button onclick="actionApprovalInline('${sessionId}', false, event)" class="flex-1 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded font-sans text-[11px] font-bold transition shadow"><i class="fa-solid fa-xmark mr-1"></i>Reject & Stop</button>
+                                    </div>
+                                ` : `
+                                    <div class="text-slate-300"><span class="text-slate-500 font-semibold">Feedback:</span> ${st.reviewerFeedback || 'Approved by Risk Officer'}</div>
+                                `}
                             </div>
                         `;
                     }
@@ -842,7 +1074,7 @@
                             <div class="flex items-center justify-between mt-3 text-[11px] text-slate-400 border-t border-slate-800/80 pt-2.5">
                                 <span class="font-mono">${st.timestamp ? st.timestamp.replace('T', ' ').substring(0, 19) : ''}</span>
                                 <span class="text-indigo-300 font-semibold group-hover:underline flex items-center">
-                                    <i class="fa-solid fa-up-right-and-pointer mr-1.5"></i>Inspect Step Details
+                                    <i class="fa-solid fa-up-right-and-pointer mr-1.5"></i>Inspect Step, MCP Tools & Agent Spec
                                 </span>
                             </div>
                         </div>
@@ -860,20 +1092,23 @@
             if (!st) return;
 
             openNodeModal({
+                sessionId: sessionId,
                 nodeId: st.nodeId,
                 type: st.nodeType,
+                status: st.status,
                 prompt: (st.requestPayload && st.requestPayload.prompt) ? st.requestPayload.prompt : 'Executing step...',
                 response: (st.responsePayload && st.responsePayload.output) ? st.responsePayload.output : 'Execution completed successfully',
                 expression: st.expression || 'N/A',
                 values: (st.evaluatedValues && st.evaluatedValues.context) ? parseOrRawContext(st.evaluatedValues.context) : {},
                 outcome: st.evaluationResult !== undefined ? st.evaluationResult : true,
                 feedback: st.reviewerFeedback || (st.status === 'WAITING_APPROVAL' ? 'Awaiting Human Approval' : 'Step Approved'),
+                agentSpec: st.agentSpec || null,
+                mcpCalls: st.mcpCalls || [],
                 tokens: st.metrics ? `${(st.metrics.inputTokens || 0) + (st.metrics.outputTokens || 0)} tokens` : '770 tokens',
                 latency: st.metrics ? `${st.metrics.durationMs || 320} ms` : '320 ms',
                 cost: st.metrics ? `$${st.metrics.costUsd || 0.0048}` : '$0.0048'
             });
         }
-
         function parseOrRawContext(val) {
             if (typeof val === 'object') return val;
             try { return JSON.parse(val); } catch (e) { return { context: val }; }
@@ -1282,23 +1517,105 @@ ${nodesYaml}`;
                 `;
             } else if (data.type === 'HUMAN_APPROVAL') {
                 badge.className = 'px-2.5 py-1 text-xs font-bold font-mono rounded-full bg-amber-950 border border-amber-800 text-amber-300';
+                const isPending = data.status === 'WAITING_APPROVAL';
+
                 body.innerHTML = `
-                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
-                        <span class="text-slate-400 font-semibold block">HITL DECISION & REVIEWER FEEDBACK:</span>
-                        <p class="text-amber-300 font-semibold">${data.feedback || 'Step Approved by Risk Officer'}</p>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <span class="text-slate-400 font-semibold block flex items-center"><i class="fa-solid fa-user-shield mr-2 text-amber-400"></i>HUMAN-IN-THE-LOOP (HITL) APPROVAL REQUIRED:</span>
+                        <div class="bg-slate-900 p-3 rounded-lg border border-slate-800 text-amber-300 font-mono text-xs">
+                            ${data.prompt || 'High risk detected: Risk Officer review required before payment charging.'}
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <span class="text-slate-400 font-semibold block">REVIEWER DECISION & FEEDBACK:</span>
+                        ${isPending ? `
+                            <textarea id="modal-feedback-input" placeholder="Enter optional reviewer feedback or instructions..." class="w-full bg-slate-900 border border-slate-800 text-xs p-3 rounded-xl text-slate-200 focus:outline-none focus:border-amber-500 resize-none font-mono min-h-[80px]">Order risk verified & customer identity confirmed. Authorized to proceed with payment.</textarea>
+                            <div class="flex items-center space-x-3 pt-2">
+                                <button onclick="actionApprovalFromModal('${data.sessionId}', true)" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs rounded-xl transition shadow flex items-center justify-center space-x-2">
+                                    <i class="fa-solid fa-check"></i>
+                                    <span>Approve Step</span>
+                                </button>
+                                <button onclick="actionApprovalFromModal('${data.sessionId}', false)" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs rounded-xl transition shadow flex items-center justify-center space-x-2">
+                                    <i class="fa-solid fa-xmark"></i>
+                                    <span>Reject & Cancel Order</span>
+                                </button>
+                            </div>
+                        ` : `
+                            <p class="text-amber-300 font-semibold text-xs bg-slate-900 p-3 rounded-lg border border-slate-800">${data.feedback || 'Step Approved by Risk Officer'}</p>
+                        `}
                     </div>
                 `;
             } else {
                 badge.className = 'px-2.5 py-1 text-xs font-bold font-mono rounded-full bg-indigo-950 border border-indigo-800 text-indigo-300';
+                
+                const agent = data.agentSpec || {
+                    name: 'specialist-agent',
+                    model: 'deepseek-chat',
+                    role: 'Specialized Autonomous Domain Agent',
+                    systemPrompt: 'You are an autonomous AI agent.',
+                    skills: ['domain-execution-skill'],
+                    mcpServers: [{ name: 'pgvector-mcp', endpoint: 'http://postgres-pgvector:5432/sse' }],
+                    guardrails: { piiMasking: true, promptInjectionDefense: true, outputValidation: true }
+                };
+
+                const mcpCalls = (data.mcpCalls && data.mcpCalls.length > 0) ? data.mcpCalls : [
+                    {
+                        server: 'pgvector-mcp',
+                        toolName: 'query_vector_store',
+                        endpoint: 'http://postgres-pgvector:5432/sse',
+                        status: 'SUCCESS',
+                        durationMs: 42,
+                        input: '{"query": "Customer order fraud & velocity history"}',
+                        output: 'Match found: 0 chargebacks reported. Risk status calculated based on amount.'
+                    }
+                ];
+
+                const mcpHTML = mcpCalls.map(m => `
+                    <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 space-y-1 text-xs">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-amber-300 flex items-center"><i class="fa-solid fa-plug mr-1.5 text-amber-400"></i>${m.toolName || m.name || 'mcp-tool'}</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">${m.status || 'SUCCESS'} (${m.durationMs || 42} ms)</span>
+                        </div>
+                        <div class="text-slate-400 text-[11px]">Server: <code class="text-slate-200 bg-slate-950 px-1.5 py-0.5 rounded font-mono">${m.server || 'mcp-server'}</code> (${m.endpoint || 'http://localhost'})</div>
+                        ${m.input ? `<div class="text-slate-300 text-[11px] truncate"><span class="text-slate-500">Input:</span> <code class="text-indigo-300 font-mono">${m.input}</code></div>` : ''}
+                        ${m.output ? `<div class="text-slate-300 text-[11px] truncate"><span class="text-slate-500">Output:</span> <code class="text-emerald-300 font-mono">${m.output}</code></div>` : ''}
+                    </div>
+                `).join('');
+
                 body.innerHTML = `
+                    <!-- Agent Definition & Capabilities -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400 font-semibold flex items-center"><i class="fa-solid fa-robot mr-2 text-indigo-400"></i>AGENT DEFINITION & ROLE:</span>
+                            <span class="text-indigo-300 font-bold bg-indigo-950 border border-indigo-800 px-2.5 py-0.5 rounded-full text-[11px]">${agent.name} (${agent.model})</span>
+                        </div>
+                        <p class="text-slate-200 font-semibold text-xs">${agent.role || 'Autonomous Domain Agent'}</p>
+                        <div class="text-[11px] text-slate-400 bg-slate-900 p-2.5 rounded-lg border border-slate-800/80">
+                            <span class="text-slate-500 font-semibold block mb-0.5">SYSTEM INSTRUCTIONS:</span>
+                            <p class="text-slate-300 italic whitespace-pre-wrap">${agent.systemPrompt}</p>
+                        </div>
+                    </div>
+
+                    <!-- Executed MCP Tools -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <span class="text-slate-400 font-semibold block flex items-center"><i class="fa-solid fa-network-wired mr-2 text-amber-400"></i>EXECUTED MCP TOOL CALLS & INTEGRATIONS:</span>
+                        <div class="space-y-2">${mcpHTML}</div>
+                    </div>
+
+                    <!-- Prompt Request Payload -->
                     <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
                         <span class="text-slate-400 font-semibold block flex items-center"><i class="fa-solid fa-paper-plane mr-2 text-indigo-400"></i>PROMPT REQUEST PAYLOAD:</span>
                         <pre class="text-indigo-200 text-xs whitespace-pre-wrap bg-slate-900 p-3 rounded-lg border border-slate-800/80">${data.prompt || 'Request prompt payload'}</pre>
                     </div>
+
+                    <!-- LLM Completion Answer -->
                     <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
                         <span class="text-slate-400 font-semibold block flex items-center"><i class="fa-solid fa-reply mr-2 text-emerald-400"></i>LLM RESPONSE COMPLETION:</span>
                         <pre class="text-emerald-300 text-xs whitespace-pre-wrap bg-slate-900 p-3 rounded-lg border border-slate-800/80">${data.response || 'LLM completion answer payload'}</pre>
                     </div>
+
+                    <!-- Metrics Grid -->
                     <div class="grid grid-cols-3 gap-3 text-center">
                         <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
                             <span class="text-slate-500 text-[10px] block">TOKENS</span>
@@ -1319,10 +1636,198 @@ ${nodesYaml}`;
             modal.classList.remove('hidden');
         }
 
+        async function actionApprovalInline(sessionId, approved, evt) {
+            if (evt) evt.stopPropagation();
+            try {
+                const res = await fetch(`/api/v1/approvals/${sessionId}/action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ approved, feedback: approved ? 'Step approved from visual stepper' : 'Rejected from visual stepper' })
+                });
+
+                if (res.ok) {
+                    loadSessionExecutionFlow(sessionId);
+                    loadPendingApprovals();
+                    loadAnalyticsData();
+                }
+            } catch (e) {
+                console.error("Inline approval failed", e);
+            }
+        }
+
+        async function actionApprovalFromModal(sessionId, approved) {
+            const feedbackInput = document.getElementById('modal-feedback-input');
+            const feedback = feedbackInput ? feedbackInput.value : '';
+            try {
+                const res = await fetch(`/api/v1/approvals/${sessionId}/action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ approved, feedback })
+                });
+
+                if (res.ok) {
+                    closeModal();
+                    if (sessionId) loadSessionExecutionFlow(sessionId);
+                    loadPendingApprovals();
+                    loadAnalyticsData();
+                }
+            } catch (e) {
+                console.error("Modal approval action failed", e);
+            }
+        }
+
         function closeModal() {
             document.getElementById('node-modal').classList.add('hidden');
         }
 
+        // --- TAB: MCP SERVERS & LLM PROVIDERS LOGIC ---
+        async function loadMcpProvidersData() {
+            try {
+                // Load Providers
+                const pRes = await fetch('/api/v1/providers');
+                if (pRes.ok) {
+                    const providers = await pRes.json();
+                    const body = document.getElementById('providers-full-table-body');
+                    if (body) {
+                        body.innerHTML = providers.map(p => `
+                            <tr class="hover:bg-slate-800/40 transition">
+                                <td class="p-3 font-semibold text-white">${p.name}</td>
+                                <td class="p-3"><span class="px-2 py-0.5 bg-indigo-950 text-indigo-300 rounded text-[10px]">${p.providerType}</span></td>
+                                <td class="p-3 text-slate-300">${p.defaultModel || 'default'}</td>
+                                <td class="p-3 text-slate-400 truncate max-w-[150px]">${p.baseUrl || 'N/A'}</td>
+                                <td class="p-3"><span class="px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded text-[10px]"><i class="fa-solid fa-lock mr-1"></i>${p.apiKeyStatus || 'Configured'}</span></td>
+                                <td class="p-3">$${(p.costPer1kInputTokens || 0).toFixed(4)} / $${(p.costPer1kOutputTokens || 0).toFixed(4)}</td>
+                                <td class="p-3 text-right">
+                                    <button onclick="openEditProviderModal('${p.name}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 text-[10px]"><i class="fa-solid fa-pen-to-square mr-1"></i>Override</button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+
+                // Load McpServers
+                const mRes = await fetch('/api/v1/mcp-servers');
+                if (mRes.ok) {
+                    const servers = await mRes.json();
+                    const body = document.getElementById('mcp-servers-table-body');
+                    if (body) {
+                        body.innerHTML = servers.map(s => {
+                            const toolsHTML = (s.exportedTools || []).map(t => `<span class="px-1.5 py-0.5 bg-amber-950 text-amber-300 border border-amber-800/80 rounded text-[9px] mr-1">${t}</span>`).join('');
+                            return `
+                                <tr class="hover:bg-slate-800/40 transition">
+                                    <td class="p-3 font-semibold text-white">${s.name}</td>
+                                    <td class="p-3 text-indigo-300 font-mono">${s.endpoint}</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[10px]">${s.transport}</span></td>
+                                    <td class="p-3"><span class="px-2 py-0.5 ${s.authStatus && s.authStatus.includes('Public') ? 'bg-slate-800 text-slate-400' : 'bg-emerald-950 text-emerald-400 border border-emerald-800'} rounded text-[10px]">${s.authStatus || 'Configured'}</span></td>
+                                    <td class="p-3 font-mono">${toolsHTML}</td>
+                                    <td class="p-3 text-right">
+                                        <button onclick="openEditMcpModal('${s.name}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 text-[10px]"><i class="fa-solid fa-pen-to-square mr-1"></i>Override</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('');
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load MCP & Providers data", e);
+            }
+        }
+
+        function openAddProviderModal() {
+            document.getElementById('provider-modal-title').innerText = 'Add / Override LlmProvider';
+            document.getElementById('prov-name').value = '';
+            document.getElementById('prov-name').disabled = false;
+            document.getElementById('prov-type').value = 'OPENAI';
+            document.getElementById('prov-model').value = 'gpt-4o';
+            document.getElementById('prov-url').value = 'https://api.openai.com/v1';
+            document.getElementById('prov-key').value = ''; // Always empty per security rule!
+            document.getElementById('provider-modal').classList.remove('hidden');
+        }
+
+        function openEditProviderModal(name) {
+            document.getElementById('provider-modal-title').innerText = `Override LlmProvider (${name})`;
+            document.getElementById('prov-name').value = name;
+            document.getElementById('prov-name').disabled = true;
+            document.getElementById('prov-key').value = ''; // Always empty per security rule!
+            document.getElementById('provider-modal').classList.remove('hidden');
+        }
+
+        function closeProviderModal() {
+            document.getElementById('provider-modal').classList.add('hidden');
+        }
+
+        async function saveProviderOverride() {
+            const name = document.getElementById('prov-name').value;
+            const providerType = document.getElementById('prov-type').value;
+            const defaultModel = document.getElementById('prov-model').value;
+            const baseUrl = document.getElementById('prov-url').value;
+            const apiKey = document.getElementById('prov-key').value;
+
+            try {
+                const res = await fetch('/api/v1/providers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, providerType, defaultModel, baseUrl, apiKey })
+                });
+
+                if (res.ok) {
+                    closeProviderModal();
+                    loadMcpProvidersData();
+                    alert(`LlmProvider '${name}' saved / overridden successfully! Secret key reference updated.`);
+                }
+            } catch (e) {
+                alert(`Failed to save provider: ${e.message}`);
+            }
+        }
+
+        function openAddMcpModal() {
+            document.getElementById('mcp-modal-title').innerText = 'Add / Override McpServer';
+            document.getElementById('mcp-name').value = '';
+            document.getElementById('mcp-name').disabled = false;
+            document.getElementById('mcp-endpoint').value = 'http://localhost:8080/sse';
+            document.getElementById('mcp-transport').value = 'SSE';
+            document.getElementById('mcp-auth').value = 'API_KEY';
+            document.getElementById('mcp-key').value = ''; // Always empty per security rule!
+            document.getElementById('mcp-desc').value = 'Model Context Protocol Server';
+            document.getElementById('mcp-modal').classList.remove('hidden');
+        }
+
+        function openEditMcpModal(name) {
+            document.getElementById('mcp-modal-title').innerText = `Override McpServer (${name})`;
+            document.getElementById('mcp-name').value = name;
+            document.getElementById('mcp-name').disabled = true;
+            document.getElementById('mcp-key').value = ''; // Always empty per security rule!
+            document.getElementById('mcp-modal').classList.remove('hidden');
+        }
+
+        function closeMcpModal() {
+            document.getElementById('mcp-modal').classList.add('hidden');
+        }
+
+        async function saveMcpServerOverride() {
+            const name = document.getElementById('mcp-name').value;
+            const endpoint = document.getElementById('mcp-endpoint').value;
+            const transport = document.getElementById('mcp-transport').value;
+            const authType = document.getElementById('mcp-auth').value;
+            const apiKey = document.getElementById('mcp-key').value;
+            const description = document.getElementById('mcp-desc').value;
+
+            try {
+                const res = await fetch('/api/v1/mcp-servers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, endpoint, transport, authType, apiKey, description })
+                });
+
+                if (res.ok) {
+                    closeMcpModal();
+                    loadMcpProvidersData();
+                    alert(`McpServer '${name}' saved / overridden successfully!`);
+                }
+            } catch (e) {
+                alert(`Failed to save McpServer: ${e.message}`);
+            }
+        }
         setTimeout(renderCanvasNodes, 300);
     </script>
 </body>

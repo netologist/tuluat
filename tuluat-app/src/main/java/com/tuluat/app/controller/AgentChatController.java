@@ -87,13 +87,4 @@ public class AgentChatController {
         }
         return ResponseEntity.ok(agent);
     }
-
-    /**
-     * Endpoint listing all registered LLM Providers: GET /api/v1/providers
-     */
-    @GetMapping("/providers")
-    public ResponseEntity<?> listProviders(@RequestParam(value = "namespace", defaultValue = "default") String ns) {
-        var providers = client.resources(LlmProvider.class).inNamespace(ns).list().getItems();
-        return ResponseEntity.ok(providers);
-    }
 }
