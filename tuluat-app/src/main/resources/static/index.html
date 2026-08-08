@@ -494,6 +494,7 @@
 
                 // Load LlmProviders
                 const provRes = await fetch('/api/v1/analytics/providers');
+                if (provRes.ok) {
                     const providers = await provRes.json();
                     const provBody = document.getElementById('provider-pricing-table-body');
                     provBody.innerHTML = providers.map(p => `
@@ -661,8 +662,8 @@
                 document.getElementById('agent-system-prompt').innerText = spec.systemPrompt || 'No system prompt defined.';
 
                 // Fetch Agent Execution Request/Response Logs
+                const container = document.getElementById('agent-logs-container');
                 const logRes = await fetch(`/api/v1/agent-specs/${agentName}/logs`);
-                if (logRes.ok) {
                     const logs = await logRes.json();
                     if (logs.length === 0) {
                         container.innerHTML = `<p class="text-slate-500 italic text-center py-12">No execution logs found for ${agentName}. Trigger a session to generate completion logs.</p>`;
