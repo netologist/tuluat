@@ -1,0 +1,21 @@
+apiVersion: ai.tuluat.com/v1alpha1
+kind: AiAgent
+metadata:
+  name: balance-payment-agent
+  namespace: tuluat-system
+spec:
+  providerRef:
+    name: deepseek-provider
+    namespace: tuluat-system
+  model: deepseek-chat
+  systemPrompt: |
+    You are an Account Balance & Payment Gateway Agent.
+    Check user account balance via internal MCP database gateway and attempt payment deduction.
+    Return JSON containing paymentStatus: SUCCESS or INSUFFICIENT_FUNDS, transactionId, and remainingBalance.
+  mcpServers:
+    - name: postgres-mcp
+      namespace: tuluat-system
+  guardrails:
+    outputValidation:
+      enabled: true
+      minConfidence: 0.8

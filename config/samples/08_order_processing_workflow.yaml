@@ -1,0 +1,67 @@
+apiVersion: ai.tuluat.com/v1alpha1
+kind: AiWorkflow
+metadata:
+  name: order-processing-workflow
+  namespace: tuluat-system
+spec:
+  description: "Enterprise E-Commerce Order Processing Workflow (Risk Analysis -> Fraud Check Condition -> HITL Fraud Approval -> Balance Payment -> Order Fulfillment)"
+  initialNode: risk-analysis-step
+  nodes:
+    - id: risk-analysis-step
+      type: AGENT
+      agentRef: risk-analysis-agent
+      inputTemplate: "Analyze financial risk & fraud for order payload: {{input}}"
+      outputKey: riskResult
+
+    - id: risk-check-condition
+      type: CONDITION
+      expression: "#data['riskResult'] != null && (#data['riskResult'].contains('HIGH') || #data['riskResult'].contains('CRITICAL'))"
+
+    - id: hitl-fraud-review
+      type: HUMAN_APPROVAL
+      inputTemplate: "Risk Officer Review Required! High Risk Detected: {{riskResult}}. Approve to proceed with payment, or Reject to cancel order."
+      outputKey: fraudOfficerApproval
+
+    - id: payment-execution-step
+      type: AGENT
+      agentRef: balance-payment-agent
+      inputTemplate: "Execute balance check & charge payment for order: {{input}}. Risk status: {{riskResult}}"
+      outputKey: paymentResult
+
+    - id: payment-status-condition
+      type: CONDITION
+      expression: "#data['paymentResult'] != null && #data['paymentResult'].contains('SUCCESS')"
+
+    - id: order-fulfillment-step
+      type: AGENT
+      agentRef: order-fulfillment-agent
+      inputTemplate: "Finalize order & generate invoice for payment: {{paymentResult}}"
+      outputKey: fulfillmentResult
+
+  edges:
+    - from: risk-analysis-step
+      to: risk-check-condition
+
+    - from: risk-check-condition
+      to: hitl-fraud-review
+      condition: "true"
+
+    - from: risk-check-condition
+      to: payment-execution-step
+      condition: "false"
+
+    - from: hitl-fraud-review
+      to: payment-execution-step
+      condition: "approvalStatus == 'APPROVED'"
+
+    - from: payment-execution-step
+      to: payment-status-condition
+
+    - from: payment-status-condition
+      to: order-fulfillment-step
+      condition: "true"
+
+  memoryConfig:
+    shortMemorySize: 25
+    enableLongMemory: true
+    vectorTableName: order_vector_memory

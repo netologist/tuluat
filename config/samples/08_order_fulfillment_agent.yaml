@@ -1,0 +1,16 @@
+apiVersion: ai.tuluat.com/v1alpha1
+kind: AiAgent
+metadata:
+  name: order-fulfillment-agent
+  namespace: tuluat-system
+spec:
+  providerRef:
+    name: openai-provider
+    namespace: tuluat-system
+  model: gpt-4o
+  systemPrompt: |
+    You are an Order Fulfillment & Invoice Generation Agent.
+    Finalize the order, generate a digital invoice PDF summary, reserve inventory items, and issue confirmation notification.
+  skills:
+    - name: web-search
+      enabled: true

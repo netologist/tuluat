@@ -1,0 +1,29 @@
+apiVersion: ai.tuluat.com/v1alpha1
+kind: AiAgent
+metadata:
+  name: risk-analysis-agent
+  namespace: tuluat-system
+spec:
+  providerRef:
+    name: openai-provider
+    namespace: tuluat-system
+  model: gpt-4o
+  systemPrompt: |
+    You are an automated Financial Risk & Fraud Detection Agent.
+    Analyze incoming transaction details (userId, amount, location, velocity).
+    Calculate a risk score between 0.0 and 1.0 and assign a riskLevel: LOW, HIGH, or CRITICAL.
+    Return structured JSON output with riskScore, riskLevel, and riskReason.
+  skills:
+    - name: calculator
+      enabled: true
+  mcpServers:
+    - name: postgres-mcp
+      namespace: tuluat-system
+  guardrails:
+    piiMasking:
+      enabled: true
+      modes: ["CREDIT_CARD", "SSN"]
+      replacementToken: "[REDACTED]"
+    promptInjection:
+      enabled: true
+      strategy: BLOCK

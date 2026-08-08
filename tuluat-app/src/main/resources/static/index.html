@@ -358,13 +358,18 @@
                 </div>
 
                 <div class="space-y-2">
-                    <button onclick="exportWorkflowYaml()" class="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition">
-                        <i class="fa-solid fa-file-export mr-2"></i>Export AiWorkflow YAML
+                    <button onclick="exportWorkflowYaml()" class="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition shadow-lg flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-file-export"></i>
+                        <span>Export AiWorkflow YAML</span>
+                    </button>
+                    <button onclick="triggerCanvasWorkflow()" class="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition shadow-lg flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-play"></i>
+                        <span>Trigger Canvas Workflow</span>
                     </button>
                 </div>
 
                 <div class="flex-1 flex flex-col">
-                    <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">YAML Spec Preview</h2>
+                    <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Generated AiWorkflow CRD YAML</h2>
                     <textarea id="yaml-preview" readonly class="flex-1 w-full bg-slate-950 font-mono text-[11px] p-3 rounded-xl border border-slate-800 text-emerald-400 resize-none focus:outline-none"></textarea>
                 </div>
             </aside>
@@ -372,9 +377,10 @@
             <div class="flex-1 canvas-bg p-8 overflow-auto flex flex-col items-center justify-start relative" id="workflow-canvas">
                 <div class="w-full max-w-3xl flex items-center justify-between mb-4 bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
                     <div>
-                        <input id="wf-name-input" type="text" value="custom-workflow" class="bg-transparent font-bold text-base text-white focus:outline-none border-b border-indigo-500/50 pb-0.5">
-                        <p class="text-xs text-slate-400">Interactive Canvas Graph Builder</p>
+                        <input id="wf-name-input" oninput="updateCanvasYaml()" type="text" value="order-processing-workflow" class="bg-transparent font-bold text-base text-white focus:outline-none border-b border-indigo-500/50 pb-0.5 font-mono">
+                        <p class="text-xs text-slate-400">Interactive Canvas Graph & CRD Spec Builder</p>
                     </div>
+                    <span class="text-xs px-3 py-1 bg-indigo-950 border border-indigo-800 text-indigo-300 rounded-lg font-mono" id="canvas-node-count">5 Nodes</span>
                 </div>
                 <div id="nodes-container" class="w-full max-w-3xl space-y-6"></div>
             </div>
@@ -768,13 +774,160 @@
             }
         }
 
+        let canvasNodes = [
+            { id: 'risk-analysis-step', type: 'AGENT', agentRef: 'risk-analysis-agent', inputTemplate: 'Analyze risk for order: {{input}}', outputKey: 'riskResult', expression: '' },
+            { id: 'risk-check-condition', type: 'CONDITION', agentRef: '', inputTemplate: '', outputKey: '', expression: "#data['riskResult'] != null && #data['riskResult'].contains('HIGH')" },
+            { id: 'hitl-fraud-review', type: 'HUMAN_APPROVAL', agentRef: '', inputTemplate: 'High risk detected: {{riskResult}}. Approve to proceed or Reject.', outputKey: 'fraudOfficerApproval', expression: '' },
+            { id: 'payment-execution-step', type: 'AGENT', agentRef: 'balance-payment-agent', inputTemplate: 'Charge payment for order: {{input}}', outputKey: 'paymentResult', expression: '' },
+            { id: 'order-fulfillment-step', type: 'AGENT', agentRef: 'order-fulfillment-agent', inputTemplate: 'Finalize order and generate invoice: {{paymentResult}}', outputKey: 'fulfillmentResult', expression: '' }
+        ];
+
+        function renderCanvasNodes() {
+            const container = document.getElementById('nodes-container');
+            if (!container) return;
+            document.getElementById('canvas-node-count').innerText = `${canvasNodes.length} Nodes`;
+
+            container.innerHTML = canvasNodes.map((n, idx) => {
+                const isAgent = n.type === 'AGENT';
+                const isCondition = n.type === 'CONDITION';
+                const typeBadgeColor = isAgent ? 'bg-indigo-950 border-indigo-800 text-indigo-300' :
+                                       isCondition ? 'bg-violet-950 border-violet-800 text-violet-300' :
+                                       'bg-amber-950 border-amber-800 text-amber-300';
+
+                return `
+                    <div class="bg-slate-900 border-2 ${isAgent ? 'border-indigo-500/80' : isCondition ? 'border-violet-500/80' : 'border-amber-500/80'} rounded-2xl p-5 shadow-xl relative">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center space-x-3">
+                                <span class="w-7 h-7 rounded-lg bg-slate-800 text-white flex items-center justify-center font-bold text-xs">${idx + 1}</span>
+                                <input type="text" value="${n.id}" onchange="updateCanvasField(${idx}, 'id', this.value)" class="bg-slate-950 px-2.5 py-1 rounded font-mono text-xs font-bold text-white border border-slate-800 focus:border-indigo-500">
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <select onchange="updateCanvasField(${idx}, 'type', this.value)" class="bg-slate-950 text-xs text-slate-200 px-2 py-1 rounded border border-slate-800 font-semibold">
+                                    <option value="AGENT" ${n.type === 'AGENT' ? 'selected' : ''}>AGENT</option>
+                                    <option value="CONDITION" ${n.type === 'CONDITION' ? 'selected' : ''}>CONDITION</option>
+                                    <option value="HUMAN_APPROVAL" ${n.type === 'HUMAN_APPROVAL' ? 'selected' : ''}>HUMAN_APPROVAL</option>
+                                </select>
+                                <button onclick="deleteCanvasNode(${idx})" class="text-rose-400 hover:text-rose-300 text-xs px-2 py-1 bg-rose-950/60 rounded border border-rose-800"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                            ${isAgent ? `
+                                <div>
+                                    <label class="text-slate-400 block mb-1 font-semibold">Agent Ref</label>
+                                    <input type="text" value="${n.agentRef || ''}" onchange="updateCanvasField(${idx}, 'agentRef', this.value)" class="w-full bg-slate-950 px-3 py-1.5 rounded border border-slate-800 text-indigo-300 font-mono">
+                                </div>
+                                <div>
+                                    <label class="text-slate-400 block mb-1 font-semibold">Output Key</label>
+                                    <input type="text" value="${n.outputKey || ''}" onchange="updateCanvasField(${idx}, 'outputKey', this.value)" class="w-full bg-slate-950 px-3 py-1.5 rounded border border-slate-800 text-emerald-400 font-mono">
+                                </div>
+                            ` : ''}
+
+                            ${isCondition ? `
+                                <div class="col-span-2">
+                                    <label class="text-slate-400 block mb-1 font-semibold">SpEL Expression</label>
+                                    <input type="text" value="${n.expression || ''}" onchange="updateCanvasField(${idx}, 'expression', this.value)" class="w-full bg-slate-950 px-3 py-1.5 rounded border border-slate-800 text-violet-300 font-mono">
+                                </div>
+                            ` : ''}
+
+                            ${!isCondition ? `
+                                <div class="col-span-2">
+                                    <label class="text-slate-400 block mb-1 font-semibold">Input Template</label>
+                                    <input type="text" value="${n.inputTemplate || ''}" onchange="updateCanvasField(${idx}, 'inputTemplate', this.value)" class="w-full bg-slate-950 px-3 py-1.5 rounded border border-slate-800 text-slate-200 font-mono">
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    ${idx < canvasNodes.length - 1 ? `
+                        <div class="flex justify-center my-2 text-slate-600"><i class="fa-solid fa-arrow-down text-lg"></i></div>
+                    ` : ''}
+                `;
+            }).join('');
+
+            updateCanvasYaml();
+        }
+
+        function updateCanvasField(idx, field, value) {
+            if (canvasNodes[idx]) {
+                canvasNodes[idx][field] = value;
+                renderCanvasNodes();
+            }
+        }
+
         function addCanvasNode(type) {
-            alert(`Added node of type: ${type}`);
+            const count = canvasNodes.length + 1;
+            const newNode = {
+                id: `node-${count}`,
+                type: type,
+                agentRef: type === 'AGENT' ? 'web-researcher-agent' : '',
+                inputTemplate: type !== 'CONDITION' ? 'Input template: {{input}}' : '',
+                outputKey: type === 'AGENT' ? `output_${count}` : '',
+                expression: type === 'CONDITION' ? "#data['output'] != null" : ''
+            };
+            canvasNodes.push(newNode);
+            renderCanvasNodes();
+        }
+
+        function deleteCanvasNode(idx) {
+            canvasNodes.splice(idx, 1);
+            renderCanvasNodes();
+        }
+
+        function updateCanvasYaml() {
+            const wfName = document.getElementById('wf-name-input') ? document.getElementById('wf-name-input').value : 'order-processing-workflow';
+            const initial = canvasNodes.length > 0 ? canvasNodes[0].id : 'initial-node';
+
+            const nodesYaml = canvasNodes.map(n => `    - id: ${n.id}
+      type: ${n.type}${n.agentRef ? `\n      agentRef: ${n.agentRef}` : ''}${n.inputTemplate ? `\n      inputTemplate: "${n.inputTemplate}"` : ''}${n.outputKey ? `\n      outputKey: ${n.outputKey}` : ''}${n.expression ? `\n      expression: "${n.expression}"` : ''}`).join('\n');
+
+            const yaml = `apiVersion: ai.tuluat.com/v1alpha1
+kind: AiWorkflow
+metadata:
+  name: ${wfName}
+  namespace: tuluat-system
+spec:
+  description: "Generated via Tuluat Visual Canvas Builder"
+  initialNode: ${initial}
+  nodes:
+${nodesYaml}`;
+
+            const area = document.getElementById('yaml-preview');
+            if (area) area.value = yaml;
         }
 
         function exportWorkflowYaml() {
-            alert("Exporting workflow YAML...");
+            updateCanvasYaml();
+            const text = document.getElementById('yaml-preview').value;
+            const blob = new Blob([text], { type: 'text/yaml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${document.getElementById('wf-name-input').value || 'workflow'}.yaml`;
+            a.click();
         }
-    </script>
+
+        async function triggerCanvasWorkflow() {
+            const wfName = document.getElementById('wf-name-input').value || 'order-processing-workflow';
+            try {
+                const res = await fetch(`/api/v1/workflows/${wfName}/sessions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ input: 'Order #1094: Amount=$2,500.00, Customer=John Doe', maxLoops: 5 })
+                });
+
+                if (res.ok) {
+                    const session = await res.json();
+                    alert(`Workflow Session triggered successfully! Session ID: ${session.sessionId}`);
+                    loadAnalyticsData();
+                } else {
+                    alert(`Failed to trigger session for workflow '${wfName}'. Make sure it exists in cluster.`);
+                }
+            } catch (e) {
+                alert(`Trigger failed: ${e.message}`);
+            }
+        }
+
+        // Initialize canvas nodes on load
+        setTimeout(renderCanvasNodes, 300);
 </body>
 </html>
