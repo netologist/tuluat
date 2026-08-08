@@ -396,17 +396,43 @@
         });
 
         function initWebSocket() {
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${wsProtocol}//${window.location.host}/ws-raw`;
+            
+            try {
+                const socket = new WebSocket(wsUrl);
+                stompClient = Stomp.over(socket);
+                stompClient.debug = null;
+
+                stompClient.connect({}, function () {
+                    setWsStatus(true, "STOMP Connected");
+                    stompClient.subscribe('/topic/sessions', function () {
+                        loadAnalyticsData();
+                    });
+                    stompClient.subscribe('/topic/approvals', function () {
+                        loadPendingApprovals();
+                        loadAnalyticsData();
+                    });
+                }, function () {
+                    trySockJsFallback();
+                });
+            } catch (e) {
+                trySockJsFallback();
+            }
+        }
+
+        function trySockJsFallback() {
             try {
                 const socket = new SockJS('/ws');
                 stompClient = Stomp.over(socket);
                 stompClient.debug = null;
 
                 stompClient.connect({}, function () {
-                    setWsStatus(true, "STOMP Connected");
-                    stompClient.subscribe('/topic/sessions', function (msg) {
+                    setWsStatus(true, "STOMP Connected (SockJS)");
+                    stompClient.subscribe('/topic/sessions', function () {
                         loadAnalyticsData();
                     });
-                    stompClient.subscribe('/topic/approvals', function (msg) {
+                    stompClient.subscribe('/topic/approvals', function () {
                         loadPendingApprovals();
                         loadAnalyticsData();
                     });
@@ -418,7 +444,6 @@
                 setWsStatus(false, "WS Error");
             }
         }
-
         function setWsStatus(connected, text) {
             const ind = document.getElementById('ws-indicator');
             const txt = document.getElementById('ws-status-text');
