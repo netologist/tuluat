@@ -15,6 +15,7 @@ kubectl apply -f manifests/crd/llmproviders.ai.tuluat.com.yaml
 kubectl apply -f manifests/crd/aiagents.ai.tuluat.com.yaml
 kubectl apply -f manifests/crd/aiworkflows.ai.tuluat.com.yaml
 kubectl apply -f manifests/crd/workflowsessions.ai.tuluat.com.yaml
+kubectl apply -f manifests/crd/mcpservers.ai.tuluat.com.yaml
 
 echo "2. Applying RBAC, ServiceAccount, Database, and Services..."
 kubectl apply -f manifests/operator/rbac.yaml
@@ -35,5 +36,6 @@ kubectl get llmproviders -n "$NAMESPACE" || true
 kubectl get aiagents -n "$NAMESPACE" || true
 kubectl get aiworkflows -n "$NAMESPACE" || true
 kubectl get workflowsessions -n "$NAMESPACE" || true
+kubectl get mcpservers -n "$NAMESPACE" || true
 
 echo "Deployment finished successfully."
