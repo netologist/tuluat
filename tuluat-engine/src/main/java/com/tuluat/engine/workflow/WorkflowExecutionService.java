@@ -56,4 +56,49 @@ public class WorkflowExecutionService {
 
         return session;
     }
+
+    @Transactional
+    public WorkflowSessionEntity processApprovalSignal(UUID sessionId, AiWorkflowSpec spec, boolean approved, String feedback, int maxLoops) {
+        WorkflowSessionEntity session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("Session not found: " + sessionId));
+
+        String contextJson = session.getContextData() != null ? session.getContextData() : "{}";
+        String statusVal = approved ? "APPROVED" : "REJECTED";
+        String escapedFeedback = feedback != null ? feedback.replace("\"", "\\\"") : "";
+
+        if (contextJson.endsWith("}")) {
+            contextJson = contextJson.substring(0, contextJson.length() - 1) + 
+                    ",\"approvalStatus\":\"" + statusVal + "\",\"approvalFeedback\":\"" + escapedFeedback + "\"}";
+        } else {
+            contextJson = "{\"approvalStatus\":\"" + statusVal + "\",\"approvalFeedback\":\"" + escapedFeedback + "\"}";
+        }
+        session.setContextData(contextJson);
+        session.setStatus("RUNNING");
+        session = sessionRepository.save(session);
+
+        while ("RUNNING".equalsIgnoreCase(session.getStatus())) {
+            session = engine.executeNextStep(spec, session, maxLoops);
+            session = sessionRepository.save(session);
+        }
+
+        return session;
+    }
+
+    public void sendApprovalSignal(String sessionId, com.tuluat.engine.temporal.ApprovalSignal signal) {
+        try {
+            UUID id = UUID.fromString(sessionId);
+            sessionRepository.findById(id).ifPresent(s -> {
+                String statusVal = signal.isApproved() ? "APPROVED" : "REJECTED";
+                String ctx = s.getContextData() != null ? s.getContextData() : "{}";
+                if (ctx.endsWith("}")) {
+                    ctx = ctx.substring(0, ctx.length() - 1) + 
+                            ",\"approvalStatus\":\"" + statusVal + "\",\"approvalFeedback\":\"" + 
+                            (signal.getFeedback() != null ? signal.getFeedback().replace("\"", "\\\"") : "") + "\"}";
+                }
+                s.setContextData(ctx);
+                s.setStatus(signal.isApproved() ? "RUNNING" : "REJECTED");
+                sessionRepository.save(s);
+            });
+        } catch (Exception ignored) { }
+    }
 }

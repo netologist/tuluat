@@ -140,8 +140,26 @@ public class GraphStateMachineEngine {
             } else {
                 session.setCurrentNodeId(nextNodeId);
             }
+        } else if ("HUMAN_APPROVAL".equalsIgnoreCase(currentNode.getType())) {
+            if (contextData.containsKey("approvalStatus")) {
+                String approvalStatus = String.valueOf(contextData.get("approvalStatus"));
+                boolean approved = "APPROVED".equalsIgnoreCase(approvalStatus);
+                recordSessionLog(session.getSessionId(), currentNode.getId(), "INFO", 
+                        "Processing approval decision: " + approvalStatus + ". Advancing graph.");
+                String nextNodeId = resolveNextNodeId(workflowSpec, currentNode.getId(), approved);
+                if (nextNodeId == null) {
+                    session.setStatus("COMPLETED");
+                } else {
+                    session.setCurrentNodeId(nextNodeId);
+                }
+            } else {
+                recordSessionLog(session.getSessionId(), currentNode.getId(), "INFO", 
+                        "Workflow paused at node '" + currentNode.getId() + "' awaiting human approval.");
+                session.setStatus("WAITING_APPROVAL");
+                session.setUpdatedAt(OffsetDateTime.now());
+                return session;
+            }
         }
-
         session.setLoopCount(session.getLoopCount() + 1);
         session.setUpdatedAt(OffsetDateTime.now());
         return session;

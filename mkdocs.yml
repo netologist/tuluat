@@ -37,6 +37,8 @@ markdown_extensions:
 
 nav:
   - Home: ARCHITECTURE.md
+  - Custom Resources (CRDs): crds.md
+  - Maven Dependencies: dependencies.md
   - Architecture:
       - High-Level Architecture: architecture/high-level-architecture.md
       - Low-Level Design: architecture/low-level-design.md

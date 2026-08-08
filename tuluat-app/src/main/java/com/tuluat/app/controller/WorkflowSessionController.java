@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/v1")
 public class WorkflowSessionController {
@@ -24,22 +25,32 @@ public class WorkflowSessionController {
     private final WorkflowSessionRepository sessionRepository;
     private final WorkflowSessionLogRepository logRepository;
     private final KubernetesClient kubernetesClient;
+    private final com.tuluat.app.websocket.WorkflowEventPublisher eventPublisher;
 
     public WorkflowSessionController(WorkflowExecutionService executionService,
                                       WorkflowSessionRepository sessionRepository,
                                       KubernetesClient kubernetesClient) {
-        this(executionService, sessionRepository, null, kubernetesClient);
+        this(executionService, sessionRepository, null, kubernetesClient, null);
+    }
+
+    public WorkflowSessionController(WorkflowExecutionService executionService,
+                                      WorkflowSessionRepository sessionRepository,
+                                      WorkflowSessionLogRepository logRepository,
+                                      KubernetesClient kubernetesClient) {
+        this(executionService, sessionRepository, logRepository, kubernetesClient, null);
     }
 
     @Autowired
     public WorkflowSessionController(WorkflowExecutionService executionService,
                                       WorkflowSessionRepository sessionRepository,
                                       @Autowired(required = false) WorkflowSessionLogRepository logRepository,
-                                      KubernetesClient kubernetesClient) {
+                                      KubernetesClient kubernetesClient,
+                                      @Autowired(required = false) com.tuluat.app.websocket.WorkflowEventPublisher eventPublisher) {
         this.executionService = executionService;
         this.sessionRepository = sessionRepository;
         this.logRepository = logRepository;
         this.kubernetesClient = kubernetesClient;
+        this.eventPublisher = eventPublisher;
     }
     public ResponseEntity<WorkflowSessionEntity> createSession(String workflowName, Map<String, Object> request) {
         return createSession(workflowName, "tuluat-system", request);
@@ -71,6 +82,9 @@ public class WorkflowSessionController {
         }
 
         WorkflowSessionEntity session = executionService.startSession(workflowName, workflow.getSpec(), input, maxLoops);
+        if (eventPublisher != null) {
+            eventPublisher.publishSessionState(session.getSessionId(), workflowName, session.getStatus(), session.getCurrentNodeId(), session.getContextData());
+        }
         return ResponseEntity.ok(session);
     }
 
@@ -98,6 +112,10 @@ public class WorkflowSessionController {
         Map<String, Object> metadata = (Map<String, Object>) request.get("metadata");
 
         ApprovalSignal signal = new ApprovalSignal(approved, feedback, metadata);
+        executionService.sendApprovalSignal(sessionId.toString(), signal);
+        if (eventPublisher != null) {
+            eventPublisher.publishApprovalResolved(sessionId, approved, feedback);
+        }
 
         return ResponseEntity.ok(Map.of(
                 "sessionId", sessionId.toString(),
