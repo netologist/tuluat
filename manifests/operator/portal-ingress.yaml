@@ -4,20 +4,12 @@ metadata:
   name: tuluat-portal-ingress
   namespace: tuluat-system
   annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
     ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
 spec:
   ingressClassName: nginx
   rules:
-    - host: portal.tuluat.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: tuluat-operator-service
-                port:
-                  number: 8080
     - http:
         paths:
           - path: /

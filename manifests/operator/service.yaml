@@ -4,9 +4,11 @@ metadata:
   name: tuluat-operator-service
   namespace: tuluat-system
 spec:
+  type: NodePort
   selector:
     app: tuluat-operator
   ports:
     - name: http
       port: 8080
       targetPort: 8080
+      nodePort: 30080
