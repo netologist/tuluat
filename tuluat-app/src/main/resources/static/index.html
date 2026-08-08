@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tuluat AI Operator — Control Portal & Workflow Runtime</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome CDN -->
@@ -664,6 +665,7 @@
                 // Fetch Agent Execution Request/Response Logs
                 const container = document.getElementById('agent-logs-container');
                 const logRes = await fetch(`/api/v1/agent-specs/${agentName}/logs`);
+                if (logRes.ok) {
                     const logs = await logRes.json();
                     if (logs.length === 0) {
                         container.innerHTML = `<p class="text-slate-500 italic text-center py-12">No execution logs found for ${agentName}. Trigger a session to generate completion logs.</p>`;
