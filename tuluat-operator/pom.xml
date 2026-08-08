@@ -20,6 +20,10 @@
         </dependency>
         <dependency>
             <groupId>com.tuluat</groupId>
+            <artifactId>tuluat-protocols</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tuluat</groupId>
             <artifactId>tuluat-engine</artifactId>
         </dependency>
 

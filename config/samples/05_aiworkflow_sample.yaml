@@ -20,15 +20,6 @@ spec:
       agentRef: "report-writer-agent"
       inputTemplate: "Analyze the following research findings and produce a final executive report:\n\n{{research_data}}"
       outputKey: "final_report"
-      outputSchema: |
-        {
-          "type": "object",
-          "required": ["summary", "sections"],
-          "properties": {
-            "summary": { "type": "string" },
-            "sections": { "type": "array", "items": { "type": "string" } }
-          }
-        }
   edges:
     - from: "researcher-node"
       to: "evaluator-node"

@@ -38,6 +38,7 @@ public class AgentExecutionService {
     private final GuardrailPipeline guardrailPipeline;
     private final ModelGateway modelGateway;
     private final ProviderResolver providerResolver;
+    private final AgentResolver agentResolver;
 
     @Autowired
     public AgentExecutionService(
@@ -45,12 +46,14 @@ public class AgentExecutionService {
             @Autowired(required = false) @Qualifier("openAiChatModel") ChatModel chatModel,
             GuardrailPipeline guardrailPipeline,
             ModelGateway modelGateway,
-            @Autowired(required = false) ProviderResolver providerResolver) {
+            @Autowired(required = false) ProviderResolver providerResolver,
+            @Autowired(required = false) AgentResolver agentResolver) {
         this.skillRegistry = skillRegistry;
         this.chatModel = chatModel;
         this.guardrailPipeline = guardrailPipeline;
         this.modelGateway = modelGateway;
         this.providerResolver = providerResolver;
+        this.agentResolver = agentResolver;
     }
 
     /**
@@ -178,16 +181,50 @@ public class AgentExecutionService {
         return AgentResponse.create(agentName, model, effectiveSystemPrompt, aiAnswer, skillResults, usageStats);
     }
 
+    /**
+     * Executes an agent by reference (workflow node path). Resolves the agent CR
+     * via {@link AgentResolver} (when present) and applies its guardrails policy:
+     * pre-execution masking/injection defense on the prompt, post-execution
+     * output validation. Without a resolver, executes unguarded (legacy path).
+     */
     public AgentResponse executeAgent(String agentRef, String prompt, String context) {
         log.info("Executing agentRef '{}' with prompt '{}'", agentRef, prompt);
-        return AgentResponse.create(
+        String ns = (context != null && !context.isBlank()) ? context : null;
+
+        // Resolve agent CR for its guardrails policy (workflow path, ADR 004)
+        var spec = agentResolver != null ? agentResolver.resolve(agentRef, ns) : Optional.<AiAgent>empty();
+        var guardrails = spec.map(a -> a.getSpec() != null ? a.getSpec().guardrails() : null).orElse(null);
+
+        // Pre-execution guardrails (masking + injection defense)
+        String safePrompt = prompt;
+        if (guardrailPipeline != null) {
+            try {
+                safePrompt = guardrailPipeline.processPrompt(prompt, guardrails);
+            } catch (GuardrailBlockedException e) {
+                log.warn("Agent '{}' request blocked by guardrail [{}]: {}", agentRef, e.getFilterName(), e.getMessage());
+                return AgentResponse.blocked(agentRef, e.getFilterName(), e.getMessage());
+            }
+        }
+
+        AgentResponse response = AgentResponse.create(
             agentRef != null ? agentRef : "default-agent",
             "deepseek-chat",
             "Workflow Agent System Prompt",
-            "Execution completed for: " + prompt,
+            "Execution completed for: " + safePrompt,
             List.of(),
             UsageStats.calculate(10, 10, "deepseek-chat", 50)
         );
+
+        // Post-execution output validation
+        if (guardrailPipeline != null && guardrails != null && guardrails.outputValidation() != null
+                && guardrails.outputValidation().isEnabled()) {
+            ValidationResult vr = guardrailPipeline.validateOutput(response.answer(), guardrails, null);
+            if (!vr.valid()) {
+                log.warn("Agent '{}' output rejected by guardrails: confidence={}, errors={}",
+                    agentRef, vr.confidence(), vr.errors());
+            }
+        }
+        return response;
     }
 
     private int estimateTokens(String text) {

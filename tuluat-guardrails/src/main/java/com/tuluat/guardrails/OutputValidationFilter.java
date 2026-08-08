@@ -37,9 +37,14 @@ public class OutputValidationFilter implements PostExecutionFilter {
 
     @Override
     public ValidationResult validate(String output, GuardrailsConfig config, String outputSchema) {
-        // No guardrails policy block declared => no post-execution filtering.
-        if (config == null || config.outputValidation() == null || !config.outputValidation().isEnabled()) {
-            return ValidationResult.pass(NAME);
+        // A node-declared schema is a hard contract (ADR 007): validate it even
+        // when the agent has no guardrails policy block (workflow path).
+        boolean schemaGiven = outputSchema != null && !outputSchema.isBlank();
+        if (!schemaGiven) {
+            // No policy block declared => no post-execution filtering.
+            if (config == null || config.outputValidation() == null || !config.outputValidation().isEnabled()) {
+                return ValidationResult.pass(NAME);
+            }
         }
         if (output == null || output.isBlank()) {
             return ValidationResult.fail(0.0, List.of("output is empty"), NAME);
@@ -52,8 +57,8 @@ public class OutputValidationFilter implements PostExecutionFilter {
             return ValidationResult.fail(0.2, List.of("output is not valid JSON: " + e.getMessage()), NAME);
         }
 
-        if (outputSchema == null || outputSchema.isBlank()) {
-            // No schema declared: treat well-formed JSON with baseline confidence.
+        if (!schemaGiven) {
+            // Well-formed JSON with baseline confidence when no schema declared.
             return new ValidationResult(true, 0.9, List.of(), NAME);
         }
 

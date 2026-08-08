@@ -37,7 +37,8 @@ class AgentExecutionServiceTest {
                 List.of(new OutputValidationFilter())
             ),
             null, // no Model Gateway in unit test
-            null  // no ProviderResolver
+            null, // no ProviderResolver
+            null  // no AgentResolver
         );
     }
 

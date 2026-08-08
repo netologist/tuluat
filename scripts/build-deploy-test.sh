@@ -10,7 +10,7 @@ echo " 🚀 Tuluat AI Operator (Spring Boot 4.1 / Java 25 LTS): Build, Deploy & 
 echo "=========================================================="
 
 echo "1. Building Fat JAR & Production Docker Image (${IMAGE_NAME})..."
-./mvnw package -DskipTests ${MAVEN_ARGS:-} || ./mvnw package -DskipTests -Dmaven.compiler.release=24
+./mvnw package -DskipTests ${MAVEN_ARGS:-} || ./mvnw package -DskipTests -Dmaven.compiler.release=25
 docker build -f Dockerfile.local -t "${IMAGE_NAME}" .
 echo "2. Loading Docker Image into Kind Cluster (${CLUSTER_NAME})..."
 kind load docker-image "${IMAGE_NAME}" --name "${CLUSTER_NAME}"

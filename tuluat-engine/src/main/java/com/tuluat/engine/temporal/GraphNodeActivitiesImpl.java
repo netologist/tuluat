@@ -24,15 +24,18 @@ public class GraphNodeActivitiesImpl implements GraphNodeActivities {
     private final AgentExecutionService agentExecutionService;
     private final WorkflowSessionLogRepository logRepository;
     private final WorkflowTelemetryService telemetryService;
+    private final com.tuluat.guardrails.GuardrailPipeline guardrailPipeline;
     private final ExpressionParser parser = new SpelExpressionParser();
 
     @Autowired
     public GraphNodeActivitiesImpl(AgentExecutionService agentExecutionService,
                                   @Autowired(required = false) WorkflowSessionLogRepository logRepository,
-                                  @Autowired(required = false) WorkflowTelemetryService telemetryService) {
+                                  @Autowired(required = false) WorkflowTelemetryService telemetryService,
+                                  @Autowired(required = false) com.tuluat.guardrails.GuardrailPipeline guardrailPipeline) {
         this.agentExecutionService = agentExecutionService;
         this.logRepository = logRepository;
         this.telemetryService = telemetryService;
+        this.guardrailPipeline = guardrailPipeline;
     }
 
     @Override
@@ -44,6 +47,22 @@ public class GraphNodeActivitiesImpl implements GraphNodeActivities {
         AgentResponse response = agentExecutionService.executeAgent(node.getAgentRef(), prompt, null);
 
         contextData.put(node.getOutputKey(), response.answer());
+
+        // Post-execution JSON Schema validation (ADR 004 / 007); failure fails the activity
+        if (guardrailPipeline != null && node.getOutputSchema() != null && !node.getOutputSchema().isBlank()) {
+            com.tuluat.guardrails.ValidationResult vr =
+                guardrailPipeline.validateOutput(response.answer(), null, node.getOutputSchema());
+            if (!vr.valid()) {
+                String errMsg = String.format(
+                    "Temporal node '%s' output failed schema validation (confidence=%.2f): %s",
+                    node.getId(), vr.confidence(), vr.errors());
+                log.error(errMsg);
+                recordLog(sessionId, node.getId(), "ERROR", errMsg);
+                throw new IllegalStateException(errMsg);
+            }
+            recordLog(sessionId, node.getId(), "INFO",
+                "Temporal node '" + node.getId() + "' output passed schema validation");
+        }
 
         if (telemetryService != null) {
             telemetryService.recordNodeExecuted("temporal-workflow", "AGENT", node.getId());

@@ -19,6 +19,8 @@ rules:
       - aiworkflows/status
       - workflowsessions
       - workflowsessions/status
+      - mcpservers
+      - mcpservers/status
     verbs: ["*"]
   - apiGroups: ["apps"]
     resources: ["deployments"]

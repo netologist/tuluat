@@ -29,20 +29,23 @@ public class GraphStateMachineEngine {
     private final AgentExecutionService agentExecutionService;
     private final WorkflowSessionLogRepository logRepository;
     private final WorkflowTelemetryService telemetryService;
+    private final com.tuluat.guardrails.GuardrailPipeline guardrailPipeline;
     private final ExpressionParser parser = new SpelExpressionParser();
     private final ObjectMapper mapper = new ObjectMapper();
 
     public GraphStateMachineEngine(AgentExecutionService agentExecutionService) {
-        this(agentExecutionService, null, null);
+        this(agentExecutionService, null, null, null);
     }
 
     @Autowired
     public GraphStateMachineEngine(AgentExecutionService agentExecutionService,
                                    @Autowired(required = false) WorkflowSessionLogRepository logRepository,
-                                   @Autowired(required = false) WorkflowTelemetryService telemetryService) {
+                                   @Autowired(required = false) WorkflowTelemetryService telemetryService,
+                                   @Autowired(required = false) com.tuluat.guardrails.GuardrailPipeline guardrailPipeline) {
         this.agentExecutionService = agentExecutionService;
         this.logRepository = logRepository;
         this.telemetryService = telemetryService;
+        this.guardrailPipeline = guardrailPipeline;
     }
 
     public WorkflowSessionEntity executeNextStep(AiWorkflowSpec workflowSpec, WorkflowSessionEntity session, int maxLoops) {
@@ -89,6 +92,27 @@ public class GraphStateMachineEngine {
             session.setContextData(writeContext(contextData));
 
             recordSessionLog(session.getSessionId(), currentNode.getId(), "INFO", "Agent '" + currentNode.getAgentRef() + "' output saved to key '" + currentNode.getOutputKey() + "'");
+
+            // Post-execution JSON Schema validation (ADR 004 / 007): node-level output contract
+            if (guardrailPipeline != null && currentNode.getOutputSchema() != null && !currentNode.getOutputSchema().isBlank()) {
+                com.tuluat.guardrails.ValidationResult vr =
+                    guardrailPipeline.validateOutput(response.answer(), null, currentNode.getOutputSchema());
+                if (!vr.valid()) {
+                    String errMsg = String.format(
+                        "Node '%s' output failed schema validation (confidence=%.2f): %s",
+                        currentNode.getId(), vr.confidence(), vr.errors());
+                    log.error(errMsg);
+                    recordSessionLog(session.getSessionId(), currentNode.getId(), "ERROR", errMsg);
+                    session.setStatus("FAILED");
+                    session.setUpdatedAt(OffsetDateTime.now());
+                    if (telemetryService != null) {
+                        telemetryService.recordSessionCompleted(session.getWorkflowName(), "FAILED");
+                    }
+                    return session;
+                }
+                recordSessionLog(session.getSessionId(), currentNode.getId(), "INFO",
+                    "Node '" + currentNode.getId() + "' output passed schema validation");
+            }
 
             String nextNodeId = resolveNextNodeId(workflowSpec, currentNode.getId(), true);
             if (nextNodeId == null) {
