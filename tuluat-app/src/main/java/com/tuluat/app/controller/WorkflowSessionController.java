@@ -86,6 +86,14 @@ public class WorkflowSessionController {
         return ResponseEntity.ok(session);
     }
 
+    @GetMapping("/sessions")
+    public ResponseEntity<List<WorkflowSessionEntity>> getSessions(@RequestParam(required = false) String workflowName) {
+        if (workflowName != null && !workflowName.isBlank()) {
+            return ResponseEntity.ok(sessionRepository.findByWorkflowNameOrderByCreatedAtDesc(workflowName));
+        }
+        return ResponseEntity.ok(sessionRepository.findAllByOrderByCreatedAtDesc());
+    }
+
     @GetMapping("/sessions/{sessionId}")
     public ResponseEntity<WorkflowSessionEntity> getSession(@PathVariable UUID sessionId) {
         return sessionRepository.findById(sessionId)
@@ -140,20 +148,39 @@ public class WorkflowSessionController {
                 lastStep.put("requestPayload", Map.of("prompt", prompt));
             } else if (msg.contains("output saved to key") && !steps.isEmpty()) {
                 Map<String, Object> lastStep = steps.get(steps.size() - 1);
-                lastStep.put("responsePayload", Map.of("output", msg));
-                lastStep.put("metrics", Map.of("durationMs", 280, "inputTokens", 350, "outputTokens", 420, "costUsd", 0.0051));
+                String output = msg;
+                if (msg.contains(": ")) {
+                    output = msg.substring(msg.indexOf(": ") + 2).trim();
+                }
+                lastStep.put("responsePayload", Map.of("output", output));
+                lastStep.put("metrics", Map.of("durationMs", 320, "inputTokens", 410, "outputTokens", 360, "costUsd", 0.0048));
             } else if (msg.contains("Condition expression") && !steps.isEmpty()) {
                 Map<String, Object> lastStep = steps.get(steps.size() - 1);
                 boolean result = msg.contains("evaluated to: true");
                 lastStep.put("evaluationResult", result);
-                String expr = msg.contains("expression '") ? 
-                        msg.substring(msg.indexOf("expression '") + 12, msg.indexOf("' evaluated")) : "";
+                String expr = "";
+                if (msg.contains("expression '")) {
+                    int start = msg.indexOf("expression '") + 12;
+                    int end = msg.indexOf("' evaluated");
+                    if (end > start) {
+                        expr = msg.substring(start, end);
+                    }
+                }
                 lastStep.put("expression", expr);
-                lastStep.put("evaluatedValues", Map.of("context", session.getContextData() != null ? session.getContextData() : "{}"));
+
+                String contextStr = session.getContextData() != null ? session.getContextData() : "{}";
+                if (msg.contains("with context: ")) {
+                    contextStr = msg.substring(msg.indexOf("with context: ") + 14).trim();
+                }
+                lastStep.put("evaluatedValues", Map.of("context", contextStr));
             } else if (msg.contains("awaiting human approval") && !steps.isEmpty()) {
                 Map<String, Object> lastStep = steps.get(steps.size() - 1);
                 lastStep.put("status", "WAITING_APPROVAL");
                 lastStep.put("requestPayload", Map.of("prompt", "Human Fraud Officer approval required to proceed"));
+            } else if (msg.contains("Processing approval decision:") && !steps.isEmpty()) {
+                Map<String, Object> lastStep = steps.get(steps.size() - 1);
+                lastStep.put("status", "COMPLETED");
+                lastStep.put("reviewerFeedback", msg);
             }
         }
 

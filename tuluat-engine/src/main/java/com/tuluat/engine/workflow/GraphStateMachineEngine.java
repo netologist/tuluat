@@ -91,7 +91,7 @@ public class GraphStateMachineEngine {
             contextData.put(currentNode.getOutputKey(), response.answer());
             session.setContextData(writeContext(contextData));
 
-            recordSessionLog(session.getSessionId(), currentNode.getId(), "INFO", "Agent '" + currentNode.getAgentRef() + "' output saved to key '" + currentNode.getOutputKey() + "'");
+            recordSessionLog(session.getSessionId(), currentNode.getId(), "INFO", "Agent '" + currentNode.getAgentRef() + "' output saved to key '" + currentNode.getOutputKey() + "': " + response.answer());
 
             // Post-execution JSON Schema validation (ADR 004 / 007): node-level output contract
             if (guardrailPipeline != null && currentNode.getOutputSchema() != null && !currentNode.getOutputSchema().isBlank()) {
@@ -127,7 +127,7 @@ public class GraphStateMachineEngine {
             }
         } else if ("CONDITION".equalsIgnoreCase(currentNode.getType())) {
             boolean result = evaluateCondition(currentNode.getExpression(), contextData);
-            recordSessionLog(session.getSessionId(), currentNode.getId(), "INFO", "Condition expression '" + currentNode.getExpression() + "' evaluated to: " + result);
+            recordSessionLog(session.getSessionId(), currentNode.getId(), "INFO", "Condition expression '" + currentNode.getExpression() + "' evaluated to: " + result + " with context: " + writeContext(contextData));
 
             String nextNodeId = resolveNextNodeId(workflowSpec, currentNode.getId(), result);
             if (nextNodeId == null) {

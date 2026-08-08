@@ -10,5 +10,7 @@ import java.util.UUID;
 @Repository
 public interface WorkflowSessionRepository extends JpaRepository<WorkflowSessionEntity, UUID> {
     List<WorkflowSessionEntity> findByWorkflowName(String workflowName);
+    List<WorkflowSessionEntity> findByWorkflowNameOrderByCreatedAtDesc(String workflowName);
+    List<WorkflowSessionEntity> findAllByOrderByCreatedAtDesc();
     List<WorkflowSessionEntity> findByStatus(String status);
 }

@@ -126,6 +126,59 @@ class WorkflowSessionControllerTest {
         assertEquals(1, response.getBody().size());
         assertEquals("Executing node-1", response.getBody().get(0).getMessage());
     }
+    @Test
+    @DisplayName("Should list sessions ordered by created date")
+    void testGetSessions() {
+        WorkflowSessionEntity entity = new WorkflowSessionEntity();
+        entity.setSessionId(UUID.randomUUID());
+        entity.setWorkflowName("order-processing-workflow");
+        entity.setStatus("COMPLETED");
+
+        when(sessionRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of(entity));
+
+        ResponseEntity<List<WorkflowSessionEntity>> response = controller.getSessions(null);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().size());
+        assertEquals("order-processing-workflow", response.getBody().get(0).getWorkflowName());
+    }
+
+    @Test
+    @DisplayName("Should build execution tree steps with condition evaluation data")
+    void testGetSessionExecutionTree() {
+        UUID sessionId = UUID.randomUUID();
+        WorkflowSessionEntity session = new WorkflowSessionEntity();
+        session.setSessionId(sessionId);
+        session.setWorkflowName("order-processing-workflow");
+        session.setContextData("{\"riskResult\":\"HIGH Risk Detected\"}");
+
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+
+        WorkflowSessionLogEntity log1 = new WorkflowSessionLogEntity();
+        log1.setSessionId(sessionId);
+        log1.setNodeId("risk-check-condition");
+        log1.setMessage("Executing node 'risk-check-condition' (type: CONDITION) for session " + sessionId);
+
+        WorkflowSessionLogEntity log2 = new WorkflowSessionLogEntity();
+        log2.setSessionId(sessionId);
+        log2.setNodeId("risk-check-condition");
+        log2.setMessage("Condition expression '#data[\"riskResult\"].contains(\"HIGH\")' evaluated to: true with context: {\"riskResult\":\"HIGH Risk Detected\"}");
+
+        when(logRepository.findBySessionIdOrderByCreatedAtAsc(sessionId)).thenReturn(List.of(log1, log2));
+
+        ResponseEntity<List<Map<String, Object>>> response = controller.getSessionExecutionTree(sessionId);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().size());
+
+        Map<String, Object> step = response.getBody().get(0);
+        assertEquals("risk-check-condition", step.get("nodeId"));
+        assertEquals("CONDITION", step.get("nodeType"));
+        assertEquals(true, step.get("evaluationResult"));
+        assertEquals("#data[\"riskResult\"].contains(\"HIGH\")", step.get("expression"));
+    }
 
     @Test
     @DisplayName("Should send free-form approval signal for human-in-the-loop node")
