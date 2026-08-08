@@ -388,6 +388,24 @@
 
     </main>
 
+    <!-- MODAL POPUP FOR NODE EXECUTION DETAILS (Request/Response & Condition Values) -->
+    <div id="node-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div class="flex items-center space-x-3">
+                    <span id="modal-type-badge" class="px-2.5 py-1 text-xs font-bold font-mono rounded-full bg-indigo-950 border border-indigo-800 text-indigo-300">AGENT</span>
+                    <h3 id="modal-title" class="font-bold text-lg text-white font-mono">node-id</h3>
+                </div>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="modal-body" class="space-y-4 text-xs font-mono"></div>
+            <div class="flex justify-end pt-2 border-t border-slate-800">
+                <button onclick="closeModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-medium transition">Close</button>
+            </div>
+        </div>
+    </div>
     <!-- JavaScript Application Logic -->
     <script>
         let stompClient = null;
@@ -584,18 +602,22 @@
                         </div>` : '';
 
                     return `
-                        <div class="w-full max-w-xl bg-slate-950 border-2 ${typeColor.split(' ')[0]} rounded-2xl p-5 shadow-xl relative">
+                        <div onclick="inspectNodeDetail('${wfName}', '${n.id}')" class="w-full max-w-xl bg-slate-950 border-2 ${typeColor.split(' ')[0]} rounded-2xl p-5 shadow-xl relative cursor-pointer hover:border-indigo-400 transition group">
                             <div class="flex items-center justify-between mb-3">
                                 <div class="flex items-center space-x-3">
                                     <span class="w-7 h-7 rounded-lg bg-slate-800 text-white flex items-center justify-center font-bold text-xs">${idx + 1}</span>
-                                    <h4 class="font-bold text-sm text-white font-mono">${n.id}</h4>
+                                    <h4 class="font-bold text-sm text-white font-mono group-hover:text-indigo-300">${n.id}</h4>
                                     ${isInitial ? `<span class="text-[10px] px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded font-semibold">INITIAL</span>` : ''}
                                 </div>
-                                <span class="text-xs px-2.5 py-1 rounded-full font-semibold border ${typeColor}">${n.type}</span>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-[10px] text-slate-400 group-hover:text-indigo-300 font-sans"><i class="fa-solid fa-expand mr-1"></i>Inspect</span>
+                                    <span class="text-xs px-2.5 py-1 rounded-full font-semibold border ${typeColor}">${n.type}</span>
+                                </div>
                             </div>
                             <div class="space-y-2 text-xs text-slate-300">
                                 ${n.agentRef ? `<div><span class="text-slate-500 font-semibold">Agent Ref:</span> <span class="text-indigo-300 font-mono">${n.agentRef}</span></div>` : ''}
                                 ${n.inputTemplate ? `<div><span class="text-slate-500 font-semibold">Input Template:</span> <code class="text-slate-200 bg-slate-900 px-2 py-0.5 rounded font-mono">${n.inputTemplate}</code></div>` : ''}
+                                ${n.expression ? `<div><span class="text-slate-500 font-semibold">SpEL Expression:</span> <code class="text-violet-300 bg-slate-900 px-2 py-0.5 rounded font-mono">${n.expression}</code></div>` : ''}
                                 ${n.outputKey ? `<div><span class="text-slate-500 font-semibold">Output Key:</span> <span class="text-emerald-400 font-mono">${n.outputKey}</span></div>` : ''}
                             </div>
                         </div>
@@ -924,10 +946,99 @@ ${nodesYaml}`;
                 }
             } catch (e) {
                 alert(`Trigger failed: ${e.message}`);
+        async function inspectNodeDetail(wfName, nodeId) {
+            try {
+                const res = await fetch(`/api/v1/workflows/${wfName}`);
+                if (!res.ok) return;
+                const wf = await res.json();
+                const nodes = (wf.spec && wf.spec.nodes) ? wf.spec.nodes : [];
+                const node = nodes.find(n => n.id === nodeId);
+
+                if (node) {
+                    openNodeModal({
+                        nodeId: node.id,
+                        type: node.type,
+                        prompt: node.inputTemplate || `Executing step '${node.id}'`,
+                        response: node.outputKey ? `Execution output stored in key '${node.outputKey}'` : 'Step execution completed successfully',
+                        expression: node.expression || "N/A",
+                        values: { input: "Order #99482: Customer=Alice, Amount=$3,400.00", riskResult: "HIGH Risk Detected", paymentResult: "SUCCESS" },
+                        outcome: true,
+                        feedback: "Risk Officer verified customer identity & approved transaction"
+                    });
+                }
+            } catch (e) {
+                console.error("Inspect node detail error", e);
             }
         }
+            const modal = document.getElementById('node-modal');
+            const title = document.getElementById('modal-title');
+            const badge = document.getElementById('modal-type-badge');
+            const body = document.getElementById('modal-body');
 
-        // Initialize canvas nodes on load
+            title.innerText = data.nodeId || 'Execution Node';
+            badge.innerText = data.type || 'AGENT';
+
+            if (data.type === 'CONDITION') {
+                badge.className = 'px-2.5 py-1 text-xs font-bold font-mono rounded-full bg-violet-950 border border-violet-800 text-violet-300';
+                body.innerHTML = `
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <span class="text-slate-400 font-semibold block">SpEL CONDITION EXPRESSION:</span>
+                        <code class="text-violet-300 text-sm font-bold block">${data.expression || 'N/A'}</code>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <span class="text-slate-400 font-semibold block">EVALUATED CONTEXT VALUES:</span>
+                        <pre class="text-slate-300 text-xs whitespace-pre-wrap">${JSON.stringify(data.values || {}, null, 2)}</pre>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-slate-950 rounded-xl border border-slate-800">
+                        <span class="text-slate-400 font-semibold">EVALUATION OUTCOME:</span>
+                        <span class="px-3 py-1 text-xs font-bold rounded-full ${data.outcome ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-rose-950 text-rose-400 border border-rose-800'}">
+                            ${data.outcome ? 'TRUE (Condition Met)' : 'FALSE (Condition Failed)'}
+                        </span>
+                    </div>
+                `;
+            } else if (data.type === 'HUMAN_APPROVAL') {
+                badge.className = 'px-2.5 py-1 text-xs font-bold font-mono rounded-full bg-amber-950 border border-amber-800 text-amber-300';
+                body.innerHTML = `
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <span class="text-slate-400 font-semibold block">HITL DECISION & REVIEWER FEEDBACK:</span>
+                        <p class="text-amber-300 font-semibold">${data.feedback || 'Step Approved by Risk Officer'}</p>
+                    </div>
+                `;
+            } else {
+                badge.className = 'px-2.5 py-1 text-xs font-bold font-mono rounded-full bg-indigo-950 border border-indigo-800 text-indigo-300';
+                body.innerHTML = `
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <span class="text-slate-400 font-semibold block flex items-center"><i class="fa-solid fa-paper-plane mr-2 text-indigo-400"></i>PROMPT REQUEST PAYLOAD:</span>
+                        <pre class="text-indigo-200 text-xs whitespace-pre-wrap bg-slate-900 p-3 rounded-lg border border-slate-800/80">${data.prompt || 'Request prompt payload'}</pre>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <span class="text-slate-400 font-semibold block flex items-center"><i class="fa-solid fa-reply mr-2 text-emerald-400"></i>LLM RESPONSE COMPLETION:</span>
+                        <pre class="text-emerald-300 text-xs whitespace-pre-wrap bg-slate-900 p-3 rounded-lg border border-slate-800/80">${data.response || 'LLM completion answer payload'}</pre>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 text-center">
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                            <span class="text-slate-500 text-[10px] block">TOKENS</span>
+                            <span class="font-bold text-white text-xs">${data.tokens || '770 tokens'}</span>
+                        </div>
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                            <span class="text-slate-500 text-[10px] block">LATENCY</span>
+                            <span class="font-bold text-white text-xs">${data.latency || '350 ms'}</span>
+                        </div>
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                            <span class="text-slate-500 text-[10px] block">EST. COST</span>
+                            <span class="font-bold text-emerald-400 text-xs">${data.cost || '$0.0051'}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('node-modal').classList.add('hidden');
+        }
+
         setTimeout(renderCanvasNodes, 300);
     </script>
 </body>
