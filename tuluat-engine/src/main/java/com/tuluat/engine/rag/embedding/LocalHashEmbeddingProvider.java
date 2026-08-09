@@ -14,16 +14,26 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class LocalHashEmbeddingProvider implements EmbeddingProvider {
 
-    public static final int DIMENSION = 1536;
+    public static final int DEFAULT_DIMENSION = 1536;
+
+    private final int dimension;
+
+    public LocalHashEmbeddingProvider() {
+        this(DEFAULT_DIMENSION);
+    }
+
+    public LocalHashEmbeddingProvider(@org.springframework.beans.factory.annotation.Value("${tuluat.rag.embedding-dimension:1536}") int dimension) {
+        this.dimension = dimension;
+    }
 
     @Override
     public int dimension() {
-        return DIMENSION;
+        return dimension;
     }
 
     @Override
     public float[] embed(String text) {
-        float[] vector = new float[DIMENSION];
+        float[] vector = new float[dimension];
         if (text == null || text.isBlank()) {
             return vector;
         }
@@ -36,7 +46,7 @@ public class LocalHashEmbeddingProvider implements EmbeddingProvider {
             for (int j = 0; j < 4; j++) {
                 h = 31 * h + (bytes[i + j] & 0xFF);
             }
-            int bucket = Math.floorMod(h, DIMENSION);
+            int bucket = Math.floorMod(h, dimension);
             vector[bucket] += 1.0f;
         }
         // Word presence boost: map each word hash to a bucket as well.
@@ -45,7 +55,7 @@ public class LocalHashEmbeddingProvider implements EmbeddingProvider {
                 continue;
             }
             int h = word.hashCode();
-            int bucket = Math.floorMod(h, DIMENSION);
+            int bucket = Math.floorMod(h, dimension);
             vector[bucket] += 3.0f;
         }
         return normalize(vector);

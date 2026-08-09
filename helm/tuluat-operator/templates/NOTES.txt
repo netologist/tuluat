@@ -1,0 +1,31 @@
+╔══════════════════════════════════════════════════════════════╗
+║         Tuluat AI Operator — Proof of Concept                ║
+║         Chart version: {{ .Chart.Version }}                              ║
+║         App version:   {{ .Chart.AppVersion }}                       ║
+╚══════════════════════════════════════════════════════════════╝
+
+⚠️  This is a Proof of Concept deployment — not production-ready.
+
+✅ Operator deployed in namespace: {{ .Values.namespace.name }}
+
+{{- if .Values.ingress.enabled }}
+🌐 Portal available at: http://{{ .Values.ingress.host }}
+{{- else }}
+🔌 Port-forward to access the operator:
+   kubectl port-forward svc/tuluat-operator-service 8080:8080 -n {{ .Values.namespace.name }}
+   → http://localhost:8080/actuator/health
+{{- end }}
+
+📊 Quick port-forward commands:
+   kubectl port-forward svc/tuluat-operator-service 8080:8080 -n {{ .Values.namespace.name }}
+   kubectl port-forward svc/temporal-ui-service 8233:8233 -n {{ .Values.namespace.name }}
+   kubectl port-forward svc/grafana-service 3000:3000 -n {{ .Values.namespace.name }}
+   kubectl port-forward svc/prometheus-service 9090:9090 -n {{ .Values.namespace.name }}
+   kubectl port-forward svc/postgres-service 5432:5432 -n {{ .Values.namespace.name }}
+
+📚 Trigger a workflow session:
+   curl -X POST http://localhost:8080/api/v1/workflows/multi-agent-researcher/sessions \
+     -H "Content-Type: application/json" \
+     -d '{"input": "Kubernetes CRD Operator Best Practices 2026", "maxLoops": 5}'
+
+🔍 RAG retriever: {{ .Values.rag.retriever }} (dimension: {{ .Values.rag.embeddingDimension }})

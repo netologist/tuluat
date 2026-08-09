@@ -39,6 +39,17 @@ public class AgentExecutionService {
     private final ModelGateway modelGateway;
     private final ProviderResolver providerResolver;
     private final AgentResolver agentResolver;
+    private final com.tuluat.engine.rag.RagService ragService;
+
+    public AgentExecutionService(
+            SkillRegistry skillRegistry,
+            ChatModel chatModel,
+            GuardrailPipeline guardrailPipeline,
+            ModelGateway modelGateway,
+            ProviderResolver providerResolver,
+            AgentResolver agentResolver) {
+        this(skillRegistry, chatModel, guardrailPipeline, modelGateway, providerResolver, agentResolver, null);
+    }
 
     @Autowired
     public AgentExecutionService(
@@ -47,13 +58,15 @@ public class AgentExecutionService {
             GuardrailPipeline guardrailPipeline,
             ModelGateway modelGateway,
             @Autowired(required = false) ProviderResolver providerResolver,
-            @Autowired(required = false) AgentResolver agentResolver) {
+            @Autowired(required = false) AgentResolver agentResolver,
+            @Autowired(required = false) com.tuluat.engine.rag.RagService ragService) {
         this.skillRegistry = skillRegistry;
         this.chatModel = chatModel;
         this.guardrailPipeline = guardrailPipeline;
         this.modelGateway = modelGateway;
         this.providerResolver = providerResolver;
         this.agentResolver = agentResolver;
+        this.ragService = ragService;
     }
 
     /**
@@ -98,9 +111,16 @@ public class AgentExecutionService {
             .collect(Collectors.joining("\n"));
 
         String baseSystemPrompt = spec.systemPrompt() != null ? spec.systemPrompt() : "You are a helpful AI assistant.";
-        String effectiveSystemPrompt = skillContext.isBlank()
-            ? baseSystemPrompt
-            : baseSystemPrompt + "\n\nAvailable Context from Tools/Skills:\n" + skillContext;
+        String ragContext = (ragService != null && safeQuery != null && !safeQuery.isBlank())
+            ? ragService.retrieveAsPrompt(safeQuery, 3)
+            : "";
+        String effectiveSystemPrompt = baseSystemPrompt;
+        if (!skillContext.isBlank()) {
+            effectiveSystemPrompt += "\n\nAvailable Context from Tools/Skills:\n" + skillContext;
+        }
+        if (!ragContext.isBlank()) {
+            effectiveSystemPrompt += ragContext;
+        }
 
         // Step 3: Invoke LLM via Model Gateway (fallback/budget/cost) or direct Spring AI
         String aiAnswer;

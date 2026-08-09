@@ -32,3 +32,5 @@ site/
 Dockerfile.local
 
 .idea/
+dist/
+*.tgz

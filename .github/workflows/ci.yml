@@ -235,3 +235,43 @@ jobs:
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
         id: deployment
         uses: actions/deploy-pages@v4
+
+  # ── 5. Package & Deploy Helm Chart ───────────────────────────────────────
+  package-helm:
+    name: Lint, Package & Deploy Helm Chart
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Lint Helm Chart
+        run: |
+          helm lint helm/tuluat-operator
+
+      - name: Package Helm Chart
+        run: |
+          mkdir -p dist
+          helm package helm/tuluat-operator -d dist
+
+      - name: Upload Helm Chart Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tuluat-operator-helm-chart
+          path: dist/*.tgz
+          if-no-files-found: error
+
+      - name: Push Helm Chart OCI Artifact to GHCR
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+        env:
+          HELM_EXPERIMENTAL_OCI: "1"
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          helm push dist/*.tgz "oci://ghcr.io/${OWNER_LOWER}/charts"

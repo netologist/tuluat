@@ -1,0 +1,56 @@
+{{- if .Values.rbac.create }}
+{{- if .Values.serviceAccount.create }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.serviceAccount.name }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "tuluat-operator.fullname" . | default "tuluat-operator" }}-role
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+rules:
+  - apiGroups: ["ai.tuluat.com"]
+    resources:
+      - llmproviders
+      - llmproviders/status
+      - aiagents
+      - aiagents/status
+      - aiworkflows
+      - aiworkflows/status
+      - workflowsessions
+      - workflowsessions/status
+      - mcpservers
+      - mcpservers/status
+    verbs: ["*"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources: ["services", "secrets", "configmaps", "pods", "events"]
+    verbs: ["*"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "tuluat-operator.fullname" . | default "tuluat-operator" }}-rolebinding
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "tuluat-operator.fullname" . | default "tuluat-operator" }}-role
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.serviceAccount.name }}
+    namespace: {{ .Values.namespace.name }}
+{{- end }}

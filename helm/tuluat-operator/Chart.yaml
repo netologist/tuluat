@@ -1,0 +1,22 @@
+apiVersion: v2
+name: tuluat-operator
+description: >
+  **PoC** — Tuluat Kubernetes AI Operator & Workflow Runtime.
+  Deploys the operator, CRDs, and infrastructure (PostgreSQL+pgvector, Temporal, Prometheus, Grafana).
+  This is an early-stage Proof of Concept; not production-ready.
+type: application
+version: 0.1.0
+appVersion: "1.0.0-SNAPSHOT"
+keywords:
+  - ai-operator
+  - kubernetes-operator
+  - llm
+  - rag
+  - mcp
+  - temporal
+  - poc
+home: https://github.com/tuluat/k8s-crd-demo
+sources:
+  - https://github.com/tuluat/k8s-crd-demo
+maintainers:
+  - name: Tuluat Team

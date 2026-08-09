@@ -18,3 +18,4 @@ public class TuluatOperatorApplication {
         SpringApplication.run(TuluatOperatorApplication.class, args);
     }
 }
+

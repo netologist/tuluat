@@ -22,15 +22,20 @@ public class SpringAiEmbeddingProvider implements EmbeddingProvider {
     private static final Logger log = LoggerFactory.getLogger(SpringAiEmbeddingProvider.class);
 
     private final EmbeddingModel embeddingModel;
+    private final int dimension;
 
-    public SpringAiEmbeddingProvider(EmbeddingModel embeddingModel) {
+    public SpringAiEmbeddingProvider(
+        EmbeddingModel embeddingModel,
+        @org.springframework.beans.factory.annotation.Value("${tuluat.rag.embedding-dimension:1536}") int dimension
+    ) {
         this.embeddingModel = embeddingModel;
-        log.info("SpringAiEmbeddingProvider active (model: {})", embeddingModel.getClass().getSimpleName());
+        this.dimension = dimension;
+        log.info("SpringAiEmbeddingProvider active (model: {}, dim: {})", embeddingModel.getClass().getSimpleName(), dimension);
     }
 
     @Override
     public int dimension() {
-        return LocalHashEmbeddingProvider.DIMENSION;
+        return dimension;
     }
 
     @Override

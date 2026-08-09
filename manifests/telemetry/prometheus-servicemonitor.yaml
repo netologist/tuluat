@@ -8,7 +8,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: k8s-crd-ai-operator
+      app: tuluat-operator
   endpoints:
     - port: http
       path: /actuator/prometheus

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tuluat-operator.fullname" . | default "tuluat-operator" }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    app: tuluat-operator
+    app.kubernetes.io/name: tuluat-operator
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.operator.replicaCount }}
+  selector:
+    matchLabels:
+      app: tuluat-operator
+  template:
+    metadata:
+      labels:
+        app: tuluat-operator
+        app.kubernetes.io/name: tuluat-operator
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      containers:
+        - name: operator
+          image: "{{ .Values.operator.image.repository }}:{{ .Values.operator.image.tag }}"
+          imagePullPolicy: {{ .Values.operator.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.operator.service.port }}
+              name: http
+          env:
+            - name: SPRING_THREADS_VIRTUAL_ENABLED
+              value: "{{ .Values.operator.env.springThreadsVirtualEnabled }}"
+            - name: TULUAT_RAG_RETRIEVER
+              value: "{{ .Values.rag.retriever }}"
+            - name: TULUAT_RAG_EMBEDDING_DIMENSION
+              value: "{{ .Values.rag.embeddingDimension }}"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: {{ .Values.operator.service.port }}
+            initialDelaySeconds: {{ .Values.operator.probe.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.operator.probe.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.operator.probe.readiness.failureThreshold }}
+          resources:
+            {{- toYaml .Values.operator.resources | nindent 12 }}
