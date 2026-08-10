@@ -14,22 +14,19 @@ import java.util.Optional;
 @Component
 public class KubernetesProviderResolver implements ProviderResolver {
 
-    private final KubernetesClient client;
+	private final KubernetesClient client;
 
-    public KubernetesProviderResolver(KubernetesClient client) {
-        this.client = client;
-    }
+	public KubernetesProviderResolver(KubernetesClient client) {
+		this.client = client;
+	}
 
-    @Override
-    public Optional<LlmProvider> resolve(String providerName, String namespace) {
-        if (providerName == null || providerName.isBlank()) {
-            return Optional.empty();
-        }
-        String ns = (namespace != null && !namespace.isBlank()) ? namespace : "tuluat-system";
-        LlmProvider provider = client.resources(LlmProvider.class)
-            .inNamespace(ns)
-            .withName(providerName)
-            .get();
-        return Optional.ofNullable(provider);
-    }
+	@Override
+	public Optional<LlmProvider> resolve(String providerName, String namespace) {
+		if (providerName == null || providerName.isBlank()) {
+			return Optional.empty();
+		}
+		String ns = (namespace != null && !namespace.isBlank()) ? namespace : "tuluat-system";
+		LlmProvider provider = client.resources(LlmProvider.class).inNamespace(ns).withName(providerName).get();
+		return Optional.ofNullable(provider);
+	}
 }

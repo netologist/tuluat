@@ -7,8 +7,8 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
     inputs:
-      build_modules:
-        description: 'Build & Test Maven Sub-Modules + Run KinD E2E'
+      build_test:
+        description: 'Build, Spotless Check & Test + Run KinD E2E'
         type: boolean
         default: true
       deploy_docs:
@@ -20,15 +20,13 @@ permissions:
   contents: write
 
 jobs:
-  # ── 1. Detect Changed Maven Modules ───────────────────────────────────────
+  # ── 1. Detect Changes ───────────────────────────────────────────────────────
   detect-changes:
-    name: Detect Changed Sub-Modules
+    name: Detect Changes
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-      has_changes: ${{ steps.set-matrix.outputs.has_changes }}
-      shared_changed: ${{ steps.filter.outputs.shared }}
-      docs_changed: ${{ steps.set-matrix.outputs.docs_changed }}
+      has_changes: ${{ steps.set-output.outputs.has_changes }}
+      docs_changed: ${{ steps.set-output.outputs.docs_changed }}
     steps:
       - uses: actions/checkout@v4
 
@@ -36,8 +34,11 @@ jobs:
         id: filter
         with:
           filters: |
-            shared:
+            code:
               - 'pom.xml'
+              - '**/pom.xml'
+              - 'src/**'
+              - '**/src/**'
               - 'Dockerfile*'
               - 'manifests/**'
               - 'config/**'
@@ -45,74 +46,30 @@ jobs:
             docs:
               - 'docs/**'
               - 'mkdocs.yml'
-            crd-domain:
-              - 'tuluat-crd-domain/**'
-            guardrails:
-              - 'tuluat-guardrails/**'
-            protocols:
-              - 'tuluat-protocols/**'
-            engine:
-              - 'tuluat-engine/**'
-            operator:
-              - 'tuluat-operator/**'
-            app:
-              - 'tuluat-app/**'
 
-      - name: Compute Build Matrix
-        id: set-matrix
+      - name: Compute Build Outputs
+        id: set-output
         run: |
           EVENT_NAME="${{ github.event_name }}"
-          FORCE_MODULES="${{ inputs.build_modules }}"
+          FORCE_BUILD="${{ inputs.build_test }}"
           FORCE_DOCS="${{ inputs.deploy_docs }}"
-          SHARED="${{ steps.filter.outputs.shared }}"
-          CHANGES='${{ steps.filter.outputs.changes }}'
+          CODE_FILTER="${{ steps.filter.outputs.code }}"
           DOCS_FILTER="${{ steps.filter.outputs.docs }}"
-          ALL='["crd-domain","guardrails","protocols","engine","operator","app"]'
 
-          # Manual trigger handling
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            if [ "$FORCE_MODULES" = "true" ]; then
-              echo "matrix=$ALL" >> $GITHUB_OUTPUT
-              echo "has_changes=true" >> $GITHUB_OUTPUT
-            else
-              echo "matrix=[]" >> $GITHUB_OUTPUT
-              echo "has_changes=false" >> $GITHUB_OUTPUT
-            fi
-
-            if [ "$FORCE_DOCS" = "true" ]; then
-              echo "docs_changed=true" >> $GITHUB_OUTPUT
-            else
-              echo "docs_changed=false" >> $GITHUB_OUTPUT
-            fi
-            exit 0
-          fi
-
-          # Automatic trigger handling (Push / Pull Request)
-          echo "docs_changed=$DOCS_FILTER" >> $GITHUB_OUTPUT
-
-          MOD_CHANGES=$(echo "$CHANGES" | jq -c --argjson all "$ALL" '[.[] | select(. as $c | $all | index($c))]')
-
-          if [ "$SHARED" = "true" ]; then
-            echo "matrix=$ALL" >> $GITHUB_OUTPUT
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-          elif [ "$MOD_CHANGES" != "[]" ] && [ -n "$MOD_CHANGES" ]; then
-            echo "matrix=$MOD_CHANGES" >> $GITHUB_OUTPUT
-            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "has_changes=${FORCE_BUILD:-true}" >> $GITHUB_OUTPUT
+            echo "docs_changed=${FORCE_DOCS:-true}" >> $GITHUB_OUTPUT
           else
-            echo "matrix=[]" >> $GITHUB_OUTPUT
-            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "has_changes=${CODE_FILTER}" >> $GITHUB_OUTPUT
+            echo "docs_changed=${DOCS_FILTER}" >> $GITHUB_OUTPUT
           fi
 
-  # ── 2. Fan-Out Matrix: Unit Test Changed Sub-Modules ───────────────────────
-  build-module:
-    name: Unit Test (tuluat-${{ matrix.module }})
+  # ── 2. Spotless Check & Unit Tests ─────────────────────────────────────────
+  build-test:
+    name: Spotless Check & Unit Tests
     needs: detect-changes
     runs-on: ubuntu-latest
     if: needs.detect-changes.outputs.has_changes == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        module: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -124,14 +81,18 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Build & Test Sub-Module
+      - name: Run Spotless Code Format Check
         run: |
-          ./mvnw test -pl tuluat-${{ matrix.module }} -am -Denable-preview
+          ./mvnw spotless:check
 
-  # ── 3. Build & Package Container Image ──────────────────────────────────
+      - name: Run Project Unit Tests
+        run: |
+          ./mvnw test -Denable-preview
+
+  # ── 3. Build & Package Container Image ──────────────────────────────────────
   build-image:
     name: Build & Package Container Image
-    needs: [detect-changes, build-module]
+    needs: [detect-changes, build-test]
     if: needs.detect-changes.outputs.has_changes == 'true' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     steps:
@@ -160,6 +121,7 @@ jobs:
           name: tuluat-operator-container-image
           path: image-dist/*.tar.gz
           if-no-files-found: error
+
   # ── 4. Lint & Package Helm Chart ──────────────────────────────────────────
   package-helm:
     name: Lint & Package Helm Chart
@@ -193,7 +155,7 @@ jobs:
   # ── 5. Push Helm Chart OCI Artifact to GHCR ─────────────────────────────
   publish-helm:
     name: Deploy Helm Chart OCI Artifact to GHCR
-    needs: [detect-changes, build-module, build-image, package-helm]
+    needs: [detect-changes, build-test, build-image, package-helm]
     if: needs.detect-changes.outputs.has_changes == 'true' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     permissions:
@@ -238,7 +200,6 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-
       - name: Set up Helm
         uses: azure/setup-helm@v4
         with:
@@ -253,7 +214,6 @@ jobs:
       - name: Create tuluat-system Namespace
         run: kubectl create namespace tuluat-system --dry-run=client -o yaml | kubectl apply -f -
 
-
       - name: Download Container Image Artifact
         uses: actions/download-artifact@v4
         with:
@@ -264,6 +224,7 @@ jobs:
         run: |
           docker load -i image-dist/tuluat-operator-image.tar.gz
           kind load docker-image tuluat-operator:latest --name tuluat-cluster
+
       - name: Download Helm Chart Artifact
         uses: actions/download-artifact@v4
         with:
@@ -282,7 +243,6 @@ jobs:
             --set samples.install=true \
             --wait --timeout=5m
 
-
       - name: Wait for Operator Pod Readiness
         run: |
           kubectl rollout status deployment/tuluat-operator -n tuluat-system --timeout=120s
@@ -296,6 +256,7 @@ jobs:
           sleep 5
 
           ./scripts/e2e-acceptance-test.sh "http://localhost:${PORT}" "tuluat-system"
+
       - name: Debug Pods on Failure
         if: failure()
         run: |
@@ -337,6 +298,7 @@ jobs:
           NO_MKDOCS_2_WARNING: "1"
         run: |
           mkdocs build --strict
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

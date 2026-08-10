@@ -16,19 +16,19 @@ import static org.mockito.Mockito.when;
 
 class SpringAiEmbeddingProviderTest {
 
-    @Test
-    void embedDelegatesToSpringAiEmbeddingModel() {
-        EmbeddingModel model = mock(EmbeddingModel.class);
-        float[] expectedVector = new float[]{0.1f, 0.2f, 0.3f, 0.4f};
-        Embedding embedding = new Embedding(expectedVector, 0);
-        EmbeddingResponse response = new EmbeddingResponse(List.of(embedding));
+	@Test
+	void embedDelegatesToSpringAiEmbeddingModel() {
+		EmbeddingModel model = mock(EmbeddingModel.class);
+		float[] expectedVector = new float[]{0.1f, 0.2f, 0.3f, 0.4f};
+		Embedding embedding = new Embedding(expectedVector, 0);
+		EmbeddingResponse response = new EmbeddingResponse(List.of(embedding));
 
-        when(model.call(any(EmbeddingRequest.class))).thenReturn(response);
+		when(model.call(any(EmbeddingRequest.class))).thenReturn(response);
 
-        SpringAiEmbeddingProvider provider = new SpringAiEmbeddingProvider(model, 1536);
+		SpringAiEmbeddingProvider provider = new SpringAiEmbeddingProvider(model, 1536);
 
-        assertEquals(1536, provider.dimension());
-        float[] result = provider.embed("test document");
-        assertArrayEquals(expectedVector, result);
-    }
+		assertEquals(1536, provider.dimension());
+		float[] result = provider.embed("test document");
+		assertArrayEquals(expectedVector, result);
+	}
 }

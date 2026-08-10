@@ -12,5 +12,5 @@ import java.util.Optional;
  */
 public interface AgentResolver {
 
-    Optional<AiAgent> resolve(String agentName, String namespace);
+	Optional<AiAgent> resolve(String agentName, String namespace);
 }

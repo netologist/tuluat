@@ -17,53 +17,52 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SkillRegistryTest {
 
-    private SkillRegistry skillRegistry;
+	private SkillRegistry skillRegistry;
 
-    @BeforeEach
-    void setUp() {
-        skillRegistry = new SkillRegistry();
-    }
+	@BeforeEach
+	void setUp() {
+		skillRegistry = new SkillRegistry();
+	}
 
-    @Test
-    @DisplayName("Should register default skills and list available skill names")
-    void testDefaultSkillsRegistration() {
-        var skills = skillRegistry.getAvailableSkillNames();
-        assertTrue(skills.contains("calculator"));
-        assertTrue(skills.contains("web-search"));
-        assertTrue(skills.contains("weather"));
-    }
+	@Test
+	@DisplayName("Should register default skills and list available skill names")
+	void testDefaultSkillsRegistration() {
+		var skills = skillRegistry.getAvailableSkillNames();
+		assertTrue(skills.contains("calculator"));
+		assertTrue(skills.contains("web-search"));
+		assertTrue(skills.contains("weather"));
+	}
 
-    @Test
-    @DisplayName("Should execute enabled skills concurrently on Virtual Threads")
-    void testExecuteActiveSkillsConcurrently() {
-        var skillDefs = List.of(
-            new SkillDefinition("calculator", "Math calculations", true, Map.of()),
-            new SkillDefinition("weather", "Weather forecast", true, Map.of()),
-            new SkillDefinition("web-search", "Search web", false, Map.of()) // Disabled
-        );
+	@Test
+	@DisplayName("Should execute enabled skills concurrently on Virtual Threads")
+	void testExecuteActiveSkillsConcurrently() {
+		var skillDefs = List.of(new SkillDefinition("calculator", "Math calculations", true, Map.of()),
+				new SkillDefinition("weather", "Weather forecast", true, Map.of()),
+				new SkillDefinition("web-search", "Search web", false, Map.of()) // Disabled
+		);
 
-        Map<String, SkillResult> results = skillRegistry.executeActiveSkills(skillDefs, "25 * 4 in Istanbul");
+		Map<String, SkillResult> results = skillRegistry.executeActiveSkills(skillDefs, "25 * 4 in Istanbul");
 
-        assertEquals(2, results.size());
-        assertTrue(results.containsKey("calculator"));
-        assertTrue(results.containsKey("weather"));
-        assertFalse(results.containsKey("web-search"));
+		assertEquals(2, results.size());
+		assertTrue(results.containsKey("calculator"));
+		assertTrue(results.containsKey("weather"));
+		assertFalse(results.containsKey("web-search"));
 
-        SkillResult calcRes = results.get("calculator");
-        assertTrue(calcRes.success());
-        assertTrue(calcRes.output().contains("100"));
+		SkillResult calcRes = results.get("calculator");
+		assertTrue(calcRes.success());
+		assertTrue(calcRes.output().contains("100"));
 
-        SkillResult weatherRes = results.get("weather");
-        assertTrue(weatherRes.success());
-        assertTrue(weatherRes.output().contains("Istanbul"));
-    }
+		SkillResult weatherRes = results.get("weather");
+		assertTrue(weatherRes.success());
+		assertTrue(weatherRes.output().contains("Istanbul"));
+	}
 
-    @Test
-    @DisplayName("Should execute calculator skill correctly with math expression")
-    void testCalculatorSkillDirectExecution() {
-        var calc = new CalculatorSkill();
-        var res = calc.execute("100 / 4", Map.of());
-        assertTrue(res.success());
-        assertTrue(res.output().contains("25.00"));
-    }
+	@Test
+	@DisplayName("Should execute calculator skill correctly with math expression")
+	void testCalculatorSkillDirectExecution() {
+		var calc = new CalculatorSkill();
+		var res = calc.execute("100 / 4", Map.of());
+		assertTrue(res.success());
+		assertTrue(res.output().contains("25.00"));
+	}
 }

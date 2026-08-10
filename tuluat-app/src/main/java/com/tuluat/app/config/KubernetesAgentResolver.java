@@ -14,22 +14,19 @@ import java.util.Optional;
 @Component
 public class KubernetesAgentResolver implements AgentResolver {
 
-    private final KubernetesClient client;
+	private final KubernetesClient client;
 
-    public KubernetesAgentResolver(KubernetesClient client) {
-        this.client = client;
-    }
+	public KubernetesAgentResolver(KubernetesClient client) {
+		this.client = client;
+	}
 
-    @Override
-    public Optional<AiAgent> resolve(String agentName, String namespace) {
-        if (agentName == null || agentName.isBlank()) {
-            return Optional.empty();
-        }
-        String ns = (namespace != null && !namespace.isBlank()) ? namespace : "tuluat-system";
-        AiAgent agent = client.resources(AiAgent.class)
-            .inNamespace(ns)
-            .withName(agentName)
-            .get();
-        return Optional.ofNullable(agent);
-    }
+	@Override
+	public Optional<AiAgent> resolve(String agentName, String namespace) {
+		if (agentName == null || agentName.isBlank()) {
+			return Optional.empty();
+		}
+		String ns = (namespace != null && !namespace.isBlank()) ? namespace : "tuluat-system";
+		AiAgent agent = client.resources(AiAgent.class).inNamespace(ns).withName(agentName).get();
+		return Optional.ofNullable(agent);
+	}
 }

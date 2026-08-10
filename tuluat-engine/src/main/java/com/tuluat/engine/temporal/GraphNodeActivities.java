@@ -10,12 +10,12 @@ import java.util.UUID;
 @ActivityInterface
 public interface GraphNodeActivities {
 
-    @ActivityMethod
-    Map<String, Object> executeAgentNode(UUID sessionId, NodeDefinition node, Map<String, Object> contextData);
+	@ActivityMethod
+	Map<String, Object> executeAgentNode(UUID sessionId, NodeDefinition node, Map<String, Object> contextData);
 
-    @ActivityMethod
-    boolean evaluateConditionNode(UUID sessionId, NodeDefinition node, Map<String, Object> contextData);
+	@ActivityMethod
+	boolean evaluateConditionNode(UUID sessionId, NodeDefinition node, Map<String, Object> contextData);
 
-    @ActivityMethod
-    void recordLog(UUID sessionId, String nodeId, String level, String message);
+	@ActivityMethod
+	void recordLog(UUID sessionId, String nodeId, String level, String message);
 }

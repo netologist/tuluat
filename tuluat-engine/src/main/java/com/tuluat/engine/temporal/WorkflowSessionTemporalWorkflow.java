@@ -11,9 +11,10 @@ import java.util.UUID;
 @WorkflowInterface
 public interface WorkflowSessionTemporalWorkflow {
 
-    @WorkflowMethod
-    Map<String, Object> runSession(UUID sessionId, String workflowName, AiWorkflowSpec spec, String input, int maxLoops);
+	@WorkflowMethod
+	Map<String, Object> runSession(UUID sessionId, String workflowName, AiWorkflowSpec spec, String input,
+			int maxLoops);
 
-    @SignalMethod
-    void signalApproval(ApprovalSignal signal);
+	@SignalMethod
+	void signalApproval(ApprovalSignal signal);
 }

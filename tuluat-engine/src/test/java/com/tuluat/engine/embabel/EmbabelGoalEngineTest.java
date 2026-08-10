@@ -16,36 +16,40 @@ import static org.mockito.Mockito.*;
 
 class EmbabelGoalEngineTest {
 
-    private AgentExecutionService agentExecutionService;
-    private EmbabelGoalEngine goalEngine;
+	private AgentExecutionService agentExecutionService;
+	private EmbabelGoalEngine goalEngine;
 
-    @BeforeEach
-    void setUp() {
-        agentExecutionService = mock(AgentExecutionService.class);
-        goalEngine = new EmbabelGoalEngine(agentExecutionService);
-    }
+	@BeforeEach
+	void setUp() {
+		agentExecutionService = mock(AgentExecutionService.class);
+		goalEngine = new EmbabelGoalEngine(agentExecutionService);
+	}
 
-    @Test
-    @DisplayName("Should sequence actions based on preconditions and achieve goal state")
-    void testExecuteGoalWithActions() {
-        EmbabelGoal goal = new EmbabelGoal("research-goal", "Research and Report", "final_report");
+	@Test
+	@DisplayName("Should sequence actions based on preconditions and achieve goal state")
+	void testExecuteGoalWithActions() {
+		EmbabelGoal goal = new EmbabelGoal("research-goal", "Research and Report", "final_report");
 
-        EmbabelAction action1 = new EmbabelAction("research", "web-researcher-agent", "Research {{input}}", "research_data", List.of());
-        EmbabelAction action2 = new EmbabelAction("report", "report-writer-agent", "Report {{research_data}}", "final_report", List.of("research_data"));
+		EmbabelAction action1 = new EmbabelAction("research", "web-researcher-agent", "Research {{input}}",
+				"research_data", List.of());
+		EmbabelAction action2 = new EmbabelAction("report", "report-writer-agent", "Report {{research_data}}",
+				"final_report", List.of("research_data"));
 
-        when(agentExecutionService.executeAgent(eq("web-researcher-agent"), anyString(), any()))
-                .thenReturn(AgentResponse.create("web-researcher-agent", "model", "OPENAI", "Raw Findings", List.of(), UsageStats.calculate(5, 5, "model", 50L)));
+		when(agentExecutionService.executeAgent(eq("web-researcher-agent"), anyString(), any()))
+				.thenReturn(AgentResponse.create("web-researcher-agent", "model", "OPENAI", "Raw Findings", List.of(),
+						UsageStats.calculate(5, 5, "model", 50L)));
 
-        when(agentExecutionService.executeAgent(eq("report-writer-agent"), anyString(), any()))
-                .thenReturn(AgentResponse.create("report-writer-agent", "model", "OPENAI", "Formatted Executive Report", List.of(), UsageStats.calculate(5, 5, "model", 50L)));
+		when(agentExecutionService.executeAgent(eq("report-writer-agent"), anyString(), any()))
+				.thenReturn(AgentResponse.create("report-writer-agent", "model", "OPENAI", "Formatted Executive Report",
+						List.of(), UsageStats.calculate(5, 5, "model", 50L)));
 
-        EmbabelBlackboard blackboard = new EmbabelBlackboard(Map.of("input", "Kubernetes AI"));
-        blackboard = goalEngine.executeGoal(goal, List.of(action1, action2), blackboard);
+		EmbabelBlackboard blackboard = new EmbabelBlackboard(Map.of("input", "Kubernetes AI"));
+		blackboard = goalEngine.executeGoal(goal, List.of(action1, action2), blackboard);
 
-        assertTrue(blackboard.has("research_data"));
-        assertTrue(blackboard.has("final_report"));
-        assertEquals("Formatted Executive Report", blackboard.get("final_report"));
+		assertTrue(blackboard.has("research_data"));
+		assertTrue(blackboard.has("final_report"));
+		assertEquals("Formatted Executive Report", blackboard.get("final_report"));
 
-        verify(agentExecutionService, times(2)).executeAgent(anyString(), anyString(), any());
-    }
+		verify(agentExecutionService, times(2)).executeAgent(anyString(), anyString(), any());
+	}
 }

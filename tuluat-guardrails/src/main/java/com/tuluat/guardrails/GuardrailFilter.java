@@ -9,8 +9,8 @@ import com.tuluat.crd.agent.GuardrailsConfig;
  */
 public interface GuardrailFilter {
 
-    /**
-     * Unique, stable filter name (used in logs, metrics, and results).
-     */
-    String getFilterName();
+	/**
+	 * Unique, stable filter name (used in logs, metrics, and results).
+	 */
+	String getFilterName();
 }

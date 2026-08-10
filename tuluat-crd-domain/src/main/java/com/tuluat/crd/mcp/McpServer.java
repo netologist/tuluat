@@ -9,7 +9,8 @@ import io.fabric8.kubernetes.model.annotation.ShortNames;
 import io.fabric8.kubernetes.model.annotation.Version;
 
 /**
- * McpServer Custom Resource: external Model Context Protocol server registration.
+ * McpServer Custom Resource: external Model Context Protocol server
+ * registration.
  */
 @Group("ai.tuluat.com")
 @Version("v1alpha1")

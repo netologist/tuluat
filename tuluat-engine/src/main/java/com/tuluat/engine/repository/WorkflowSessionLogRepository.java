@@ -9,5 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface WorkflowSessionLogRepository extends JpaRepository<WorkflowSessionLogEntity, Long> {
-    List<WorkflowSessionLogEntity> findBySessionIdOrderByCreatedAtAsc(UUID sessionId);
+	List<WorkflowSessionLogEntity> findBySessionIdOrderByCreatedAtAsc(UUID sessionId);
 }

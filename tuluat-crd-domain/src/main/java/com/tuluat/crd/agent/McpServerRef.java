@@ -7,8 +7,5 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * Reference to an McpServer resource (mirrors {@link ProviderRef}).
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record McpServerRef(
-    @JsonProperty("name") String name,
-    @JsonProperty("namespace") String namespace
-) {
+public record McpServerRef(@JsonProperty("name") String name, @JsonProperty("namespace") String namespace) {
 }

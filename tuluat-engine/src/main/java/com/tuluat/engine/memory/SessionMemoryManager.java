@@ -11,29 +11,29 @@ import java.util.UUID;
 @Service
 public class SessionMemoryManager {
 
-    private final SessionShortMemoryRepository shortMemoryRepository;
+	private final SessionShortMemoryRepository shortMemoryRepository;
 
-    public SessionMemoryManager(SessionShortMemoryRepository shortMemoryRepository) {
-        this.shortMemoryRepository = shortMemoryRepository;
-    }
+	public SessionMemoryManager(SessionShortMemoryRepository shortMemoryRepository) {
+		this.shortMemoryRepository = shortMemoryRepository;
+	}
 
-    @Transactional
-    public SessionShortMemoryEntity saveShortMemory(UUID sessionId, String agentName, String role, String content) {
-        SessionShortMemoryEntity entity = new SessionShortMemoryEntity();
-        entity.setSessionId(sessionId);
-        entity.setAgentName(agentName);
-        entity.setRole(role);
-        entity.setContent(content);
-        return shortMemoryRepository.save(entity);
-    }
+	@Transactional
+	public SessionShortMemoryEntity saveShortMemory(UUID sessionId, String agentName, String role, String content) {
+		SessionShortMemoryEntity entity = new SessionShortMemoryEntity();
+		entity.setSessionId(sessionId);
+		entity.setAgentName(agentName);
+		entity.setRole(role);
+		entity.setContent(content);
+		return shortMemoryRepository.save(entity);
+	}
 
-    @Transactional(readOnly = true)
-    public List<SessionShortMemoryEntity> getShortMemory(UUID sessionId) {
-        return shortMemoryRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
-    }
+	@Transactional(readOnly = true)
+	public List<SessionShortMemoryEntity> getShortMemory(UUID sessionId) {
+		return shortMemoryRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
+	}
 
-    @Transactional
-    public void clearShortMemory(UUID sessionId) {
-        shortMemoryRepository.deleteBySessionId(sessionId);
-    }
+	@Transactional
+	public void clearShortMemory(UUID sessionId) {
+		shortMemoryRepository.deleteBySessionId(sessionId);
+	}
 }

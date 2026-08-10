@@ -20,98 +20,101 @@ import java.util.UUID;
 @Component
 public class GraphNodeActivitiesImpl implements GraphNodeActivities {
 
-    private static final Logger log = LoggerFactory.getLogger(GraphNodeActivitiesImpl.class);
-    private final AgentExecutionService agentExecutionService;
-    private final WorkflowSessionLogRepository logRepository;
-    private final WorkflowTelemetryService telemetryService;
-    private final com.tuluat.guardrails.GuardrailPipeline guardrailPipeline;
-    private final ExpressionParser parser = new SpelExpressionParser();
+	private static final Logger log = LoggerFactory.getLogger(GraphNodeActivitiesImpl.class);
+	private final AgentExecutionService agentExecutionService;
+	private final WorkflowSessionLogRepository logRepository;
+	private final WorkflowTelemetryService telemetryService;
+	private final com.tuluat.guardrails.GuardrailPipeline guardrailPipeline;
+	private final ExpressionParser parser = new SpelExpressionParser();
 
-    @Autowired
-    public GraphNodeActivitiesImpl(AgentExecutionService agentExecutionService,
-                                  @Autowired(required = false) WorkflowSessionLogRepository logRepository,
-                                  @Autowired(required = false) WorkflowTelemetryService telemetryService,
-                                  @Autowired(required = false) com.tuluat.guardrails.GuardrailPipeline guardrailPipeline) {
-        this.agentExecutionService = agentExecutionService;
-        this.logRepository = logRepository;
-        this.telemetryService = telemetryService;
-        this.guardrailPipeline = guardrailPipeline;
-    }
+	@Autowired
+	public GraphNodeActivitiesImpl(AgentExecutionService agentExecutionService,
+			@Autowired(required = false) WorkflowSessionLogRepository logRepository,
+			@Autowired(required = false) WorkflowTelemetryService telemetryService,
+			@Autowired(required = false) com.tuluat.guardrails.GuardrailPipeline guardrailPipeline) {
+		this.agentExecutionService = agentExecutionService;
+		this.logRepository = logRepository;
+		this.telemetryService = telemetryService;
+		this.guardrailPipeline = guardrailPipeline;
+	}
 
-    @Override
-    public Map<String, Object> executeAgentNode(UUID sessionId, NodeDefinition node, Map<String, Object> contextData) {
-        log.info("Temporal Activity: Executing Agent Node '{}' for session {}", node.getId(), sessionId);
-        recordLog(sessionId, node.getId(), "INFO", "Executing Agent Node: " + node.getId());
+	@Override
+	public Map<String, Object> executeAgentNode(UUID sessionId, NodeDefinition node, Map<String, Object> contextData) {
+		log.info("Temporal Activity: Executing Agent Node '{}' for session {}", node.getId(), sessionId);
+		recordLog(sessionId, node.getId(), "INFO", "Executing Agent Node: " + node.getId());
 
-        String prompt = resolvePromptTemplate(node.getInputTemplate(), contextData);
-        AgentResponse response = agentExecutionService.executeAgent(node.getAgentRef(), prompt, null);
+		String prompt = resolvePromptTemplate(node.getInputTemplate(), contextData);
+		AgentResponse response = agentExecutionService.executeAgent(node.getAgentRef(), prompt, null);
 
-        contextData.put(node.getOutputKey(), response.answer());
+		contextData.put(node.getOutputKey(), response.answer());
 
-        // Post-execution JSON Schema validation (ADR 004 / 007); failure fails the activity
-        if (guardrailPipeline != null && node.getOutputSchema() != null && !node.getOutputSchema().isBlank()) {
-            com.tuluat.guardrails.ValidationResult vr =
-                guardrailPipeline.validateOutput(response.answer(), null, node.getOutputSchema());
-            if (!vr.valid()) {
-                String errMsg = String.format(
-                    "Temporal node '%s' output failed schema validation (confidence=%.2f): %s",
-                    node.getId(), vr.confidence(), vr.errors());
-                log.error(errMsg);
-                recordLog(sessionId, node.getId(), "ERROR", errMsg);
-                throw new IllegalStateException(errMsg);
-            }
-            recordLog(sessionId, node.getId(), "INFO",
-                "Temporal node '" + node.getId() + "' output passed schema validation");
-        }
+		// Post-execution JSON Schema validation (ADR 004 / 007); failure fails the
+		// activity
+		if (guardrailPipeline != null && node.getOutputSchema() != null && !node.getOutputSchema().isBlank()) {
+			com.tuluat.guardrails.ValidationResult vr = guardrailPipeline.validateOutput(response.answer(), null,
+					node.getOutputSchema());
+			if (!vr.valid()) {
+				String errMsg = String.format(
+						"Temporal node '%s' output failed schema validation (confidence=%.2f): %s", node.getId(),
+						vr.confidence(), vr.errors());
+				log.error(errMsg);
+				recordLog(sessionId, node.getId(), "ERROR", errMsg);
+				throw new IllegalStateException(errMsg);
+			}
+			recordLog(sessionId, node.getId(), "INFO",
+					"Temporal node '" + node.getId() + "' output passed schema validation");
+		}
 
-        if (telemetryService != null) {
-            telemetryService.recordNodeExecuted("temporal-workflow", "AGENT", node.getId());
-        }
+		if (telemetryService != null) {
+			telemetryService.recordNodeExecuted("temporal-workflow", "AGENT", node.getId());
+		}
 
-        return contextData;
-    }
+		return contextData;
+	}
 
-    @Override
-    public boolean evaluateConditionNode(UUID sessionId, NodeDefinition node, Map<String, Object> contextData) {
-        log.info("Temporal Activity: Evaluating Condition Node '{}' for session {}", node.getId(), sessionId);
-        if (node.getExpression() == null || node.getExpression().isBlank()) return true;
+	@Override
+	public boolean evaluateConditionNode(UUID sessionId, NodeDefinition node, Map<String, Object> contextData) {
+		log.info("Temporal Activity: Evaluating Condition Node '{}' for session {}", node.getId(), sessionId);
+		if (node.getExpression() == null || node.getExpression().isBlank())
+			return true;
 
-        StandardEvaluationContext evalContext = new StandardEvaluationContext();
-        evalContext.setVariable("data", contextData);
-        Boolean result = parser.parseExpression(node.getExpression()).getValue(evalContext, Boolean.class);
-        boolean eval = Boolean.TRUE.equals(result);
+		StandardEvaluationContext evalContext = new StandardEvaluationContext();
+		evalContext.setVariable("data", contextData);
+		Boolean result = parser.parseExpression(node.getExpression()).getValue(evalContext, Boolean.class);
+		boolean eval = Boolean.TRUE.equals(result);
 
-        recordLog(sessionId, node.getId(), "INFO", "Condition expression evaluated to: " + eval);
+		recordLog(sessionId, node.getId(), "INFO", "Condition expression evaluated to: " + eval);
 
-        if (telemetryService != null) {
-            telemetryService.recordNodeExecuted("temporal-workflow", "CONDITION", node.getId());
-        }
+		if (telemetryService != null) {
+			telemetryService.recordNodeExecuted("temporal-workflow", "CONDITION", node.getId());
+		}
 
-        return eval;
-    }
+		return eval;
+	}
 
-    @Override
-    public void recordLog(UUID sessionId, String nodeId, String level, String message) {
-        if (logRepository != null && sessionId != null) {
-            try {
-                WorkflowSessionLogEntity entity = new WorkflowSessionLogEntity();
-                entity.setSessionId(sessionId);
-                entity.setNodeId(nodeId);
-                entity.setLogLevel(level);
-                entity.setMessage(message);
-                logRepository.save(entity);
-            } catch (Exception e) {
-                log.warn("Failed to record Temporal session log: {}", e.getMessage());
-            }
-        }
-    }
+	@Override
+	public void recordLog(UUID sessionId, String nodeId, String level, String message) {
+		if (logRepository != null && sessionId != null) {
+			try {
+				WorkflowSessionLogEntity entity = new WorkflowSessionLogEntity();
+				entity.setSessionId(sessionId);
+				entity.setNodeId(nodeId);
+				entity.setLogLevel(level);
+				entity.setMessage(message);
+				logRepository.save(entity);
+			} catch (Exception e) {
+				log.warn("Failed to record Temporal session log: {}", e.getMessage());
+			}
+		}
+	}
 
-    private String resolvePromptTemplate(String template, Map<String, Object> contextData) {
-        if (template == null) return "";
-        String result = template;
-        for (Map.Entry<String, Object> entry : contextData.entrySet()) {
-            result = result.replace("{{" + entry.getKey() + "}}", String.valueOf(entry.getValue()));
-        }
-        return result;
-    }
+	private String resolvePromptTemplate(String template, Map<String, Object> contextData) {
+		if (template == null)
+			return "";
+		String result = template;
+		for (Map.Entry<String, Object> entry : contextData.entrySet()) {
+			result = result.replace("{{" + entry.getKey() + "}}", String.valueOf(entry.getValue()));
+		}
+		return result;
+	}
 }

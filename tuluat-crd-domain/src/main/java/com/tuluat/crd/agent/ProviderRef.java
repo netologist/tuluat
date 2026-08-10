@@ -7,8 +7,5 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * Reference to an LlmProvider resource.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record ProviderRef(
-    @JsonProperty("name") String name,
-    @JsonProperty("namespace") String namespace
-) {
+public record ProviderRef(@JsonProperty("name") String name, @JsonProperty("namespace") String namespace) {
 }

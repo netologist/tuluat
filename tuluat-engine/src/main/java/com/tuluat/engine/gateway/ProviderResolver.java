@@ -10,5 +10,5 @@ import java.util.Optional;
  */
 public interface ProviderResolver {
 
-    Optional<LlmProvider> resolve(String providerName, String namespace);
+	Optional<LlmProvider> resolve(String providerName, String namespace);
 }

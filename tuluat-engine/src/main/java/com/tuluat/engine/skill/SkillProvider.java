@@ -9,13 +9,13 @@ import java.util.List;
  */
 public interface SkillProvider {
 
-    /**
-     * Unique provider identifier (e.g. "builtin", "external-db").
-     */
-    String providerName();
+	/**
+	 * Unique provider identifier (e.g. "builtin", "external-db").
+	 */
+	String providerName();
 
-    /**
-     * Skills contributed by this provider.
-     */
-    List<Skill> provideSkills();
+	/**
+	 * Skills contributed by this provider.
+	 */
+	List<Skill> provideSkills();
 }

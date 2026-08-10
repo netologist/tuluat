@@ -8,13 +8,17 @@ import com.tuluat.crd.agent.GuardrailsConfig;
  */
 public interface PostExecutionFilter extends GuardrailFilter {
 
-    /**
-     * Validate the model output.
-     *
-     * @param output       raw model output
-     * @param config       the agent's guardrails policy
-     * @param outputSchema JSON Schema (as string) the output must satisfy, or null to skip schema validation
-     * @return validation result
-     */
-    ValidationResult validate(String output, GuardrailsConfig config, String outputSchema);
+	/**
+	 * Validate the model output.
+	 *
+	 * @param output
+	 *            raw model output
+	 * @param config
+	 *            the agent's guardrails policy
+	 * @param outputSchema
+	 *            JSON Schema (as string) the output must satisfy, or null to skip
+	 *            schema validation
+	 * @return validation result
+	 */
+	ValidationResult validate(String output, GuardrailsConfig config, String outputSchema);
 }

@@ -15,47 +15,41 @@ import org.springframework.stereotype.Component;
 @Component
 public class WorkflowSessionReconciler implements Reconciler<WorkflowSession> {
 
-    private static final Logger log = LoggerFactory.getLogger(WorkflowSessionReconciler.class);
-    private final WorkflowExecutionService executionService;
-    private final KubernetesClient kubernetesClient;
+	private static final Logger log = LoggerFactory.getLogger(WorkflowSessionReconciler.class);
+	private final WorkflowExecutionService executionService;
+	private final KubernetesClient kubernetesClient;
 
-    public WorkflowSessionReconciler(WorkflowExecutionService executionService, KubernetesClient kubernetesClient) {
-        this.executionService = executionService;
-        this.kubernetesClient = kubernetesClient;
-    }
+	public WorkflowSessionReconciler(WorkflowExecutionService executionService, KubernetesClient kubernetesClient) {
+		this.executionService = executionService;
+		this.kubernetesClient = kubernetesClient;
+	}
 
-    @Override
-    public UpdateControl<WorkflowSession> reconcile(WorkflowSession resource, Context<WorkflowSession> context) {
-        log.info("Reconciling WorkflowSession: {}", resource.getMetadata().getName());
+	@Override
+	public UpdateControl<WorkflowSession> reconcile(WorkflowSession resource, Context<WorkflowSession> context) {
+		log.info("Reconciling WorkflowSession: {}", resource.getMetadata().getName());
 
-        WorkflowSessionStatus status = resource.getStatus();
-        if (status == null) {
-            status = new WorkflowSessionStatus();
-            resource.setStatus(status);
-        }
+		WorkflowSessionStatus status = resource.getStatus();
+		if (status == null) {
+			status = new WorkflowSessionStatus();
+			resource.setStatus(status);
+		}
 
-        if ("PENDING".equalsIgnoreCase(status.getPhase()) || status.getPhase() == null) {
-            String workflowName = resource.getSpec().getWorkflowRef();
-            AiWorkflow workflow = kubernetesClient.resources(AiWorkflow.class)
-                    .inNamespace(resource.getMetadata().getNamespace())
-                    .withName(workflowName)
-                    .get();
+		if ("PENDING".equalsIgnoreCase(status.getPhase()) || status.getPhase() == null) {
+			String workflowName = resource.getSpec().getWorkflowRef();
+			AiWorkflow workflow = kubernetesClient.resources(AiWorkflow.class)
+					.inNamespace(resource.getMetadata().getNamespace()).withName(workflowName).get();
 
-            if (workflow != null) {
-                WorkflowSessionEntity entity = executionService.startSession(
-                        workflowName,
-                        workflow.getSpec(),
-                        resource.getSpec().getInput(),
-                        10
-                );
+			if (workflow != null) {
+				WorkflowSessionEntity entity = executionService.startSession(workflowName, workflow.getSpec(),
+						resource.getSpec().getInput(), 10);
 
-                status.setSessionId(entity.getSessionId().toString());
-                status.setPhase(entity.getStatus());
-                status.setCurrentNode(entity.getCurrentNodeId());
-                return UpdateControl.patchStatus(resource);
-            }
-        }
+				status.setSessionId(entity.getSessionId().toString());
+				status.setPhase(entity.getStatus());
+				status.setCurrentNode(entity.getCurrentNodeId());
+				return UpdateControl.patchStatus(resource);
+			}
+		}
 
-        return UpdateControl.noUpdate();
-    }
+		return UpdateControl.noUpdate();
+	}
 }

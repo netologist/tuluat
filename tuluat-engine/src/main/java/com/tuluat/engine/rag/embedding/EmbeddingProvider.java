@@ -6,13 +6,13 @@ package com.tuluat.engine.rag.embedding;
  */
 public interface EmbeddingProvider {
 
-    /**
-     * @return vector dimension (must match DB column, e.g. 1536)
-     */
-    int dimension();
+	/**
+	 * @return vector dimension (must match DB column, e.g. 1536)
+	 */
+	int dimension();
 
-    /**
-     * Embed a text into a normalized vector.
-     */
-    float[] embed(String text);
+	/**
+	 * Embed a text into a normalized vector.
+	 */
+	float[] embed(String text);
 }

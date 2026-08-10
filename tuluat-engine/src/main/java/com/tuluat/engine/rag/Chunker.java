@@ -7,5 +7,5 @@ import java.util.List;
  */
 public interface Chunker {
 
-    List<TextChunk> chunk(String content, String sourceRef, ChunkConfig config);
+	List<TextChunk> chunk(String content, String sourceRef, ChunkConfig config);
 }

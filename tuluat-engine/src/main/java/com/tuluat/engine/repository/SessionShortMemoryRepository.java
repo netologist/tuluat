@@ -9,6 +9,6 @@ import java.util.UUID;
 
 @Repository
 public interface SessionShortMemoryRepository extends JpaRepository<SessionShortMemoryEntity, Long> {
-    List<SessionShortMemoryEntity> findBySessionIdOrderByCreatedAtAsc(UUID sessionId);
-    void deleteBySessionId(UUID sessionId);
+	List<SessionShortMemoryEntity> findBySessionIdOrderByCreatedAtAsc(UUID sessionId);
+	void deleteBySessionId(UUID sessionId);
 }

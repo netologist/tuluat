@@ -5,14 +5,14 @@ package com.tuluat.guardrails;
  */
 public class GuardrailBlockedException extends RuntimeException {
 
-    private final String filterName;
+	private final String filterName;
 
-    public GuardrailBlockedException(String filterName, String reason) {
-        super("Guardrail [" + filterName + "] blocked request: " + reason);
-        this.filterName = filterName;
-    }
+	public GuardrailBlockedException(String filterName, String reason) {
+		super("Guardrail [" + filterName + "] blocked request: " + reason);
+		this.filterName = filterName;
+	}
 
-    public String getFilterName() {
-        return filterName;
-    }
+	public String getFilterName() {
+		return filterName;
+	}
 }

@@ -11,21 +11,23 @@ import org.springframework.stereotype.Component;
 @Component
 public class AiWorkflowReconciler implements Reconciler<AiWorkflow> {
 
-    private static final Logger log = LoggerFactory.getLogger(AiWorkflowReconciler.class);
+	private static final Logger log = LoggerFactory.getLogger(AiWorkflowReconciler.class);
 
-    @Override
-    public UpdateControl<AiWorkflow> reconcile(AiWorkflow resource, Context<AiWorkflow> context) {
-        log.info("Reconciling AiWorkflow: {}", resource.getMetadata().getName());
+	@Override
+	public UpdateControl<AiWorkflow> reconcile(AiWorkflow resource, Context<AiWorkflow> context) {
+		log.info("Reconciling AiWorkflow: {}", resource.getMetadata().getName());
 
-        AiWorkflowStatus status = resource.getStatus();
-        if (status == null) {
-            status = new AiWorkflowStatus();
-        }
+		AiWorkflowStatus status = resource.getStatus();
+		if (status == null) {
+			status = new AiWorkflowStatus();
+		}
 
-        status.setState("Ready");
-        status.setNodeCount(resource.getSpec() != null && resource.getSpec().getNodes() != null ? resource.getSpec().getNodes().size() : 0);
-        resource.setStatus(status);
+		status.setState("Ready");
+		status.setNodeCount(resource.getSpec() != null && resource.getSpec().getNodes() != null
+				? resource.getSpec().getNodes().size()
+				: 0);
+		resource.setStatus(status);
 
-        return UpdateControl.patchStatus(resource);
-    }
+		return UpdateControl.patchStatus(resource);
+	}
 }

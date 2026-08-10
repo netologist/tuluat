@@ -17,40 +17,37 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class TemporalConfig {
 
-    private static final Logger log = LoggerFactory.getLogger(TemporalConfig.class);
+	private static final Logger log = LoggerFactory.getLogger(TemporalConfig.class);
 
-    @Value("${spring.temporal.target:temporal-service:7233}")
-    private String temporalTarget;
+	@Value("${spring.temporal.target:temporal-service:7233}")
+	private String temporalTarget;
 
-    public static final String TASK_QUEUE = "AI_WORKFLOW_TASK_QUEUE";
+	public static final String TASK_QUEUE = "AI_WORKFLOW_TASK_QUEUE";
 
-    @Bean
-    public WorkflowServiceStubs workflowServiceStubs() {
-        log.info("Connecting Temporal WorkflowServiceStubs to target: {}", temporalTarget);
-        WorkflowServiceStubsOptions options = WorkflowServiceStubsOptions.newBuilder()
-                .setTarget(temporalTarget)
-                .build();
-        return WorkflowServiceStubs.newServiceStubs(options);
-    }
+	@Bean
+	public WorkflowServiceStubs workflowServiceStubs() {
+		log.info("Connecting Temporal WorkflowServiceStubs to target: {}", temporalTarget);
+		WorkflowServiceStubsOptions options = WorkflowServiceStubsOptions.newBuilder().setTarget(temporalTarget)
+				.build();
+		return WorkflowServiceStubs.newServiceStubs(options);
+	}
 
-    @Bean
-    public WorkflowClient workflowClient(WorkflowServiceStubs serviceStubs) {
-        WorkflowClientOptions options = WorkflowClientOptions.newBuilder()
-                .setNamespace("default")
-                .build();
-        return WorkflowClient.newInstance(serviceStubs, options);
-    }
+	@Bean
+	public WorkflowClient workflowClient(WorkflowServiceStubs serviceStubs) {
+		WorkflowClientOptions options = WorkflowClientOptions.newBuilder().setNamespace("default").build();
+		return WorkflowClient.newInstance(serviceStubs, options);
+	}
 
-    @Bean
-    public WorkerFactory workerFactory(WorkflowClient workflowClient, GraphNodeActivitiesImpl activities) {
-        WorkerFactory factory = WorkerFactory.newInstance(workflowClient);
-        Worker worker = factory.newWorker(TASK_QUEUE);
+	@Bean
+	public WorkerFactory workerFactory(WorkflowClient workflowClient, GraphNodeActivitiesImpl activities) {
+		WorkerFactory factory = WorkerFactory.newInstance(workflowClient);
+		Worker worker = factory.newWorker(TASK_QUEUE);
 
-        worker.registerWorkflowImplementationTypes(WorkflowSessionTemporalWorkflowImpl.class);
-        worker.registerActivitiesImplementations(activities);
+		worker.registerWorkflowImplementationTypes(WorkflowSessionTemporalWorkflowImpl.class);
+		worker.registerActivitiesImplementations(activities);
 
-        factory.start();
-        log.info("Temporal WorkerFactory started listening on task queue: {}", TASK_QUEUE);
-        return factory;
-    }
+		factory.start();
+		log.info("Temporal WorkerFactory started listening on task queue: {}", TASK_QUEUE);
+		return factory;
+	}
 }

@@ -15,41 +15,41 @@ import static org.mockito.Mockito.*;
 
 class WorkflowExecutionServiceTest {
 
-    private WorkflowSessionRepository sessionRepository;
-    private GraphStateMachineEngine engine;
-    private WorkflowExecutionService service;
+	private WorkflowSessionRepository sessionRepository;
+	private GraphStateMachineEngine engine;
+	private WorkflowExecutionService service;
 
-    @BeforeEach
-    void setUp() {
-        sessionRepository = mock(WorkflowSessionRepository.class);
-        engine = mock(GraphStateMachineEngine.class);
-        service = new WorkflowExecutionService(sessionRepository, engine);
+	@BeforeEach
+	void setUp() {
+		sessionRepository = mock(WorkflowSessionRepository.class);
+		engine = mock(GraphStateMachineEngine.class);
+		service = new WorkflowExecutionService(sessionRepository, engine);
 
-        when(sessionRepository.save(any(WorkflowSessionEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
-    }
+		when(sessionRepository.save(any(WorkflowSessionEntity.class)))
+				.thenAnswer(invocation -> invocation.getArgument(0));
+	}
 
-    @Test
-    @DisplayName("Should initialize and execute session through engine until COMPLETED")
-    void testStartSessionSuccess() {
-        AiWorkflowSpec spec = new AiWorkflowSpec();
-        spec.setInitialNode("node-1");
+	@Test
+	@DisplayName("Should initialize and execute session through engine until COMPLETED")
+	void testStartSessionSuccess() {
+		AiWorkflowSpec spec = new AiWorkflowSpec();
+		spec.setInitialNode("node-1");
 
-        when(engine.executeNextStep(eq(spec), any(WorkflowSessionEntity.class), eq(5)))
-                .thenAnswer(invocation -> {
-                    WorkflowSessionEntity session = invocation.getArgument(1);
-                    session.setStatus("COMPLETED");
-                    session.setCurrentNodeId("node-2");
-                    return session;
-                });
+		when(engine.executeNextStep(eq(spec), any(WorkflowSessionEntity.class), eq(5))).thenAnswer(invocation -> {
+			WorkflowSessionEntity session = invocation.getArgument(1);
+			session.setStatus("COMPLETED");
+			session.setCurrentNodeId("node-2");
+			return session;
+		});
 
-        WorkflowSessionEntity result = service.startSession("test-workflow", spec, "test input", 5);
+		WorkflowSessionEntity result = service.startSession("test-workflow", spec, "test input", 5);
 
-        assertNotNull(result);
-        assertEquals("test-workflow", result.getWorkflowName());
-        assertEquals("COMPLETED", result.getStatus());
-        assertEquals("node-2", result.getCurrentNodeId());
+		assertNotNull(result);
+		assertEquals("test-workflow", result.getWorkflowName());
+		assertEquals("COMPLETED", result.getStatus());
+		assertEquals("node-2", result.getCurrentNodeId());
 
-        verify(sessionRepository, atLeastOnce()).save(any(WorkflowSessionEntity.class));
-        verify(engine, times(1)).executeNextStep(eq(spec), any(WorkflowSessionEntity.class), eq(5));
-    }
+		verify(sessionRepository, atLeastOnce()).save(any(WorkflowSessionEntity.class));
+		verify(engine, times(1)).executeNextStep(eq(spec), any(WorkflowSessionEntity.class), eq(5));
+	}
 }

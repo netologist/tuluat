@@ -26,54 +26,45 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RagIntegrationTest {
 
-    @TempDir
-    Path tempDir;
+	@TempDir
+	Path tempDir;
 
-    private RagService ragService;
-    private AgentExecutionService agentExecutionService;
+	private RagService ragService;
+	private AgentExecutionService agentExecutionService;
 
-    @BeforeEach
-    void setUp() {
-        LocalHashEmbeddingProvider embeddings = new LocalHashEmbeddingProvider();
-        InMemoryRetriever retriever = new InMemoryRetriever();
-        LocalObjectStorage storage = new LocalObjectStorage(tempDir.toString());
-        ragService = new RagService(new RecursiveCharacterChunker(), embeddings, retriever, storage);
+	@BeforeEach
+	void setUp() {
+		LocalHashEmbeddingProvider embeddings = new LocalHashEmbeddingProvider();
+		InMemoryRetriever retriever = new InMemoryRetriever();
+		LocalObjectStorage storage = new LocalObjectStorage(tempDir.toString());
+		ragService = new RagService(new RecursiveCharacterChunker(), embeddings, retriever, storage);
 
-        agentExecutionService = new AgentExecutionService(
-            new SkillRegistry(),
-            null, // simulated execution
-            new GuardrailPipeline(List.of(), List.of()),
-            null,
-            null,
-            null,
-            ragService
-        );
-    }
+		agentExecutionService = new AgentExecutionService(new SkillRegistry(), null, // simulated execution
+				new GuardrailPipeline(List.of(), List.of()), null, null, null, ragService);
+	}
 
-    @Test
-    void processAgentPromptInjectsRagContextWhenRelevantDocsExist() {
-        // Ingest domain context into RAG
-        ragService.ingest("kb/k8s-crd", "Kubernetes CRDs allow extending the Kubernetes API with custom resources.");
+	@Test
+	void processAgentPromptInjectsRagContextWhenRelevantDocsExist() {
+		// Ingest domain context into RAG
+		ragService.ingest("kb/k8s-crd", "Kubernetes CRDs allow extending the Kubernetes API with custom resources.");
 
-        var agent = new AiAgent();
-        agent.setMetadata(new ObjectMetaBuilder().withName("rag-agent").withNamespace("default").build());
-        agent.setSpec(new AiAgentSpec(
-            new ProviderRef("openai-provider", "default"),
-            "gpt-4o",
-            "You are a Kubernetes expert.",
-            "Default prompt",
-            List.of(), List.of(), List.of(), null, null, null, 1
-        ));
+		var agent = new AiAgent();
+		agent.setMetadata(new ObjectMetaBuilder().withName("rag-agent").withNamespace("default").build());
+		agent.setSpec(
+				new AiAgentSpec(new ProviderRef("openai-provider", "default"), "gpt-4o", "You are a Kubernetes expert.",
+						"Default prompt", List.of(), List.of(), List.of(), null, null, null, 1));
 
-        var provider = new LlmProvider();
-        provider.setMetadata(new ObjectMetaBuilder().withName("openai-provider").withNamespace("default").build());
-        provider.setSpec(new LlmProviderSpec("OPENAI", "https://api.openai.com/v1", null, "gpt-4o", 0.7, 2048, 0.0, 0.0, List.of()));
+		var provider = new LlmProvider();
+		provider.setMetadata(new ObjectMetaBuilder().withName("openai-provider").withNamespace("default").build());
+		provider.setSpec(new LlmProviderSpec("OPENAI", "https://api.openai.com/v1", null, "gpt-4o", 0.7, 2048, 0.0, 0.0,
+				List.of()));
 
-        AgentResponse response = agentExecutionService.processAgentPrompt(agent, provider, "Explain custom resources in Kubernetes API");
+		AgentResponse response = agentExecutionService.processAgentPrompt(agent, provider,
+				"Explain custom resources in Kubernetes API");
 
-        assertNotNull(response);
-        assertTrue(response.systemPrompt().contains("Relevant Document Context (RAG):"));
-        assertTrue(response.systemPrompt().contains("kb/k8s-crd"));
-        assertTrue(response.systemPrompt().contains("Kubernetes CRDs allow extending"));
-    }
+		assertNotNull(response);
+		assertTrue(response.systemPrompt().contains("Relevant Document Context (RAG):"));
+		assertTrue(response.systemPrompt().contains("kb/k8s-crd"));
+		assertTrue(response.systemPrompt().contains("Kubernetes CRDs allow extending"));
+	}
 }

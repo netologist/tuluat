@@ -9,17 +9,19 @@ import java.util.List;
  */
 public interface Retriever {
 
-    /**
-     * Retrieve chunks most similar to the given query embedding.
-     *
-     * @param queryEmbedding query vector (must match provider dimension)
-     * @param topK           max number of chunks to return
-     * @return chunks ordered by descending similarity
-     */
-    List<RetrievedChunk> retrieve(float[] queryEmbedding, int topK);
+	/**
+	 * Retrieve chunks most similar to the given query embedding.
+	 *
+	 * @param queryEmbedding
+	 *            query vector (must match provider dimension)
+	 * @param topK
+	 *            max number of chunks to return
+	 * @return chunks ordered by descending similarity
+	 */
+	List<RetrievedChunk> retrieve(float[] queryEmbedding, int topK);
 
-    /**
-     * Persist an embedded chunk for future retrieval.
-     */
-    void storeChunk(TextChunk chunk, float[] embedding, String docId);
+	/**
+	 * Persist an embedded chunk for future retrieval.
+	 */
+	void storeChunk(TextChunk chunk, float[] embedding, String docId);
 }
