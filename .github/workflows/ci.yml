@@ -263,6 +263,7 @@ jobs:
       - name: Load Pre-Built Container Image into KinD
         run: |
           docker load -i image-dist/tuluat-operator-image.tar.gz
+          kind load docker-image tuluat-operator:latest --name tuluat-cluster
       - name: Download Helm Chart Artifact
         uses: actions/download-artifact@v4
         with:

@@ -44,3 +44,24 @@ spec:
             failureThreshold: {{ .Values.operator.probe.readiness.failureThreshold }}
           resources:
             {{- toYaml .Values.operator.resources | nindent 12 }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tuluat-operator-service
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    app: tuluat-operator
+    {{- include "tuluat-operator.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.operator.service.type }}
+  selector:
+    app: tuluat-operator
+  ports:
+    - name: http
+      port: {{ .Values.operator.service.port }}
+      targetPort: {{ .Values.operator.service.port }}
+      {{- if and (eq .Values.operator.service.type "NodePort") .Values.operator.service.nodePort }}
+      nodePort: {{ .Values.operator.service.nodePort }}
+      {{- end }}
