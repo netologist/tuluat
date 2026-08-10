@@ -85,6 +85,9 @@ jobs:
         run: |
           ./mvnw spotless:check
 
+      - name: Run Checkstyle Static Code Analysis
+        run: |
+          ./mvnw checkstyle:check
       - name: Run Project Unit Tests
         run: |
           ./mvnw test -Denable-preview
