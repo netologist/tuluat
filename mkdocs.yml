@@ -5,9 +5,21 @@ site_url: https://netologist.github.io/tuluat/
 theme:
   name: material
   palette:
+    # Palette toggle for light mode (Default)
+    - scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
     - scheme: slate
       primary: indigo
       accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
   features:
     - navigation.indexes
     - navigation.expand
