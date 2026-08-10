@@ -6,8 +6,6 @@ import com.tuluat.engine.agent.AgentExecutionService;
 import com.tuluat.engine.agent.AgentResponse;
 import com.tuluat.engine.agent.UsageStats;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,16 +19,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Spring Web Controller serving HTTP endpoints exposed via Kubernetes Ingress.
  */
 @RestController
 @RequestMapping("/api/v1")
+@Slf4j
 public class AgentChatController {
-	private static final Logger log = LoggerFactory.getLogger(AgentChatController.class);
-
-	private final KubernetesClient client;
+private final KubernetesClient client;
 	private final AgentExecutionService agentExecutionService;
 
 	@Autowired

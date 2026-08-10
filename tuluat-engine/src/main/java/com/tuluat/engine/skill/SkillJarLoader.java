@@ -1,7 +1,5 @@
 package com.tuluat.engine.skill;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URL;
@@ -12,18 +10,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Loads {@link SkillProvider} implementations from external JARs dropped into a
  * skill folder (ADR 007). Each JAR is loaded in its own {@link URLClassLoader}
  * and must be closed after use to avoid classloader leaks.
  */
+@Slf4j
 public final class SkillJarLoader {
-
-	private static final Logger log = LoggerFactory.getLogger(SkillJarLoader.class);
-
-	private SkillJarLoader() {
-	}
 
 	/**
 	 * Scans a folder for {@code *.jar} files and loads all {@link SkillProvider}

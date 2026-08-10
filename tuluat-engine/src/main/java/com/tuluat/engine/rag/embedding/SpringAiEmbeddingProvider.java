@@ -1,13 +1,12 @@
 package com.tuluat.engine.rag.embedding;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Production embedding provider wrapping Spring AI {@link EmbeddingModel}
@@ -17,11 +16,9 @@ import java.util.List;
  */
 @Component
 @ConditionalOnProperty(name = "tuluat.rag.embedding", havingValue = "spring-ai")
+@Slf4j
 public class SpringAiEmbeddingProvider implements EmbeddingProvider {
-
-	private static final Logger log = LoggerFactory.getLogger(SpringAiEmbeddingProvider.class);
-
-	private final EmbeddingModel embeddingModel;
+private final EmbeddingModel embeddingModel;
 	private final int dimension;
 
 	public SpringAiEmbeddingProvider(EmbeddingModel embeddingModel,

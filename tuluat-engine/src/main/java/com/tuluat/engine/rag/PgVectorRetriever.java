@@ -1,12 +1,11 @@
 package com.tuluat.engine.rag;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * pgvector-backed retriever (ADR 008): cosine similarity via {@code <=>} on the
@@ -15,11 +14,9 @@ import java.util.List;
  */
 @Component
 @ConditionalOnProperty(name = "tuluat.rag.retriever", havingValue = "pgvector")
+@Slf4j
 public class PgVectorRetriever implements Retriever {
-
-	private static final Logger log = LoggerFactory.getLogger(PgVectorRetriever.class);
-
-	private final JdbcTemplate jdbcTemplate;
+private final JdbcTemplate jdbcTemplate;
 
 	public PgVectorRetriever(JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;

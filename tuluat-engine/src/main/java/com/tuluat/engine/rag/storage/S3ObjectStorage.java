@@ -9,8 +9,6 @@ import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.Result;
 import io.minio.messages.Item;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -21,6 +19,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * S3-compatible object storage via MinIO SDK (ADR 008). Active when
@@ -29,11 +28,9 @@ import java.util.Optional;
  */
 @Component
 @ConditionalOnProperty(name = "tuluat.rag.storage.type", havingValue = "s3")
+@Slf4j
 public class S3ObjectStorage implements ObjectStorage {
-
-	private static final Logger log = LoggerFactory.getLogger(S3ObjectStorage.class);
-
-	private final MinioClient client;
+private final MinioClient client;
 	private final String bucket;
 
 	public S3ObjectStorage(@Value("${tuluat.rag.storage.s3.endpoint}") String endpoint,

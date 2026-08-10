@@ -2,18 +2,16 @@ package com.tuluat.engine.embabel;
 
 import com.tuluat.engine.agent.AgentExecutionService;
 import com.tuluat.engine.agent.AgentResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class EmbabelGoalEngine {
-
-	private static final Logger log = LoggerFactory.getLogger(EmbabelGoalEngine.class);
-	private final AgentExecutionService agentExecutionService;
+private final AgentExecutionService agentExecutionService;
 
 	public EmbabelGoalEngine(AgentExecutionService agentExecutionService) {
 		this.agentExecutionService = agentExecutionService;

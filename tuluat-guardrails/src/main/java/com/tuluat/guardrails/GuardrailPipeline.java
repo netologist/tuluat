@@ -1,11 +1,10 @@
 package com.tuluat.guardrails;
 
 import com.tuluat.crd.agent.GuardrailsConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Orchestrates the guardrails pipeline for one agent execution: pre-execution
@@ -13,11 +12,9 @@ import java.util.List;
  * output validation.
  */
 @Service
+@Slf4j
 public class GuardrailPipeline {
-
-	private static final Logger log = LoggerFactory.getLogger(GuardrailPipeline.class);
-
-	private final List<PreExecutionFilter> preExecutionFilters;
+private final List<PreExecutionFilter> preExecutionFilters;
 	private final List<PostExecutionFilter> postExecutionFilters;
 
 	public GuardrailPipeline(List<PreExecutionFilter> preExecutionFilters,

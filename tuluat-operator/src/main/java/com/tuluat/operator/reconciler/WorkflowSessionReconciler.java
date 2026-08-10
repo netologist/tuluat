@@ -7,16 +7,14 @@ import com.tuluat.engine.workflow.WorkflowExecutionService;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.javaoperatorsdk.operator.api.reconciler.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
 
 @ControllerConfiguration
 @Component
+@Slf4j
 public class WorkflowSessionReconciler implements Reconciler<WorkflowSession> {
-
-	private static final Logger log = LoggerFactory.getLogger(WorkflowSessionReconciler.class);
-	private final WorkflowExecutionService executionService;
+private final WorkflowExecutionService executionService;
 	private final KubernetesClient kubernetesClient;
 
 	public WorkflowSessionReconciler(WorkflowExecutionService executionService, KubernetesClient kubernetesClient) {

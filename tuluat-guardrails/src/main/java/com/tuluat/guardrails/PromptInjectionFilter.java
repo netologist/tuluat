@@ -2,12 +2,11 @@ package com.tuluat.guardrails;
 
 import com.tuluat.crd.agent.GuardrailsConfig;
 import com.tuluat.crd.agent.PromptInjectionConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Pre-execution prompt injection defense. Detects common injection patterns
@@ -16,11 +15,9 @@ import java.util.regex.Pattern;
  * (SANITIZE).
  */
 @Component
+@Slf4j
 public class PromptInjectionFilter implements PreExecutionFilter {
-
-	private static final Logger log = LoggerFactory.getLogger(PromptInjectionFilter.class);
-
-	public static final String NAME = "prompt-injection";
+public static final String NAME = "prompt-injection";
 
 	private static final List<Pattern> INJECTION_PATTERNS = List.of(
 			Pattern.compile("(?i)ignore\\s+(all\\s+)?(previous|prior|above)\\s+(instructions|prompts|messages)"),

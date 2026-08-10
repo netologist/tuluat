@@ -2,10 +2,8 @@ package com.tuluat.engine.skill;
 
 import com.tuluat.crd.agent.SkillDefinition;
 import com.tuluat.crd.agent.SkillSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Service;
-
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +12,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service managing skill registry and execution using Java Virtual Threads and
@@ -22,10 +21,9 @@ import java.util.concurrent.Executors;
  * {@code skillSources} folders.
  */
 @Service
+@Slf4j
 public class SkillRegistry {
-	private static final Logger log = LoggerFactory.getLogger(SkillRegistry.class);
-
-	private final Map<String, Skill> registeredSkills = new ConcurrentHashMap<>();
+private final Map<String, Skill> registeredSkills = new ConcurrentHashMap<>();
 	private final Map<String, List<SkillJarLoader.LoadedProvider>> loadedProviders = new ConcurrentHashMap<>();
 	private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
@@ -126,5 +124,10 @@ public class SkillRegistry {
 		public List<Skill> provideSkills() {
 			return List.of(new CalculatorSkill(), new WebSearchSkill(), new WeatherSkill());
 		}
+	}
+
+	@PreDestroy
+	public void shutdown() {
+		virtualThreadExecutor.shutdown();
 	}
 }

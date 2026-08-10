@@ -8,12 +8,11 @@ import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
 import com.tuluat.crd.agent.GuardrailsConfig;
 import com.tuluat.crd.agent.OutputValidationConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Post-execution output validation filter. Verifies that the model output is
@@ -21,11 +20,9 @@ import java.util.Set;
  * confidence (1.0 for schema-valid output, lower otherwise).
  */
 @Component
+@Slf4j
 public class OutputValidationFilter implements PostExecutionFilter {
-
-	private static final Logger log = LoggerFactory.getLogger(OutputValidationFilter.class);
-
-	public static final String NAME = "output-validation";
+public static final String NAME = "output-validation";
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	private final JsonSchemaFactory schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);

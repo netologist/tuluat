@@ -9,8 +9,6 @@ import com.tuluat.engine.skill.SkillResult;
 import com.tuluat.guardrails.GuardrailBlockedException;
 import com.tuluat.guardrails.GuardrailPipeline;
 import com.tuluat.guardrails.ValidationResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -24,16 +22,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Core engine service for executing AI Agent prompts with Spring AI, Skills,
  * guardrails (ADR 004 / 007) and the Model Gateway (fallback/budget/cost).
  */
 @Service
+@Slf4j
 public class AgentExecutionService {
-	private static final Logger log = LoggerFactory.getLogger(AgentExecutionService.class);
-
-	private final SkillRegistry skillRegistry;
+private final SkillRegistry skillRegistry;
 	private final ChatModel chatModel;
 	private final GuardrailPipeline guardrailPipeline;
 	private final ModelGateway modelGateway;

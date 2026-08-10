@@ -2,13 +2,12 @@ package com.tuluat.guardrails;
 
 import com.tuluat.crd.agent.GuardrailsConfig;
 import com.tuluat.crd.agent.PiiMaskingConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Pre-execution PII masking filter. Replaces sensitive data (emails, credit
@@ -16,11 +15,9 @@ import java.util.regex.Pattern;
  * sent to the external LLM provider.
  */
 @Component
+@Slf4j
 public class PiiMaskingFilter implements PreExecutionFilter {
-
-	private static final Logger log = LoggerFactory.getLogger(PiiMaskingFilter.class);
-
-	public static final String NAME = "pii-masking";
+public static final String NAME = "pii-masking";
 
 	private static final Map<String, Pattern> MODE_PATTERNS = Map.of("EMAIL",
 			Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"), "CREDIT_CARD",

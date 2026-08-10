@@ -3,8 +3,6 @@ package com.tuluat.protocols;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -16,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * HTTP-based A2A adapter. Remote agents are discovered via {@code GET
@@ -23,11 +22,9 @@ import java.util.Optional;
  * {endpoint}/agents/{id}/execute}. Uses the JDK {@link HttpClient}.
  */
 @Service
+@Slf4j
 public class A2aAdapterImpl implements A2aAdapter {
-
-	private static final Logger log = LoggerFactory.getLogger(A2aAdapterImpl.class);
-
-	private final ObjectMapper objectMapper = new ObjectMapper();
+private final ObjectMapper objectMapper = new ObjectMapper();
 	private final HttpClient httpClient;
 
 	public A2aAdapterImpl() {

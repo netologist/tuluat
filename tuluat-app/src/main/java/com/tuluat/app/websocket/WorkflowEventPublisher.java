@@ -1,7 +1,5 @@
 package com.tuluat.app.websocket;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -10,13 +8,12 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 public class WorkflowEventPublisher {
-
-	private static final Logger log = LoggerFactory.getLogger(WorkflowEventPublisher.class);
-
-	private final SimpMessagingTemplate messagingTemplate;
+private final SimpMessagingTemplate messagingTemplate;
 
 	@Autowired
 	public WorkflowEventPublisher(@Autowired(required = false) SimpMessagingTemplate messagingTemplate) {

@@ -3,8 +3,6 @@ package com.tuluat.engine.gateway;
 import com.tuluat.crd.provider.LlmProvider;
 import com.tuluat.crd.provider.LlmProviderSpec;
 import com.tuluat.crd.provider.ModelFallback;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Service;
@@ -16,6 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Model Gateway (ADR 007): route resolution, ordered fallback chains, budget
@@ -24,11 +23,9 @@ import java.util.concurrent.atomic.AtomicReference;
  * definition; routing policy lives here.
  */
 @Service
+@Slf4j
 public class ModelGateway {
-
-	private static final Logger log = LoggerFactory.getLogger(ModelGateway.class);
-
-	/** Bean-name resolution for provider types (Spring AI starter bean names). */
+/** Bean-name resolution for provider types (Spring AI starter bean names). */
 	private static final Map<String, String> PROVIDER_BEAN_NAMES = Map.of("OPENAI", "openAiChatModel", "OLLAMA",
 			"ollamaChatModel", "ANTHROPIC", "anthropicChatModel");
 

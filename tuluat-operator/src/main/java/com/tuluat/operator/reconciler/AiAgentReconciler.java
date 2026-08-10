@@ -21,13 +21,12 @@ import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * JOSDK Reconciler for managing AiAgent Custom Resources and creating
@@ -35,10 +34,9 @@ import java.util.Map;
  */
 @Component
 @ControllerConfiguration(name = "aiagent-reconciler")
+@Slf4j
 public class AiAgentReconciler implements Reconciler<AiAgent> {
-	private static final Logger log = LoggerFactory.getLogger(AiAgentReconciler.class);
-
-	private final KubernetesClient client;
+private final KubernetesClient client;
 
 	@Autowired
 	public AiAgentReconciler(KubernetesClient client) {

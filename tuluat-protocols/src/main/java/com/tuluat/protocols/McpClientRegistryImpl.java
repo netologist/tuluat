@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tuluat.crd.mcp.McpServer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -18,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * In-memory MCP client registry. Clients register {@link McpServer} resources
@@ -26,11 +25,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * 25).
  */
 @Service
+@Slf4j
 public class McpClientRegistryImpl implements McpClientRegistry {
-
-	private static final Logger log = LoggerFactory.getLogger(McpClientRegistryImpl.class);
-
-	private final Map<String, McpClientConnection> clients = new ConcurrentHashMap<>();
+private final Map<String, McpClientConnection> clients = new ConcurrentHashMap<>();
 	private final AtomicLong requestId = new AtomicLong();
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	private final HttpClient httpClient;

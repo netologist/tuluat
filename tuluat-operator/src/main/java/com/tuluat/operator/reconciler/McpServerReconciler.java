@@ -9,10 +9,9 @@ import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 import io.javaoperatorsdk.operator.api.reconciler.DeleteControl;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * JOSDK Reconciler for McpServer Custom Resources: keeps the
@@ -22,10 +21,9 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @ControllerConfiguration(name = "mcpserver-reconciler")
+@Slf4j
 public class McpServerReconciler implements Reconciler<McpServer>, Cleaner<McpServer> {
-	private static final Logger log = LoggerFactory.getLogger(McpServerReconciler.class);
-
-	private final McpClientRegistry clientRegistry;
+private final McpClientRegistry clientRegistry;
 
 	@Autowired
 	public McpServerReconciler(McpClientRegistry clientRegistry) {

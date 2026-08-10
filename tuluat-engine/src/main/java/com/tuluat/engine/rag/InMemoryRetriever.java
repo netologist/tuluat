@@ -1,7 +1,5 @@
 package com.tuluat.engine.rag;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -9,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * In-memory retriever: brute-force cosine similarity over embedded chunks (ADR
@@ -18,11 +17,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 @Component
 @ConditionalOnProperty(name = "tuluat.rag.retriever", havingValue = "memory", matchIfMissing = true)
+@Slf4j
 public class InMemoryRetriever implements Retriever {
-
-	private static final Logger log = LoggerFactory.getLogger(InMemoryRetriever.class);
-
-	private record Entry(TextChunk chunk, float[] embedding) {
+private record Entry(TextChunk chunk, float[] embedding) {
 	}
 
 	private final List<Entry> entries = new CopyOnWriteArrayList<>();

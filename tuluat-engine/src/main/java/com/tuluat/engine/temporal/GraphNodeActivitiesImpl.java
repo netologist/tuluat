@@ -6,8 +6,6 @@ import com.tuluat.engine.agent.AgentResponse;
 import com.tuluat.engine.telemetry.WorkflowTelemetryService;
 import com.tuluat.engine.entity.WorkflowSessionLogEntity;
 import com.tuluat.engine.repository.WorkflowSessionLogRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
@@ -16,12 +14,12 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class GraphNodeActivitiesImpl implements GraphNodeActivities {
-
-	private static final Logger log = LoggerFactory.getLogger(GraphNodeActivitiesImpl.class);
-	private final AgentExecutionService agentExecutionService;
+private final AgentExecutionService agentExecutionService;
 	private final WorkflowSessionLogRepository logRepository;
 	private final WorkflowTelemetryService telemetryService;
 	private final com.tuluat.guardrails.GuardrailPipeline guardrailPipeline;

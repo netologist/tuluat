@@ -1,7 +1,5 @@
 package com.tuluat.engine.rag.storage;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -13,6 +11,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Filesystem-backed object storage for development and CI (ADR 008). Active
@@ -20,11 +19,9 @@ import java.util.stream.Stream;
  */
 @Component
 @ConditionalOnProperty(name = "tuluat.rag.storage.type", havingValue = "local", matchIfMissing = true)
+@Slf4j
 public class LocalObjectStorage implements ObjectStorage {
-
-	private static final Logger log = LoggerFactory.getLogger(LocalObjectStorage.class);
-
-	private final Path root;
+private final Path root;
 
 	public LocalObjectStorage(@Value("${tuluat.rag.storage.local-dir:./data/rag}") String localDir) {
 		this.root = Paths.get(localDir).toAbsolutePath().normalize();

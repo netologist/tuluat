@@ -2,24 +2,21 @@ package com.tuluat.engine.rag;
 
 import com.tuluat.engine.rag.embedding.EmbeddingProvider;
 import com.tuluat.engine.rag.storage.ObjectStorage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * RAG orchestrator (ADR 008): ingest (chunk → embed → store) and retrieve
  * (embed query → top-K similarity → {@link RagContext}).
  */
 @Service
+@Slf4j
 public class RagService {
-
-	private static final Logger log = LoggerFactory.getLogger(RagService.class);
-
-	private final Chunker chunker;
+private final Chunker chunker;
 	private final EmbeddingProvider embeddingProvider;
 	private final Retriever retriever;
 	private final ObjectStorage objectStorage;
