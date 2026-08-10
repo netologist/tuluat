@@ -224,6 +224,8 @@ jobs:
           NO_MKDOCS_2_WARNING: "1"
         run: |
           mkdocs build --strict
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
       - name: Upload Pages Artifact
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'

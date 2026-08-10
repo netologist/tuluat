@@ -44,6 +44,8 @@ nav:
       - Low-Level Design: architecture/low-level-design.md
       - System Specifications: superpowers/specs/2026-08-06-workflow-operator-design.md
       - Implementation Plan: superpowers/plans/2026-08-06-workflow-operator.md
+      - Phase 1 Execution Plan: superpowers/plans/2026-08-06-phase1-embabel-temporal.md
+      - Embabel Migration & HITL Plan: superpowers/plans/2026-08-07-embabel-migration-freeform-approval.md
   - ADRs (Architecture Decision Records):
       - "ADR 001: Durable Execution Engine": adrs/001-durable-execution-engine.md
       - "ADR 002: Embabel Agent Framework": adrs/002-embabel-agent-framework.md
@@ -54,3 +56,10 @@ nav:
       - "ADR 007: Skill Provisioning vs Binding, Model Gateway, and Evre 2 Configuration Placement": adrs/007-skill-provisioning-model-gateway-evre2-placement.md
       - "ADR 008: Retrieval-Augmented Generation (RAG) System": adrs/008-rag-system.md
       - "ADR 009: Agent Harness — Sandboxed Execution Runtime": adrs/009-agent-harness.md
+      - "ADR 010: GraalVM Native Image Transition": adrs/010-graalvm-native-image-tech-debt.md
+
+validation:
+  nav:
+    omitted_files: warn
+    absolute_links: warn
+    not_found: warn
