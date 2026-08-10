@@ -192,7 +192,7 @@ jobs:
   # ── 5. KinD Cluster & E2E Acceptance Tests ─────────────────────────────────
   e2e-kind:
     name: KinD Cluster E2E Acceptance Test
-    needs: [detect-changes, build-module, package-helm, publish-helm]
+    needs: [detect-changes, publish-helm]
     if: needs.detect-changes.outputs.has_changes == 'true' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     steps:
