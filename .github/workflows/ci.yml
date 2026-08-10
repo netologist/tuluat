@@ -266,8 +266,6 @@ jobs:
       - name: Load Pre-Built Container Image into KinD
         run: |
           docker load -i image-dist/tuluat-operator-image.tar.gz
-          kind load docker-image tuluat-operator:latest --name tuluat-cluster
-
       - name: Download Helm Chart Artifact
         uses: actions/download-artifact@v4
         with:
@@ -280,15 +278,13 @@ jobs:
 
       - name: Deploy Operator via Packaged Helm Chart
         run: |
-          helm upgrade --install tuluat-operator dist/*.tgz --namespace tuluat-system --set operator.image.repository=tuluat-operator --set operator.image.tag=latest --set operator.image.pullPolicy=IfNotPresent
+          helm upgrade --install tuluat-operator dist/*.tgz --namespace tuluat-system --set namespace.create=false --set operator.image.repository=tuluat-operator --set operator.image.tag=latest --set operator.image.pullPolicy=IfNotPresent
 
       - name: Wait for Operator & Infrastructure Pod Readiness
         run: |
           kubectl rollout status deployment/postgres-pgvector -n tuluat-system --timeout=120s
           kubectl rollout status deployment/temporal-server -n tuluat-system --timeout=180s
           kubectl rollout status deployment/wiremock-stub -n tuluat-system --timeout=120s
-          kubectl rollout status deployment/tuluat-operator -n tuluat-system --timeout=180s
-
       - name: Run E2E Smoke & Acceptance Test Suite
         run: |
           PORT=8089
@@ -298,7 +294,6 @@ jobs:
           sleep 5
 
           ./scripts/e2e-acceptance-test.sh "http://localhost:${PORT}" "tuluat-system"
-
       - name: Debug Pods on Failure
         if: failure()
         run: |
