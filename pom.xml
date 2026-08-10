@@ -34,8 +34,8 @@
         <josdk.version>5.1.0</josdk.version>
         <fabric8.version>7.3.1</fabric8.version>
         <temporal.version>1.27.0</temporal.version>
+        <archunit.version>1.3.0</archunit.version>
     </properties>
-
     <dependencyManagement>
         <dependencies>
             <!-- Internal Sub-Modules -->
@@ -115,7 +115,12 @@
                 <version>${josdk.version}</version>
                 <scope>test</scope>
             </dependency>
-
+            <dependency>
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit-junit5</artifactId>
+                <version>${archunit.version}</version>
+                <scope>test</scope>
+            </dependency>
             <!-- Lombok -->
             <dependency>
                 <groupId>org.projectlombok</groupId>
