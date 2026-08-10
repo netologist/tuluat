@@ -278,7 +278,7 @@ jobs:
 
       - name: Deploy Operator via Packaged Helm Chart
         run: |
-          helm upgrade --install tuluat-operator dist/*.tgz --namespace tuluat-system --create-namespace --set operator.image.repository=tuluat-operator --set operator.image.tag=latest --set operator.image.pullPolicy=IfNotPresent
+          helm upgrade --install tuluat-operator dist/*.tgz --namespace tuluat-system --set namespace.create=false --set operator.image.repository=tuluat-operator --set operator.image.tag=latest --set operator.image.pullPolicy=IfNotPresent
 
       - name: Wait for Operator & Infrastructure Pod Readiness
         run: |

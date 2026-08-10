@@ -30,7 +30,7 @@ operator:
 # --- Namespace ---
 namespace:
   name: tuluat-system
-  create: true
+  create: false
 # --- RBAC ---
 serviceAccount:
   name: tuluat-operator-sa

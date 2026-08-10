@@ -7,11 +7,8 @@ echo "=========================================="
 
 NAMESPACE=${1:-tuluat-system}
 SKIP_OPERATOR_MANIFESTS=${2:-${SKIP_OPERATOR_MANIFESTS:-false}}
-
-if [ "${SKIP_OPERATOR_MANIFESTS}" != "true" ] && [ "${SKIP_OPERATOR_MANIFESTS}" != "--skip-operator-manifests" ]; then
-  echo "0. Creating Namespace..."
-  kubectl apply -f manifests/operator/namespace.yaml
-fi
+echo "0. Ensuring Target Namespace (${NAMESPACE}) exists..."
+kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
 
 echo "1. Applying Custom Resource Definitions (CRDs)..."
 kubectl apply -f manifests/crd/llmproviders.ai.tuluat.com.yaml
