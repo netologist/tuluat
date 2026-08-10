@@ -8,6 +8,9 @@
 
 Tuluat is a Kubernetes-native AI Runtime and Orchestration Engine (**PoC**). It decouples execution management from underlying LLM providers, providing a unified environment for multi-agent workflows, state management, vector memory, guardrails, and human-in-the-loop control.
 
+![Excalidraw High-Level Architecture Diagram](../assets/architecture-diagram.png)
+*> 🎨 Interactive Excalidraw Canvas: [View & Edit on Excalidraw.com](https://excalidraw.com/#json=-lpcntaz-fvauJsHLbYJR,HHmaYzhNnM_cKXg9wp-nnA)*
+
 ```mermaid
 graph TB
     subgraph "External Consumers"

@@ -18,6 +18,12 @@ A Kubernetes-native AI Operator and Orchestration Runtime built with **Java 25 L
 
 ---
 
+## 🏗️ High-Level System Architecture
+
+![Excalidraw Architecture Diagram](docs/assets/architecture-diagram.png)
+*> 🎨 Interactive Excalidraw Canvas: [View & Edit on Excalidraw.com](https://excalidraw.com/#json=-lpcntaz-fvauJsHLbYJR,HHmaYzhNnM_cKXg9wp-nnA)*
+---
+
 ## 🖥️ Control Portal & Web GUI
 
 The operator includes a built-in single-page Web GUI available at `http://localhost:8089/`:
