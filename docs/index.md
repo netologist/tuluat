@@ -78,3 +78,6 @@ graph TD
 - **[High-Level Architecture](architecture/high-level-architecture.md)**: System topology and control loops.
 - **[Low-Level Design](architecture/low-level-design.md)**: Code-level class diagrams and state machine details.
 - **[Architecture Decision Records (ADRs)](adrs/001-durable-execution-engine.md)**: Key design decisions (ADR 001 to ADR 010).
+- **[Feature Matrix & Capabilities](features/overview.md)**: Full breakdown of Phase 1, Phase 2, and Phase 3 capabilities.
+  - **[Phase 2 Features](features/phase2-guardrails-mcp-a2a.md)**: Safety Guardrails, Model Context Protocol (MCP), and Agent-to-Agent (A2A) protocol.
+  - **[Phase 3 Features](features/phase3-hitl-helm-orchestration.md)**: Human-in-the-Loop (HITL) approval, Helm chart deployment, and KinD E2E testing.

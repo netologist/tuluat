@@ -52,6 +52,10 @@ nav:
   - Architecture Overview: ARCHITECTURE.md
   - Custom Resources (CRDs): crds.md
   - Maven Dependencies: dependencies.md
+  - Features & Capabilities:
+      - Overview & Matrix: features/overview.md
+      - "Phase 2: Guardrails, MCP & A2A": features/phase2-guardrails-mcp-a2a.md
+      - "Phase 3: HITL, Helm & Orchestration": features/phase3-hitl-helm-orchestration.md
   - Architecture:
       - High-Level Architecture: architecture/high-level-architecture.md
       - Low-Level Design: architecture/low-level-design.md
