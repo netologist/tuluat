@@ -81,7 +81,7 @@ prometheus:
     tag: v2.50.0
   retention: 7d
   serviceMonitor:
-    enabled: true
+    enabled: false   # requires Prometheus Operator CRDs; disable on plain KinD
 
 grafana:
   enabled: true
