@@ -140,9 +140,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Container Image
-        run: |
-          docker buildx build --load -t tuluat-operator:latest .
+      - name: Build Container Image with GHA Layer Cache
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: tuluat-operator:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Save Container Image Artifact
         run: |
