@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class McpClientRegistryImpl implements McpClientRegistry {
-private final Map<String, McpClientConnection> clients = new ConcurrentHashMap<>();
+	private final Map<String, McpClientConnection> clients = new ConcurrentHashMap<>();
 	private final AtomicLong requestId = new AtomicLong();
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	private final HttpClient httpClient;

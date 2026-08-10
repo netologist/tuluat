@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @Slf4j
 public class GraphStateMachineEngine {
-private final AgentExecutionService agentExecutionService;
+	private final AgentExecutionService agentExecutionService;
 	private final WorkflowSessionLogRepository logRepository;
 	private final WorkflowTelemetryService telemetryService;
 	private final com.tuluat.guardrails.GuardrailPipeline guardrailPipeline;
@@ -52,7 +52,7 @@ private final AgentExecutionService agentExecutionService;
 			String errorMsg = String.format("Session %s exceeded max loops (%d)", session.getSessionId(), maxLoops);
 			log.error(errorMsg);
 			recordSessionLog(session.getSessionId(), session.getCurrentNodeId(), "ERROR", errorMsg);
-		session.setStatus("FAILED");
+			session.setStatus("FAILED");
 			if (telemetryService != null) {
 				telemetryService.recordSessionCompleted(session.getWorkflowName(), "FAILED");
 			}
@@ -66,8 +66,7 @@ private final AgentExecutionService agentExecutionService;
 		}
 
 		final String targetId = currentNodeId;
-		NodeDefinition currentNode = workflowSpec.nodes().stream().filter(n -> n.id().equals(targetId))
-				.findFirst()
+		NodeDefinition currentNode = workflowSpec.nodes().stream().filter(n -> n.id().equals(targetId)).findFirst()
 				.orElseThrow(() -> new IllegalArgumentException("Node not found: " + session.getCurrentNodeId()));
 
 		Map<String, Object> contextData = parseContext(session.getContextData());

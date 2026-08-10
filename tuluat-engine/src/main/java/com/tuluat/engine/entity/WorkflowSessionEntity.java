@@ -21,10 +21,8 @@ import java.util.UUID;
 @Setter
 @Getter
 @Entity
-@Table(name = "workflow_sessions", indexes = {
-		@Index(name = "idx_workflow_name", columnList = "workflow_name"),
-		@Index(name = "idx_status", columnList = "status")
-})
+@Table(name = "workflow_sessions", indexes = {@Index(name = "idx_workflow_name", columnList = "workflow_name"),
+		@Index(name = "idx_status", columnList = "status")})
 public class WorkflowSessionEntity {
 
 	@Id

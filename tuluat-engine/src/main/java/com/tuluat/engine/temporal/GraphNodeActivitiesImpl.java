@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @Slf4j
 public class GraphNodeActivitiesImpl implements GraphNodeActivities {
-private final AgentExecutionService agentExecutionService;
+	private final AgentExecutionService agentExecutionService;
 	private final WorkflowSessionLogRepository logRepository;
 	private final WorkflowTelemetryService telemetryService;
 	private final com.tuluat.guardrails.GuardrailPipeline guardrailPipeline;

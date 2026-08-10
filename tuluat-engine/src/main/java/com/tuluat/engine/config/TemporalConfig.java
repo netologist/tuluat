@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 @Configuration
 @Slf4j
 public class TemporalConfig {
-@Value("${spring.temporal.target:temporal-service:7233}")
+	@Value("${spring.temporal.target:temporal-service:7233}")
 	private String temporalTarget;
 
 	public static final String TASK_QUEUE = "AI_WORKFLOW_TASK_QUEUE";

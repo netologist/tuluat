@@ -1,11 +1,6 @@
 package com.tuluat.crd.session;
 
-public record WorkflowSessionStatus(
-		String sessionId,
-		String phase,
-		String currentNode,
-		String output,
-		String startTime,
+public record WorkflowSessionStatus(String sessionId, String phase, String currentNode, String output, String startTime,
 		String endTime) {
 
 	public static WorkflowSessionStatus pending() {

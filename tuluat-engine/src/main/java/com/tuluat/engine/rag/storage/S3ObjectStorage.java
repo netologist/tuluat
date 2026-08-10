@@ -30,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 @ConditionalOnProperty(name = "tuluat.rag.storage.type", havingValue = "s3")
 @Slf4j
 public class S3ObjectStorage implements ObjectStorage {
-private final MinioClient client;
+	private final MinioClient client;
 	private final String bucket;
 
 	public S3ObjectStorage(@Value("${tuluat.rag.storage.s3.endpoint}") String endpoint,

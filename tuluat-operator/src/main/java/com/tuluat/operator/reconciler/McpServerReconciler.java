@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 @ControllerConfiguration(name = "mcpserver-reconciler")
 @Slf4j
 public class McpServerReconciler implements Reconciler<McpServer>, Cleaner<McpServer> {
-private final McpClientRegistry clientRegistry;
+	private final McpClientRegistry clientRegistry;
 
 	@Autowired
 	public McpServerReconciler(McpClientRegistry clientRegistry) {

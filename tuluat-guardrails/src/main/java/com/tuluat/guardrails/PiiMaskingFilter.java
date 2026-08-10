@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @Slf4j
 public class PiiMaskingFilter implements PreExecutionFilter {
-public static final String NAME = "pii-masking";
+	public static final String NAME = "pii-masking";
 
 	private static final Map<String, Pattern> MODE_PATTERNS = Map.of("EMAIL",
 			Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"), "CREDIT_CARD",

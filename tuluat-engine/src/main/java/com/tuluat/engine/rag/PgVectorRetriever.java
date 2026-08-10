@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 @ConditionalOnProperty(name = "tuluat.rag.retriever", havingValue = "pgvector")
 @Slf4j
 public class PgVectorRetriever implements Retriever {
-private final JdbcTemplate jdbcTemplate;
+	private final JdbcTemplate jdbcTemplate;
 
 	public PgVectorRetriever(JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;

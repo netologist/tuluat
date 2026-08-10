@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @Slf4j
 public class PromptInjectionFilter implements PreExecutionFilter {
-public static final String NAME = "prompt-injection";
+	public static final String NAME = "prompt-injection";
 
 	private static final List<Pattern> INJECTION_PATTERNS = List.of(
 			Pattern.compile("(?i)ignore\\s+(all\\s+)?(previous|prior|above)\\s+(instructions|prompts|messages)"),

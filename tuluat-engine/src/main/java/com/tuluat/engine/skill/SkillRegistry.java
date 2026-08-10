@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class SkillRegistry {
-private final Map<String, Skill> registeredSkills = new ConcurrentHashMap<>();
+	private final Map<String, Skill> registeredSkills = new ConcurrentHashMap<>();
 	private final Map<String, List<SkillJarLoader.LoadedProvider>> loadedProviders = new ConcurrentHashMap<>();
 	private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 

@@ -21,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 @ConditionalOnProperty(name = "tuluat.rag.storage.type", havingValue = "local", matchIfMissing = true)
 @Slf4j
 public class LocalObjectStorage implements ObjectStorage {
-private final Path root;
+	private final Path root;
 
 	public LocalObjectStorage(@Value("${tuluat.rag.storage.local-dir:./data/rag}") String localDir) {
 		this.root = Paths.get(localDir).toAbsolutePath().normalize();

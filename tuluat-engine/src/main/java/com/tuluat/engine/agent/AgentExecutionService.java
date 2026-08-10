@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class AgentExecutionService {
-private final SkillRegistry skillRegistry;
+	private final SkillRegistry skillRegistry;
 	private final ChatModel chatModel;
 	private final GuardrailPipeline guardrailPipeline;
 	private final ModelGateway modelGateway;

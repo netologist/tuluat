@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @Slf4j
 public class WorkflowSessionReconciler implements Reconciler<WorkflowSession> {
-private final WorkflowExecutionService executionService;
+	private final WorkflowExecutionService executionService;
 	private final KubernetesClient kubernetesClient;
 
 	public WorkflowSessionReconciler(WorkflowExecutionService executionService, KubernetesClient kubernetesClient) {
@@ -38,13 +38,13 @@ private final WorkflowExecutionService executionService;
 					.inNamespace(resource.getMetadata().getNamespace()).withName(workflowName).get();
 
 			if (workflow != null) {
-			WorkflowSessionEntity entity = executionService.startSession(workflowName, workflow.getSpec(),
-					resource.getSpec().input(), 10);
+				WorkflowSessionEntity entity = executionService.startSession(workflowName, workflow.getSpec(),
+						resource.getSpec().input(), 10);
 
-			status = new WorkflowSessionStatus(entity.getSessionId().toString(), entity.getStatus(),
-					entity.getCurrentNodeId(), null, null, null);
-			resource.setStatus(status);
-			return UpdateControl.patchStatus(resource);
+				status = new WorkflowSessionStatus(entity.getSessionId().toString(), entity.getStatus(),
+						entity.getCurrentNodeId(), null, null, null);
+				resource.setStatus(status);
+				return UpdateControl.patchStatus(resource);
 			}
 		}
 

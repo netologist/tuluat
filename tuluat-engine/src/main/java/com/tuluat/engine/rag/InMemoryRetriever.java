@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 @ConditionalOnProperty(name = "tuluat.rag.retriever", havingValue = "memory", matchIfMissing = true)
 @Slf4j
 public class InMemoryRetriever implements Retriever {
-private record Entry(TextChunk chunk, float[] embedding) {
+	private record Entry(TextChunk chunk, float[] embedding) {
 	}
 
 	private final List<Entry> entries = new CopyOnWriteArrayList<>();

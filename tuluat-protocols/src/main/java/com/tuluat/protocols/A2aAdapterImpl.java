@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class A2aAdapterImpl implements A2aAdapter {
-private final ObjectMapper objectMapper = new ObjectMapper();
+	private final ObjectMapper objectMapper = new ObjectMapper();
 	private final HttpClient httpClient;
 
 	public A2aAdapterImpl() {

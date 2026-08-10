@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @ConditionalOnProperty(name = "tuluat.rag.embedding", havingValue = "spring-ai")
 @Slf4j
 public class SpringAiEmbeddingProvider implements EmbeddingProvider {
-private final EmbeddingModel embeddingModel;
+	private final EmbeddingModel embeddingModel;
 	private final int dimension;
 
 	public SpringAiEmbeddingProvider(EmbeddingModel embeddingModel,

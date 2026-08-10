@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @Slf4j
 public class EmbabelGoalEngine {
-private final AgentExecutionService agentExecutionService;
+	private final AgentExecutionService agentExecutionService;
 
 	public EmbabelGoalEngine(AgentExecutionService agentExecutionService) {
 		this.agentExecutionService = agentExecutionService;
@@ -19,8 +19,7 @@ private final AgentExecutionService agentExecutionService;
 
 	public EmbabelBlackboard executeGoal(EmbabelGoal goal, List<EmbabelAction> availableActions,
 			EmbabelBlackboard blackboard) {
-		log.info("Embabel Engine: Initiating Goal '{}' (targetKey: {})", goal.description(),
-				goal.targetStateKey());
+		log.info("Embabel Engine: Initiating Goal '{}' (targetKey: {})", goal.description(), goal.targetStateKey());
 
 		int maxSteps = 10;
 		int step = 0;
@@ -32,7 +31,7 @@ private final AgentExecutionService agentExecutionService;
 
 			if (nextAction == null) {
 				log.warn("Embabel Engine: No eligible actions with satisfied preconditions found for goal '{}'",
-					goal.id());
+						goal.id());
 				break;
 			}
 

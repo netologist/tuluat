@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class ModelGateway {
-/** Bean-name resolution for provider types (Spring AI starter bean names). */
+	/** Bean-name resolution for provider types (Spring AI starter bean names). */
 	private static final Map<String, String> PROVIDER_BEAN_NAMES = Map.of("OPENAI", "openAiChatModel", "OLLAMA",
 			"ollamaChatModel", "ANTHROPIC", "anthropicChatModel");
 

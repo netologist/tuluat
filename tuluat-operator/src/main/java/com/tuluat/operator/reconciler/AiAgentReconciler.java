@@ -36,7 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 @ControllerConfiguration(name = "aiagent-reconciler")
 @Slf4j
 public class AiAgentReconciler implements Reconciler<AiAgent> {
-private final KubernetesClient client;
+	private final KubernetesClient client;
 
 	@Autowired
 	public AiAgentReconciler(KubernetesClient client) {

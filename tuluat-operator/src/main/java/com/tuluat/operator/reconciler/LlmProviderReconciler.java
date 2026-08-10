@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @ControllerConfiguration(name = "llmprovider-reconciler")
 @Slf4j
 public class LlmProviderReconciler implements Reconciler<LlmProvider> {
-private final KubernetesClient client;
+	private final KubernetesClient client;
 
 	@Autowired
 	public LlmProviderReconciler(KubernetesClient client) {

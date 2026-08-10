@@ -43,22 +43,20 @@ class GraphOutputSchemaValidationTest {
 	}
 
 	private AiWorkflowSpec specWithSchema() {
-		NodeDefinition writer = new NodeDefinition("writer-node", "AGENT", "writer-agent", null,
-				"final_report", null, """
-				{"type":"object","required":["summary"],"properties":{"summary":{"type":"string"}}}
-				""");
+		NodeDefinition writer = new NodeDefinition("writer-node", "AGENT", "writer-agent", null, "final_report", null,
+				"""
+						{"type":"object","required":["summary"],"properties":{"summary":{"type":"string"}}}
+						""");
 
-		NodeDefinition done = new NodeDefinition("done-node", "AGENT", "writer-agent", null, "done",
-				null, null);
+		NodeDefinition done = new NodeDefinition("done-node", "AGENT", "writer-agent", null, "done", null, null);
 
-		return new AiWorkflowSpec(null, "writer-node", List.of(writer, done),
-				List.of(edge("writer-node", "done-node")), null);
+		return new AiWorkflowSpec(null, "writer-node", List.of(writer, done), List.of(edge("writer-node", "done-node")),
+				null);
 	}
 
 	private EdgeDefinition edge(String from, String to) {
 		return new EdgeDefinition(from, to, "true");
 	}
-
 
 	@Test
 	void validJsonOutputAdvancesSession() {
@@ -97,10 +95,10 @@ class GraphOutputSchemaValidationTest {
 						com.tuluat.engine.agent.UsageStats.calculate(5, 5, "m", 10)));
 
 		AiWorkflowSpec spec = specWithSchema();
-		NodeDefinition noSchemaNode = new NodeDefinition("writer-node", "AGENT", "writer-agent", null,
-				"final_report", null, null);
-		spec = new AiWorkflowSpec(spec.description(), spec.initialNode(),
-				List.of(noSchemaNode, spec.nodes().get(1)), spec.edges(), spec.memoryConfig());
+		NodeDefinition noSchemaNode = new NodeDefinition("writer-node", "AGENT", "writer-agent", null, "final_report",
+				null, null);
+		spec = new AiWorkflowSpec(spec.description(), spec.initialNode(), List.of(noSchemaNode, spec.nodes().get(1)),
+				spec.edges(), spec.memoryConfig());
 
 		WorkflowSessionEntity result = engine().executeNextStep(spec, session(), 10);
 	}

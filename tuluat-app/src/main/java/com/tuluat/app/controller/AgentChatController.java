@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/api/v1")
 @Slf4j
 public class AgentChatController {
-private final KubernetesClient client;
+	private final KubernetesClient client;
 	private final AgentExecutionService agentExecutionService;
 
 	@Autowired

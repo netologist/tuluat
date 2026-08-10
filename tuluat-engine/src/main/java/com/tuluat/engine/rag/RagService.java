@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class RagService {
-private final Chunker chunker;
+	private final Chunker chunker;
 	private final EmbeddingProvider embeddingProvider;
 	private final Retriever retriever;
 	private final ObjectStorage objectStorage;

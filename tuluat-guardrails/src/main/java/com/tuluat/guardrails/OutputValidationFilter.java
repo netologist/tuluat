@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @Slf4j
 public class OutputValidationFilter implements PostExecutionFilter {
-public static final String NAME = "output-validation";
+	public static final String NAME = "output-validation";
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	private final JsonSchemaFactory schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);

@@ -26,8 +26,7 @@ public class WorkflowExecutionService {
 	private final Optional<WorkflowClient> workflowClient;
 
 	public WorkflowExecutionService(WorkflowSessionRepository sessionRepository, GraphStateMachineEngine engine,
-			ObjectMapper objectMapper,
-			Optional<WorkflowTelemetryService> telemetryService,
+			ObjectMapper objectMapper, Optional<WorkflowTelemetryService> telemetryService,
 			Optional<WorkflowClient> workflowClient) {
 		this.sessionRepository = sessionRepository;
 		this.engine = engine;

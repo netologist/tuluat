@@ -7,6 +7,7 @@ public record MemoryConfig(int shortMemorySize, boolean enableLongMemory, String
 	}
 
 	public MemoryConfig {
-		if (vectorTableName == null) vectorTableName = "document_vectors";
+		if (vectorTableName == null)
+			vectorTableName = "document_vectors";
 	}
 }
