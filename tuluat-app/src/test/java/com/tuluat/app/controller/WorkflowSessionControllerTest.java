@@ -15,13 +15,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -196,5 +201,20 @@ class WorkflowSessionControllerTest {
         assertEquals("SIGNAL_SENT", response.getBody().get("status"));
         assertEquals(true, response.getBody().get("approved"));
         assertEquals("Add security analysis section", response.getBody().get("feedback"));
+    }
+
+    @Test
+    @DisplayName("Should route POST /api/v1/sessions/{sessionId}/approve correctly via MockMvc")
+    void testApproveSessionStepEndpointWithMockMvc() throws Exception {
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+        UUID sessionId = UUID.randomUUID();
+
+        mockMvc.perform(post("/api/v1/sessions/" + sessionId + "/approve")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"approved\": true, \"feedback\": \"E2E Acceptance Test Signal Verified\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SIGNAL_SENT"))
+                .andExpect(jsonPath("$.approved").value(true))
+                .andExpect(jsonPath("$.feedback").value("E2E Acceptance Test Signal Verified"));
     }
 }

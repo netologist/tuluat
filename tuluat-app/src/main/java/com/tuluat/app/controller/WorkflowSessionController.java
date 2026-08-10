@@ -312,6 +312,7 @@ public class WorkflowSessionController {
         return "You are an autonomous domain-specific AI agent.";
     }
 
+    @PostMapping("/sessions/{sessionId}/approve")
     public ResponseEntity<Map<String, Object>> approveSessionStep(@PathVariable UUID sessionId,
                                                                  @RequestBody Map<String, Object> request) {
         boolean approved = Boolean.parseBoolean(String.valueOf(request.getOrDefault("approved", true)));
