@@ -8,12 +8,13 @@ import com.tuluat.engine.repository.WorkflowSessionRepository;
 import com.tuluat.engine.telemetry.WorkflowTelemetryService;
 import io.temporal.client.WorkflowClient;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Slf4j
 @Service
@@ -24,14 +25,13 @@ public class WorkflowExecutionService {
 	private final WorkflowTelemetryService telemetryService;
 	private final WorkflowClient workflowClient;
 
-	@Autowired
 	public WorkflowExecutionService(WorkflowSessionRepository sessionRepository, GraphStateMachineEngine engine,
-			@Autowired(required = false) ObjectMapper objectMapper,
+			ObjectMapper objectMapper,
 			@Autowired(required = false) WorkflowTelemetryService telemetryService,
 			@Autowired(required = false) WorkflowClient workflowClient) {
 		this.sessionRepository = sessionRepository;
 		this.engine = engine;
-		this.objectMapper = objectMapper != null ? objectMapper : new ObjectMapper();
+		this.objectMapper = objectMapper;
 		this.telemetryService = telemetryService;
 		this.workflowClient = workflowClient;
 	}
@@ -49,7 +49,6 @@ public class WorkflowExecutionService {
 		if (telemetryService != null) {
 			telemetryService.recordSessionCreated(workflowName);
 		}
-
 		while ("RUNNING".equalsIgnoreCase(session.getStatus())) {
 			session = engine.executeNextStep(spec, session, maxLoops);
 			session = sessionRepository.save(session);
