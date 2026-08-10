@@ -192,3 +192,12 @@ graph LR
 - `session_long_memory`: Pgvector vector embeddings for semantic recall.
 - `rag_chunks`: Embedded document chunks with HNSW index for cosine similarity search.
 - `workflow_session_logs`: Granular execution audit logs.
+
+---
+
+## 6. Technical Debt & Future Optimizations
+
+1. **GraalVM Native Image Transition (ADR 010)**:
+   - *Current State*: Runs on JVM JIT (`eclipse-temurin:25-jre`) with Virtual Threads. Cold-start is ~3.5s.
+   - *Debt Record*: GraalVM AOT compilation deferred until Spring AI 2.0 and JOSDK reflection hints stabilize.
+   - *Target State*: GraalVM Native Image with ~80ms startup time and ~70MB memory footprint.
