@@ -237,6 +237,7 @@ jobs:
             --set operator.image.tag=latest \
             --set operator.image.pullPolicy=IfNotPresent \
             --set wiremock.enabled=true \
+            --set minio.enabled=false \
             --set samples.install=true \
             --wait --timeout=5m
 

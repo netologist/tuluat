@@ -22,12 +22,12 @@ if [ "${SKIP_OPERATOR_MANIFESTS}" != "true" ] && [ "${SKIP_OPERATOR_MANIFESTS}" 
   kubectl apply -f manifests/operator/rbac.yaml
   kubectl apply -f manifests/operator/service.yaml
 fi
-echo "3. Applying Telemetry, Temporal, and WireMock Stub Infrastructure..."
+echo "3. Applying Telemetry, Temporal, MinIO, and WireMock Stub Infrastructure..."
 kubectl apply -f manifests/telemetry/prometheus-grafana.yaml
 kubectl apply -f manifests/telemetry/prometheus-servicemonitor.yaml || true
 kubectl apply -f manifests/temporal/temporal-cluster.yaml
+kubectl apply -f manifests/storage/minio.yaml
 kubectl apply -f manifests/testing/wiremock-stub.yaml
-
 echo "4. Applying Sample Custom Resources & Kustomize Dynamic Secrets..."
 kubectl apply -k config/
 

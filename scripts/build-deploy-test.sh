@@ -10,12 +10,13 @@ echo " 🚀 Tuluat AI Operator (Spring Boot 4.1 / Java 25 LTS): Build, Deploy & 
 echo "=========================================================="
 
 echo "1. Building Fat JAR & Production Docker Image (${IMAGE_NAME})..."
-./mvnw package -DskipTests ${MAVEN_ARGS:-} || ./mvnw package -DskipTests -Dmaven.compiler.release=25
+./mvnw package -DskipTests ${MAVEN_ARGS:-}
 docker build -f Dockerfile.local -t "${IMAGE_NAME}" .
+
 echo "2. Loading Docker Image into Kind Cluster (${CLUSTER_NAME})..."
 kind load docker-image "${IMAGE_NAME}" --name "${CLUSTER_NAME}"
 
-echo "3. Deploying Kubernetes Manifests to Namespace: ${NAMESPACE}..."
+echo "3. Deploying Infrastructure, CRDs, Operator & Samples..."
 ./scripts/deploy-operator.sh "${NAMESPACE}"
 kubectl apply -f manifests/operator/deployment.yaml -n "${NAMESPACE}"
 
@@ -36,7 +37,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
+sleep 3
 ./scripts/e2e-acceptance-test.sh "http://localhost:${PORT}" "${NAMESPACE}"
 echo -e "\n=========================================================="
-echo " ✅ Java 24 Build, Deploy, and E2E Verification Completed!"
+echo " ✅ Build, Deploy, and E2E Verification Completed!"
 echo "=========================================================="
