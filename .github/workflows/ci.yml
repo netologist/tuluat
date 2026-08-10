@@ -238,6 +238,7 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+
       - name: Set up Helm
         uses: azure/setup-helm@v4
         with:
@@ -249,13 +250,9 @@ jobs:
           cluster_name: tuluat-cluster
           wait: 120s
 
-      - name: Deploy NGINX Ingress Controller
-        run: |
-          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
-          kubectl wait --namespace ingress-nginx \
-            --for=condition=ready pod \
-            --selector=app.kubernetes.io/component=controller \
-            --timeout=180s || echo "Ingress setup continuing..."
+      - name: Create tuluat-system Namespace
+        run: kubectl create namespace tuluat-system --dry-run=client -o yaml | kubectl apply -f -
+
 
       - name: Download Container Image Artifact
         uses: actions/download-artifact@v4
@@ -272,19 +269,23 @@ jobs:
           name: tuluat-operator-helm-chart
           path: dist
 
-      - name: Deploy Infrastructure, CRDs & Custom Resources
+      - name: Deploy Everything via Packaged Helm Chart
         run: |
-          ./scripts/deploy-operator.sh tuluat-system --skip-operator-manifests
+          helm upgrade --install tuluat-operator dist/*.tgz \
+            --namespace tuluat-system \
+            --set namespace.create=false \
+            --set operator.image.repository=tuluat-operator \
+            --set operator.image.tag=latest \
+            --set operator.image.pullPolicy=IfNotPresent \
+            --set wiremock.enabled=true \
+            --set samples.install=true \
+            --wait --timeout=5m
 
-      - name: Deploy Operator via Packaged Helm Chart
-        run: |
-          helm upgrade --install tuluat-operator dist/*.tgz --namespace tuluat-system --set namespace.create=false --set operator.image.repository=tuluat-operator --set operator.image.tag=latest --set operator.image.pullPolicy=IfNotPresent
 
-      - name: Wait for Operator & Infrastructure Pod Readiness
+      - name: Wait for Operator Pod Readiness
         run: |
-          kubectl rollout status deployment/postgres-pgvector -n tuluat-system --timeout=120s
-          kubectl rollout status deployment/temporal-server -n tuluat-system --timeout=180s
-          kubectl rollout status deployment/wiremock-stub -n tuluat-system --timeout=120s
+          kubectl rollout status deployment/tuluat-operator -n tuluat-system --timeout=120s
+
       - name: Run E2E Smoke & Acceptance Test Suite
         run: |
           PORT=8089

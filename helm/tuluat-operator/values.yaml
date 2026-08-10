@@ -129,3 +129,13 @@ wiremock:
   image:
     repository: wiremock/wiremock
     tag: "3.9.1"
+
+
+# --- Sample Custom Resources (E2E / demo) ---
+# Set install: true to deploy LlmProvider, AiAgent, AiWorkflow sample CRs.
+# Agents point to wiremock-provider so no real LLM key is needed.
+samples:
+  install: false
+  apiKeys:
+    openai: "sk-placeholder-openai-key"
+    deepseek: "sk-placeholder-deepseek-key"

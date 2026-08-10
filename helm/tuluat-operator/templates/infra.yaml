@@ -1,0 +1,375 @@
+{{/* ── PostgreSQL + pgvector ─────────────────────────────────────────────── */}}
+{{- if .Values.postgresql.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-pgvector
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "tuluat-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-pgvector
+  template:
+    metadata:
+      labels:
+        app: postgres-pgvector
+    spec:
+      containers:
+        - name: postgres
+          image: "{{ .Values.postgresql.image.repository }}:{{ .Values.postgresql.image.tag }}"
+          env:
+            - name: POSTGRES_DB
+              value: {{ .Values.postgresql.credentials.database }}
+            - name: POSTGRES_USER
+              value: {{ .Values.postgresql.credentials.user }}
+            - name: POSTGRES_PASSWORD
+              value: {{ .Values.postgresql.credentials.password }}
+          ports:
+            - containerPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "tuluat-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  selector:
+    app: postgres-pgvector
+  ports:
+    - port: 5432
+      targetPort: 5432
+{{- end }}
+
+{{/* ── Temporal ──────────────────────────────────────────────────────────── */}}
+{{- if .Values.temporal.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-server
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "tuluat-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: temporal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: temporal-server
+  template:
+    metadata:
+      labels:
+        app: temporal-server
+    spec:
+      containers:
+        - name: temporal-server
+          image: "{{ .Values.temporal.image.repository }}:{{ .Values.temporal.image.tag }}"
+          env:
+            - name: DB
+              value: postgresql
+            - name: DB_PORT
+              value: "5432"
+            - name: POSTGRES_SEEDS
+              value: postgres-service
+            - name: POSTGRES_USER
+              value: {{ .Values.postgresql.credentials.user }}
+            - name: POSTGRES_PWD
+              value: {{ .Values.postgresql.credentials.password }}
+          ports:
+            - containerPort: 7233
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-service
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "tuluat-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: temporal
+spec:
+  selector:
+    app: temporal-server
+  ports:
+    - name: grpc
+      port: 7233
+      targetPort: 7233
+{{- if .Values.temporal.ui.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-ui
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "tuluat-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: temporal-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: temporal-ui
+  template:
+    metadata:
+      labels:
+        app: temporal-ui
+    spec:
+      containers:
+        - name: temporal-ui
+          image: "{{ .Values.temporal.ui.image.repository }}:{{ .Values.temporal.ui.image.tag }}"
+          env:
+            - name: TEMPORAL_ADDRESS
+              value: temporal-service:7233
+            - name: TEMPORAL_CORS_ORIGINS
+              value: "http://localhost:8233"
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-ui-service
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "tuluat-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: temporal-ui
+spec:
+  selector:
+    app: temporal-ui
+  ports:
+    - name: http
+      port: 8233
+      targetPort: 8080
+{{- end }}
+{{- end }}
+
+{{/* ── WireMock Stub (LLM stub for E2E) ─────────────────────────────────── */}}
+{{- if .Values.wiremock.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wiremock-stubs
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "tuluat-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: wiremock
+data:
+  openai-chat-completion.json: |
+    {
+      "request": {
+        "method": "POST",
+        "urlPathPattern": "/v1/chat/completions"
+      },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "jsonBody": {
+          "id": "chatcmpl-wiremock-stub-001",
+          "object": "chat.completion",
+          "created": 1700000000,
+          "model": "wiremock-gpt-4o",
+          "choices": [{
+            "index": 0,
+            "message": { "role": "assistant", "content": "WireMock Stub LLM Response: Agent execution completed successfully." },
+            "finish_reason": "stop"
+          }],
+          "usage": { "prompt_tokens": 20, "completion_tokens": 15, "total_tokens": 35 }
+        }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wiremock-stub
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "tuluat-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: wiremock
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wiremock-stub
+  template:
+    metadata:
+      labels:
+        app: wiremock-stub
+    spec:
+      containers:
+        - name: wiremock
+          image: "{{ .Values.wiremock.image.repository }}:{{ .Values.wiremock.image.tag }}"
+          args: ["--verbose"]
+          ports:
+            - containerPort: 8080
+              name: http
+          volumeMounts:
+            - name: stub-mappings
+              mountPath: /home/wiremock/mappings
+      volumes:
+        - name: stub-mappings
+          configMap:
+            name: wiremock-stubs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wiremock-service
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "tuluat-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: wiremock
+spec:
+  selector:
+    app: wiremock-stub
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+{{- end }}
+
+{{/* ── Prometheus ────────────────────────────────────────────────────────── */}}
+{{- if .Values.prometheus.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "tuluat-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: prometheus
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 5s
+    scrape_configs:
+      - job_name: 'tuluat-operator'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['tuluat-operator-service.{{ .Values.namespace.name }}.svc.cluster.local:8080']
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "tuluat-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: "{{ .Values.prometheus.image.repository }}:{{ .Values.prometheus.image.tag }}"
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.retention.time={{ .Values.prometheus.retention }}"
+          ports:
+            - containerPort: 9090
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/prometheus
+      volumes:
+        - name: config-volume
+          configMap:
+            name: prometheus-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-service
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "tuluat-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: prometheus
+spec:
+  selector:
+    app: prometheus
+  ports:
+    - port: 9090
+      targetPort: 9090
+{{- if .Values.prometheus.serviceMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: tuluat-operator-telemetry
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "tuluat-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: prometheus
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "tuluat-operator.name" . }}
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 15s
+{{- end }}
+{{- end }}
+
+{{/* ── Grafana ───────────────────────────────────────────────────────────── */}}
+{{- if .Values.grafana.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "tuluat-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: "{{ .Values.grafana.image.repository }}:{{ .Values.grafana.image.tag }}"
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: {{ .Values.grafana.credentials.user }}
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: {{ .Values.grafana.credentials.password }}
+          ports:
+            - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-service
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "tuluat-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+spec:
+  selector:
+    app: grafana
+  ports:
+    - port: 3000
+      targetPort: 3000
+{{- end }}
