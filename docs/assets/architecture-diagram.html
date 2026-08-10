@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body {
+    margin: 0;
+    padding: 20px;
+    background: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .canvas {
+    width: 1200px;
+    height: 720px;
+    background: #ffffff;
+    position: relative;
+    border-radius: 12px;
+    box-sizing: border-box;
+  }
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+  text {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    user-select: none;
+  }
+  .title {
+    font-size: 24px;
+    font-weight: 700;
+    fill: #0f172a;
+  }
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .box-text {
+    font-size: 14px;
+    font-weight: 600;
+    fill: #1e293b;
+    text-anchor: middle;
+    dominant-baseline: middle;
+  }
+  .box-subtext {
+    font-size: 11px;
+    font-weight: 500;
+    fill: #475569;
+    text-anchor: middle;
+    dominant-baseline: middle;
+  }
+</style>
+</head>
+<body>
+<div class="canvas">
+<svg viewBox="0 0 1200 720">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6"/>
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b5cf6"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981"/>
+    </marker>
+    <marker id="arrow-amber" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b"/>
+    </marker>
+    <marker id="arrow-pink" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ec4899"/>
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#06b6d4"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444"/>
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="600" y="36" class="title" text-anchor="middle">Tuluat AI Operator — High-Level Architecture</text>
+
+  <!-- 1. External Triggers Zone -->
+  <rect x="40" y="55" width="1120" height="100" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="60" y="78" class="section-title" fill="#1d4ed8">1. External Triggers & Control Layer</text>
+
+  <!-- External Nodes -->
+  <g transform="translate(180, 85)">
+    <rect x="0" y="0" width="280" height="52" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+    <text x="140" y="20" class="box-text">Control Portal (Web GUI / REST)</text>
+    <text x="140" y="37" class="box-subtext">http://localhost:8089/ · Cost & Visual Canvas</text>
+  </g>
+
+  <g transform="translate(740, 85)">
+    <rect x="0" y="0" width="280" height="52" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+    <text x="140" y="20" class="box-text">Kubectl / GitOps Pipeline</text>
+    <text x="140" y="37" class="box-subtext">WorkflowSession & CRD Declarative Triggers</text>
+  </g>
+
+  <!-- 2. K8s Cluster Zone -->
+  <rect x="40" y="175" width="1120" height="340" rx="10" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.5"/>
+  <text x="60" y="198" class="section-title" fill="#6d28d9">2. Kubernetes Cluster — Operator Pod (Spring Boot 4.1 + Java 25 LTS)</text>
+
+  <!-- Core Operator Sub-services -->
+  <!-- REST & WS -->
+  <g transform="translate(70, 215)">
+    <rect x="0" y="0" width="220" height="55" rx="8" fill="#ddd6fe" stroke="#7c3aed" stroke-width="2"/>
+    <text x="110" y="22" class="box-text">REST & WS Gateway</text>
+    <text x="110" y="39" class="box-subtext">8 Controllers · Event Stream</text>
+  </g>
+
+  <!-- Graph Engine -->
+  <g transform="translate(330, 215)">
+    <rect x="0" y="0" width="260" height="55" rx="8" fill="#ddd6fe" stroke="#7c3aed" stroke-width="2"/>
+    <text x="130" y="22" class="box-text">Graph State Machine Engine</text>
+    <text x="130" y="39" class="box-subtext">SpEL Node Traversal (Agent/Condition/Tool)</text>
+  </g>
+
+  <!-- Agent Execution -->
+  <g transform="translate(630, 215)">
+    <rect x="0" y="0" width="260" height="55" rx="8" fill="#ddd6fe" stroke="#7c3aed" stroke-width="2"/>
+    <text x="130" y="22" class="box-text">Agent Execution Service</text>
+    <text x="130" y="39" class="box-subtext">Spring AI · Model Gateway · Prompt Resolution</text>
+  </g>
+
+  <!-- Telemetry -->
+  <g transform="translate(930, 215)">
+    <rect x="0" y="0" width="200" height="55" rx="8" fill="#fbcfe8" stroke="#db2777" stroke-width="2"/>
+    <text x="100" y="22" class="box-text">Prometheus Telemetry</text>
+    <text x="100" y="39" class="box-subtext">/actuator/prometheus</text>
+  </g>
+
+  <!-- Sub-features Row 2 -->
+  <!-- Guardrails -->
+  <g transform="translate(70, 310)">
+    <rect x="0" y="0" width="240" height="60" rx="8" fill="#fecaca" stroke="#ef4444" stroke-width="2"/>
+    <text x="120" y="24" class="box-text">Guardrails Pipeline</text>
+    <text x="120" y="42" class="box-subtext">PII Masking · Injection Def · Validation</text>
+  </g>
+
+  <!-- MCP Registry -->
+  <g transform="translate(340, 310)">
+    <rect x="0" y="0" width="240" height="60" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="120" y="24" class="box-text">MCP Client Registry</text>
+    <text x="120" y="42" class="box-subtext">JSON-RPC over SSE / stdio Transports</text>
+  </g>
+
+  <!-- A2A Adapter -->
+  <g transform="translate(610, 310)">
+    <rect x="0" y="0" width="240" height="60" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="120" y="24" class="box-text">A2A Protocol Adapter</text>
+    <text x="120" y="42" class="box-subtext">A2aCard · Remote Inter-Agent Discovery</text>
+  </g>
+
+  <!-- RAG Service -->
+  <g transform="translate(880, 310)">
+    <rect x="0" y="0" width="250" height="60" rx="8" fill="#a7f3d0" stroke="#059669" stroke-width="2"/>
+    <text x="125" y="24" class="box-text">RAG Subsystem</text>
+    <text x="125" y="42" class="box-subtext">Recursive Chunker · Vector Embedding</text>
+  </g>
+
+  <!-- Reconcilers Row -->
+  <g transform="translate(70, 420)">
+    <rect x="0" y="0" width="1060" height="70" rx="8" fill="#fef9c3" stroke="#eab308" stroke-width="2"/>
+    <text x="530" y="28" class="box-text" font-size="15">JOSDK 5.1 Kubernetes Reconcilers</text>
+    <text x="530" y="48" class="box-subtext" font-size="12">LlmProviderReconciler · AiAgentReconciler · AiWorkflowReconciler · WorkflowSessionReconciler · McpServerReconciler</text>
+  </g>
+
+  <!-- 3. Storage & Infrastructure Zone -->
+  <rect x="40" y="535" width="1120" height="145" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+  <text x="60" y="558" class="section-title" fill="#15803d">3. Data, Storage & Durable Execution Layer</text>
+
+  <!-- PostgreSQL -->
+  <g transform="translate(70, 580)">
+    <rect x="0" y="0" width="240" height="75" rx="8" fill="#bbf7d0" stroke="#16a34a" stroke-width="2"/>
+    <text x="120" y="26" class="box-text">PostgreSQL 16 + pgvector</text>
+    <text x="120" y="46" class="box-subtext">Session Context · Short Memory</text>
+    <text x="120" y="60" class="box-subtext">HNSW Vector Cosine Index</text>
+  </g>
+
+  <!-- MinIO -->
+  <g transform="translate(340, 580)">
+    <rect x="0" y="0" width="240" height="75" rx="8" fill="#a7f3d0" stroke="#059669" stroke-width="2"/>
+    <text x="120" y="26" class="box-text">MinIO S3 Object Storage</text>
+    <text x="120" y="46" class="box-subtext">Raw Document Artifacts</text>
+    <text x="120" y="60" class="box-subtext">API: 9000 · Console: 9001</text>
+  </g>
+
+  <!-- Temporal -->
+  <g transform="translate(610, 580)">
+    <rect x="0" y="0" width="250" height="75" rx="8" fill="#fed7aa" stroke="#ea580c" stroke-width="2"/>
+    <text x="125" y="26" class="box-text">Temporal Engine</text>
+    <text x="125" y="46" class="box-subtext">Durable Workflow Execution</text>
+    <text x="125" y="60" class="box-subtext">HITL Approval Signal Inbox</text>
+  </g>
+
+  <!-- Prometheus & Grafana -->
+  <g transform="translate(880, 580)">
+    <rect x="0" y="0" width="250" height="75" rx="8" fill="#fbcfe8" stroke="#db2777" stroke-width="2"/>
+    <text x="125" y="26" class="box-text">Prometheus & Grafana</text>
+    <text x="125" y="46" class="box-subtext">Metrics Collection (9090)</text>
+    <text x="125" y="60" class="box-subtext">Operational Dashboard (3000)</text>
+  </g>
+
+  <!-- Connectors / Arrows -->
+  <path d="M 320 137 L 320 205" fill="none" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <path d="M 880 137 L 880 410" fill="none" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <path d="M 290 242 L 320 242" fill="none" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow-purple)"/>
+  <path d="M 590 242 L 620 242" fill="none" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow-purple)"/>
+
+  <path d="M 680 270 L 190 302" fill="none" stroke="#ef4444" stroke-width="2" marker-end="url(#arrow-red)"/>
+  <path d="M 720 270 L 460 302" fill="none" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow-amber)"/>
+  <path d="M 750 270 L 730 302" fill="none" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow-amber)"/>
+  <path d="M 810 270 L 980 302" fill="none" stroke="#06b6d4" stroke-width="2" marker-end="url(#arrow-teal)"/>
+
+  <path d="M 420 270 L 190 572" fill="none" stroke="#10b981" stroke-width="2" marker-end="url(#arrow-green)"/>
+  <path d="M 1000 370 L 460 572" fill="none" stroke="#06b6d4" stroke-width="2" marker-end="url(#arrow-teal)"/>
+  <path d="M 760 270 L 735 572" fill="none" stroke="#ea580c" stroke-width="2" marker-end="url(#arrow-amber)"/>
+  <path d="M 1030 270 L 1005 572" fill="none" stroke="#db2777" stroke-width="2" marker-end="url(#arrow-pink)"/>
+
+</svg>
+</div>
+</body>
+</html>
