@@ -142,7 +142,7 @@ jobs:
 
       - name: Build Container Image
         run: |
-          docker build -t tuluat-operator:latest .
+          docker buildx build --load -t tuluat-operator:latest .
 
       - name: Save Container Image Artifact
         run: |
@@ -155,7 +155,6 @@ jobs:
           name: tuluat-operator-container-image
           path: image-dist/*.tar.gz
           if-no-files-found: error
-
   # ── 4. Lint & Package Helm Chart ──────────────────────────────────────────
   package-helm:
     name: Lint & Package Helm Chart
