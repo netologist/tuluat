@@ -21,20 +21,20 @@ public class EmbabelGoalEngine {
 
 	public EmbabelBlackboard executeGoal(EmbabelGoal goal, List<EmbabelAction> availableActions,
 			EmbabelBlackboard blackboard) {
-		log.info("Embabel Engine: Initiating Goal '{}' (targetKey: {})", goal.getDescription(),
-				goal.getTargetStateKey());
+		log.info("Embabel Engine: Initiating Goal '{}' (targetKey: {})", goal.description(),
+				goal.targetStateKey());
 
 		int maxSteps = 10;
 		int step = 0;
 
-		while (!blackboard.has(goal.getTargetStateKey()) && step < maxSteps) {
+		while (!blackboard.has(goal.targetStateKey()) && step < maxSteps) {
 			EmbabelAction nextAction = availableActions.stream()
 					.filter(action -> action.requiredPreconditions().stream().allMatch(blackboard::has))
 					.filter(action -> !blackboard.has(action.outputKey())).findFirst().orElse(null);
 
 			if (nextAction == null) {
 				log.warn("Embabel Engine: No eligible actions with satisfied preconditions found for goal '{}'",
-						goal.getId());
+					goal.id());
 				break;
 			}
 

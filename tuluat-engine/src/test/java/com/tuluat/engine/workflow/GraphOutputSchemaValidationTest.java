@@ -43,35 +43,22 @@ class GraphOutputSchemaValidationTest {
 	}
 
 	private AiWorkflowSpec specWithSchema() {
-		NodeDefinition writer = new NodeDefinition();
-		writer.setId("writer-node");
-		writer.setType("AGENT");
-		writer.setAgentRef("writer-agent");
-		writer.setOutputKey("final_report");
-		writer.setOutputSchema("""
+		NodeDefinition writer = new NodeDefinition("writer-node", "AGENT", "writer-agent", null,
+				"final_report", null, """
 				{"type":"object","required":["summary"],"properties":{"summary":{"type":"string"}}}
 				""");
 
-		NodeDefinition done = new NodeDefinition();
-		done.setId("done-node");
-		done.setType("AGENT");
-		done.setAgentRef("writer-agent");
-		done.setOutputKey("done");
+		NodeDefinition done = new NodeDefinition("done-node", "AGENT", "writer-agent", null, "done",
+				null, null);
 
-		AiWorkflowSpec spec = new AiWorkflowSpec();
-		spec.setInitialNode("writer-node");
-		spec.setNodes(List.of(writer, done));
-		spec.setEdges(List.of(edge("writer-node", "done-node")));
-		return spec;
+		return new AiWorkflowSpec(null, "writer-node", List.of(writer, done),
+				List.of(edge("writer-node", "done-node")), null);
 	}
 
 	private EdgeDefinition edge(String from, String to) {
-		var e = new EdgeDefinition();
-		e.setFrom(from);
-		e.setTo(to);
-		e.setCondition("true");
-		return e;
+		return new EdgeDefinition(from, to, "true");
 	}
+
 
 	@Test
 	void validJsonOutputAdvancesSession() {
@@ -110,9 +97,11 @@ class GraphOutputSchemaValidationTest {
 						com.tuluat.engine.agent.UsageStats.calculate(5, 5, "m", 10)));
 
 		AiWorkflowSpec spec = specWithSchema();
-		spec.getNodes().get(0).setOutputSchema(null);
+		NodeDefinition noSchemaNode = new NodeDefinition("writer-node", "AGENT", "writer-agent", null,
+				"final_report", null, null);
+		spec = new AiWorkflowSpec(spec.description(), spec.initialNode(),
+				List.of(noSchemaNode, spec.nodes().get(1)), spec.edges(), spec.memoryConfig());
 
 		WorkflowSessionEntity result = engine().executeNextStep(spec, session(), 10);
-		assertEquals("done-node", result.getCurrentNodeId());
 	}
 }

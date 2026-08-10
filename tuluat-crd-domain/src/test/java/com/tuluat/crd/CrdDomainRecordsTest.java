@@ -62,37 +62,21 @@ class CrdDomainRecordsTest {
 		var workflow = new AiWorkflow();
 		workflow.setMetadata(new ObjectMetaBuilder().withName("wf-1").withNamespace("default").build());
 
-		NodeDefinition node = new NodeDefinition();
-		node.setId("start-node");
-		node.setType("AGENT");
-		node.setAgentRef("agent-1");
-		node.setInputTemplate("input");
-		node.setOutputKey("output");
-
-		EdgeDefinition edge = new EdgeDefinition();
-		edge.setFrom("start-node");
-		edge.setTo("end-node");
-		var spec = new AiWorkflowSpec();
-		spec.setDescription("Test workflow");
-		spec.setInitialNode("start-node");
-		spec.setNodes(List.of(node));
-		spec.setEdges(List.of(edge));
-		MemoryConfig memConfig = new MemoryConfig();
-		memConfig.setShortMemorySize(10);
-		spec.setMemoryConfig(memConfig);
+		NodeDefinition node = new NodeDefinition("start-node", "AGENT", "agent-1", "input", "output", null, null);
+		EdgeDefinition edge = new EdgeDefinition("start-node", "end-node", null);
+		var spec = new AiWorkflowSpec("Test workflow", "start-node", List.of(node), List.of(edge),
+				new MemoryConfig(10, true, "document_vectors"));
 		workflow.setSpec(spec);
 
-		assertEquals("start-node", workflow.getSpec().getInitialNode());
-		assertEquals(1, workflow.getSpec().getNodes().size());
-		assertEquals(10, workflow.getSpec().getMemoryConfig().getShortMemorySize());
+		assertEquals("start-node", workflow.getSpec().initialNode());
+		assertEquals(1, workflow.getSpec().nodes().size());
+		assertEquals(10, workflow.getSpec().memoryConfig().shortMemorySize());
 
-		AiWorkflowStatus status = new AiWorkflowStatus();
-		status.setState("Ready");
-		status.setNodeCount(1);
+		AiWorkflowStatus status = new AiWorkflowStatus("Ready", 1);
 		workflow.setStatus(status);
 
-		assertEquals("Ready", workflow.getStatus().getState());
-		assertEquals(1, workflow.getStatus().getNodeCount());
+		assertEquals("Ready", workflow.getStatus().state());
+		assertEquals(1, workflow.getStatus().nodeCount());
 	}
 
 	@Test
@@ -145,22 +129,18 @@ class CrdDomainRecordsTest {
 		var session = new WorkflowSession();
 		session.setMetadata(new ObjectMetaBuilder().withName("session-123").withNamespace("default").build());
 
-		WorkflowSessionSpec spec = new WorkflowSessionSpec();
-		spec.setWorkflowRef("research-workflow");
-		spec.setInput("Initial research query");
-		spec.setParameters(Map.of("maxLoops", 5));
+		WorkflowSessionSpec spec = new WorkflowSessionSpec("research-workflow", "Initial research query",
+				Map.of("maxLoops", 5));
 		session.setSpec(spec);
 
-		assertEquals("research-workflow", session.getSpec().getWorkflowRef());
-		assertEquals(5, session.getSpec().getParameters().get("maxLoops"));
+		assertEquals("research-workflow", session.getSpec().workflowRef());
+		assertEquals(5, session.getSpec().parameters().get("maxLoops"));
 
-		WorkflowSessionStatus status = new WorkflowSessionStatus();
-		status.setSessionId("uuid-123");
-		status.setPhase("COMPLETED");
-		status.setCurrentNode("report-node");
+		WorkflowSessionStatus status = new WorkflowSessionStatus("uuid-123", "COMPLETED", "report-node", null, null,
+				null);
 		session.setStatus(status);
 
-		assertEquals("COMPLETED", session.getStatus().getPhase());
-		assertEquals("uuid-123", session.getStatus().getSessionId());
+		assertEquals("COMPLETED", session.getStatus().phase());
+		assertEquals("uuid-123", session.getStatus().sessionId());
 	}
 }

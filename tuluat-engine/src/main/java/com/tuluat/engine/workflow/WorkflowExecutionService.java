@@ -41,7 +41,7 @@ public class WorkflowExecutionService {
 		WorkflowSessionEntity session = new WorkflowSessionEntity();
 		session.setWorkflowName(workflowName);
 		session.setStatus("RUNNING");
-		session.setCurrentNodeId(spec.getInitialNode());
+		session.setCurrentNodeId(spec.initialNode());
 		session.setContextData(toJson(Map.of("input", input)));
 
 		session = sessionRepository.save(session);
@@ -86,12 +86,12 @@ public class WorkflowExecutionService {
 		try {
 			UUID id = UUID.fromString(sessionId);
 			sessionRepository.findById(id).ifPresent(s -> {
-				String statusVal = signal.isApproved() ? "APPROVED" : "REJECTED";
+				String statusVal = signal.approved() ? "APPROVED" : "REJECTED";
 				Map<String, Object> ctx = parseContext(s.getContextData());
 				ctx.put("approvalStatus", statusVal);
-				ctx.put("approvalFeedback", signal.getFeedback() != null ? signal.getFeedback() : "");
+				ctx.put("approvalFeedback", signal.feedback() != null ? signal.feedback() : "");
 				s.setContextData(toJson(ctx));
-				s.setStatus(signal.isApproved() ? "RUNNING" : "REJECTED");
+				s.setStatus(signal.approved() ? "RUNNING" : "REJECTED");
 				sessionRepository.save(s);
 			});
 		} catch (Exception e) {

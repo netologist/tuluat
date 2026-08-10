@@ -34,13 +34,13 @@ public class WorkflowController {
 			Map<String, Object> map = new HashMap<>();
 			map.put("name", wf.getMetadata().getName());
 			map.put("namespace", wf.getMetadata().getNamespace());
-			map.put("description", wf.getSpec() != null ? wf.getSpec().getDescription() : "");
-			map.put("initialNode", wf.getSpec() != null ? wf.getSpec().getInitialNode() : "");
+			map.put("description", wf.getSpec() != null ? wf.getSpec().description() : "");
+			map.put("initialNode", wf.getSpec() != null ? wf.getSpec().initialNode() : "");
 			map.put("nodeCount",
-					(wf.getSpec() != null && wf.getSpec().getNodes() != null) ? wf.getSpec().getNodes().size() : 0);
-			map.put("nodes", wf.getSpec() != null ? wf.getSpec().getNodes() : List.of());
-			map.put("edges", wf.getSpec() != null ? wf.getSpec().getEdges() : List.of());
-			map.put("memoryConfig", wf.getSpec() != null ? wf.getSpec().getMemoryConfig() : null);
+					(wf.getSpec() != null && wf.getSpec().nodes() != null) ? wf.getSpec().nodes().size() : 0);
+			map.put("nodes", wf.getSpec() != null ? wf.getSpec().nodes() : List.of());
+			map.put("edges", wf.getSpec() != null ? wf.getSpec().edges() : List.of());
+			map.put("memoryConfig", wf.getSpec() != null ? wf.getSpec().memoryConfig() : null);
 			return map;
 		}).collect(Collectors.toList());
 

@@ -3,27 +3,13 @@ package com.tuluat.crd.session;
 import java.util.HashMap;
 import java.util.Map;
 
-public class WorkflowSessionSpec {
-	private String workflowRef;
-	private String input;
-	private Map<String, Object> parameters = new HashMap<>();
+public record WorkflowSessionSpec(String workflowRef, String input, Map<String, Object> parameters) {
 
-	public String getWorkflowRef() {
-		return workflowRef;
+	public WorkflowSessionSpec {
+		if (parameters == null) parameters = new HashMap<>();
 	}
-	public void setWorkflowRef(String workflowRef) {
-		this.workflowRef = workflowRef;
-	}
-	public String getInput() {
-		return input;
-	}
-	public void setInput(String input) {
-		this.input = input;
-	}
-	public Map<String, Object> getParameters() {
-		return parameters;
-	}
-	public void setParameters(Map<String, Object> parameters) {
-		this.parameters = parameters;
+
+	public WorkflowSessionSpec() {
+		this(null, null, new HashMap<>());
 	}
 }

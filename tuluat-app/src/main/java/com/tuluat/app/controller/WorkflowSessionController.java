@@ -324,6 +324,6 @@ public class WorkflowSessionController {
 		}
 
 		return ResponseEntity.ok(Map.of("sessionId", sessionId.toString(), "status", "SIGNAL_SENT", "approved",
-				signal.isApproved(), "feedback", signal.getFeedback() != null ? signal.getFeedback() : ""));
+				signal.approved(), "feedback", signal.feedback() != null ? signal.feedback() : ""));
 	}
 }

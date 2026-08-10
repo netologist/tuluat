@@ -22,21 +22,17 @@ class AiWorkflowReconcilerTest {
 		var workflow = new AiWorkflow();
 		workflow.setMetadata(new ObjectMetaBuilder().withName("research-wf").withNamespace("default").build());
 
-		NodeDefinition n1 = new NodeDefinition();
-		n1.setId("n1");
-		NodeDefinition n2 = new NodeDefinition();
-		n2.setId("n2");
+		NodeDefinition n1 = new NodeDefinition("n1", null, null, null, null, null, null);
+		NodeDefinition n2 = new NodeDefinition("n2", null, null, null, null, null, null);
 
-		var spec = new AiWorkflowSpec();
-		spec.setInitialNode("n1");
-		spec.setNodes(List.of(n1, n2));
+		var spec = new AiWorkflowSpec(null, "n1", List.of(n1, n2), null, null);
 		workflow.setSpec(spec);
 
 		UpdateControl<AiWorkflow> control = reconciler.reconcile(workflow, null);
 
 		assertNotNull(control);
 		assertNotNull(workflow.getStatus());
-		assertEquals("Ready", workflow.getStatus().getState());
-		assertEquals(2, workflow.getStatus().getNodeCount());
+		assertEquals("Ready", workflow.getStatus().state());
+		assertEquals(2, workflow.getStatus().nodeCount());
 	}
 }

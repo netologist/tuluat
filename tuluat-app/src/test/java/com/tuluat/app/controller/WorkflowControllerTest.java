@@ -49,12 +49,8 @@ class WorkflowControllerTest {
 	void testListWorkflows() {
 		var workflow = new AiWorkflow();
 		workflow.setMetadata(new ObjectMetaBuilder().withName("research-wf").withNamespace("tuluat-system").build());
-		var spec = new AiWorkflowSpec();
-		spec.setDescription("Research workflow");
-		spec.setInitialNode("node-1");
-		NodeDefinition node = new NodeDefinition();
-		node.setId("node-1");
-		spec.setNodes(List.of(node));
+		var spec = new AiWorkflowSpec("Research workflow", "node-1",
+				List.of(new NodeDefinition("node-1", null, null, null, null, null, null)), null, null);
 		workflow.setSpec(spec);
 
 		var listMock = mock(io.fabric8.kubernetes.api.model.KubernetesResourceList.class);

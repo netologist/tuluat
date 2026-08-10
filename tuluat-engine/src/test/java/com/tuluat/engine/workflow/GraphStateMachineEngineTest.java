@@ -25,33 +25,23 @@ class GraphStateMachineEngineTest {
 	@Test
 	@DisplayName("Should evaluate condition node expression correctly using SpEL")
 	void shouldEvaluateConditionNodeExpression() {
-		NodeDefinition condNode = new NodeDefinition();
-		condNode.setId("check-result");
-		condNode.setType("CONDITION");
-		condNode.setExpression("#data['status'] == 'OK'");
+		NodeDefinition condNode = new NodeDefinition("check-result", "CONDITION", null, null, null,
+				"#data['status'] == 'OK'", null);
 
 		Map<String, Object> context = new HashMap<>();
 		context.put("status", "OK");
 
-		boolean result = engine.evaluateCondition(condNode.getExpression(), context);
+		boolean result = engine.evaluateCondition(condNode.expression(), context);
 		assertTrue(result);
 	}
 
 	@Test
 	@DisplayName("Should find next node ID based on edge conditions")
 	void shouldFindNextNode() {
-		EdgeDefinition edge1 = new EdgeDefinition();
-		edge1.setFrom("check-result");
-		edge1.setTo("success-node");
-		edge1.setCondition("true");
+		EdgeDefinition edge1 = new EdgeDefinition("check-result", "success-node", "true");
+		EdgeDefinition edge2 = new EdgeDefinition("check-result", "retry-node", "false");
 
-		EdgeDefinition edge2 = new EdgeDefinition();
-		edge2.setFrom("check-result");
-		edge2.setTo("retry-node");
-		edge2.setCondition("false");
-
-		AiWorkflowSpec spec = new AiWorkflowSpec();
-		spec.setEdges(List.of(edge1, edge2));
+		AiWorkflowSpec spec = new AiWorkflowSpec(null, null, null, List.of(edge1, edge2), null);
 
 		String nextNode = engine.resolveNextNodeId(spec, "check-result", true);
 		assertEquals("success-node", nextNode);

@@ -40,33 +40,33 @@ public class GraphNodeActivitiesImpl implements GraphNodeActivities {
 
 	@Override
 	public Map<String, Object> executeAgentNode(UUID sessionId, NodeDefinition node, Map<String, Object> contextData) {
-		log.info("Temporal Activity: Executing Agent Node '{}' for session {}", node.getId(), sessionId);
-		recordLog(sessionId, node.getId(), "INFO", "Executing Agent Node: " + node.getId());
+		log.info("Temporal Activity: Executing Agent Node '{}' for session {}", node.id(), sessionId);
+		recordLog(sessionId, node.id(), "INFO", "Executing Agent Node: " + node.id());
 
-		String prompt = resolvePromptTemplate(node.getInputTemplate(), contextData);
-		AgentResponse response = agentExecutionService.executeAgent(node.getAgentRef(), prompt, null);
+		String prompt = resolvePromptTemplate(node.inputTemplate(), contextData);
+		AgentResponse response = agentExecutionService.executeAgent(node.agentRef(), prompt, null);
 
-		contextData.put(node.getOutputKey(), response.answer());
+		contextData.put(node.outputKey(), response.answer());
 
 		// Post-execution JSON Schema validation (ADR 004 / 007); failure fails the
 		// activity
-		if (guardrailPipeline != null && node.getOutputSchema() != null && !node.getOutputSchema().isBlank()) {
+		if (guardrailPipeline != null && node.outputSchema() != null && !node.outputSchema().isBlank()) {
 			com.tuluat.guardrails.ValidationResult vr = guardrailPipeline.validateOutput(response.answer(), null,
-					node.getOutputSchema());
+					node.outputSchema());
 			if (!vr.valid()) {
 				String errMsg = String.format(
-						"Temporal node '%s' output failed schema validation (confidence=%.2f): %s", node.getId(),
+						"Temporal node '%s' output failed schema validation (confidence=%.2f): %s", node.id(),
 						vr.confidence(), vr.errors());
 				log.error(errMsg);
-				recordLog(sessionId, node.getId(), "ERROR", errMsg);
+				recordLog(sessionId, node.id(), "ERROR", errMsg);
 				throw new IllegalStateException(errMsg);
 			}
-			recordLog(sessionId, node.getId(), "INFO",
-					"Temporal node '" + node.getId() + "' output passed schema validation");
+			recordLog(sessionId, node.id(), "INFO",
+					"Temporal node '" + node.id() + "' output passed schema validation");
 		}
 
 		if (telemetryService != null) {
-			telemetryService.recordNodeExecuted("temporal-workflow", "AGENT", node.getId());
+			telemetryService.recordNodeExecuted("temporal-workflow", "AGENT", node.id());
 		}
 
 		return contextData;
@@ -74,19 +74,19 @@ public class GraphNodeActivitiesImpl implements GraphNodeActivities {
 
 	@Override
 	public boolean evaluateConditionNode(UUID sessionId, NodeDefinition node, Map<String, Object> contextData) {
-		log.info("Temporal Activity: Evaluating Condition Node '{}' for session {}", node.getId(), sessionId);
-		if (node.getExpression() == null || node.getExpression().isBlank())
+		log.info("Temporal Activity: Evaluating Condition Node '{}' for session {}", node.id(), sessionId);
+		if (node.expression() == null || node.expression().isBlank())
 			return true;
 
 		StandardEvaluationContext evalContext = new StandardEvaluationContext();
 		evalContext.setVariable("data", contextData);
-		Boolean result = parser.parseExpression(node.getExpression()).getValue(evalContext, Boolean.class);
+		Boolean result = parser.parseExpression(node.expression()).getValue(evalContext, Boolean.class);
 		boolean eval = Boolean.TRUE.equals(result);
 
-		recordLog(sessionId, node.getId(), "INFO", "Condition expression evaluated to: " + eval);
+		recordLog(sessionId, node.id(), "INFO", "Condition expression evaluated to: " + eval);
 
 		if (telemetryService != null) {
-			telemetryService.recordNodeExecuted("temporal-workflow", "CONDITION", node.getId());
+			telemetryService.recordNodeExecuted("temporal-workflow", "CONDITION", node.id());
 		}
 
 		return eval;

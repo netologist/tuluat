@@ -19,13 +19,13 @@ public class AiWorkflowReconciler implements Reconciler<AiWorkflow> {
 
 		AiWorkflowStatus status = resource.getStatus();
 		if (status == null) {
-			status = new AiWorkflowStatus();
+			status = new AiWorkflowStatus("Ready", 0);
 		}
 
-		status.setState("Ready");
-		status.setNodeCount(resource.getSpec() != null && resource.getSpec().getNodes() != null
-				? resource.getSpec().getNodes().size()
-				: 0);
+		int nodeCount = resource.getSpec() != null && resource.getSpec().nodes() != null
+				? resource.getSpec().nodes().size()
+				: 0;
+		status = new AiWorkflowStatus("Ready", nodeCount);
 		resource.setStatus(status);
 
 		return UpdateControl.patchStatus(resource);

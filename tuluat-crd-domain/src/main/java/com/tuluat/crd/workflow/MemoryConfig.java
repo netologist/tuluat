@@ -1,26 +1,12 @@
 package com.tuluat.crd.workflow;
 
-public class MemoryConfig {
-	private int shortMemorySize = 20;
-	private boolean enableLongMemory = true;
-	private String vectorTableName = "session_long_memory";
+public record MemoryConfig(int shortMemorySize, boolean enableLongMemory, String vectorTableName) {
 
-	public int getShortMemorySize() {
-		return shortMemorySize;
+	public MemoryConfig() {
+		this(50, true, "document_vectors");
 	}
-	public void setShortMemorySize(int shortMemorySize) {
-		this.shortMemorySize = shortMemorySize;
-	}
-	public boolean isEnableLongMemory() {
-		return enableLongMemory;
-	}
-	public void setEnableLongMemory(boolean enableLongMemory) {
-		this.enableLongMemory = enableLongMemory;
-	}
-	public String getVectorTableName() {
-		return vectorTableName;
-	}
-	public void setVectorTableName(String vectorTableName) {
-		this.vectorTableName = vectorTableName;
+
+	public MemoryConfig {
+		if (vectorTableName == null) vectorTableName = "document_vectors";
 	}
 }

@@ -25,38 +25,38 @@ public class WorkflowSessionTemporalWorkflowImpl implements WorkflowSessionTempo
 		Map<String, Object> contextData = new HashMap<>();
 		contextData.put("input", input);
 
-		String currentNodeId = spec.getInitialNode();
+		String currentNodeId = spec.initialNode();
 		int loopCount = 0;
 
 		while (currentNodeId != null && loopCount < maxLoops) {
 			final String targetId = currentNodeId;
-			NodeDefinition currentNode = spec.getNodes().stream().filter(n -> n.getId().equals(targetId)).findFirst()
+			NodeDefinition currentNode = spec.nodes().stream().filter(n -> n.id().equals(targetId)).findFirst()
 					.orElse(null);
 
 			if (currentNode == null)
 				break;
 
-			if ("AGENT".equalsIgnoreCase(currentNode.getType())) {
+			if ("AGENT".equalsIgnoreCase(currentNode.type())) {
 				contextData = activities.executeAgentNode(sessionId, currentNode, contextData);
-				currentNodeId = resolveNextNodeId(spec, currentNode.getId(), true);
-			} else if ("CONDITION".equalsIgnoreCase(currentNode.getType())) {
+				currentNodeId = resolveNextNodeId(spec, currentNode.id(), true);
+			} else if ("CONDITION".equalsIgnoreCase(currentNode.type())) {
 				boolean result = activities.evaluateConditionNode(sessionId, currentNode, contextData);
-				currentNodeId = resolveNextNodeId(spec, currentNode.getId(), result);
-			} else if ("HUMAN_APPROVAL".equalsIgnoreCase(currentNode.getType())) {
-				activities.recordLog(sessionId, currentNode.getId(), "INFO", "Waiting for human approval signal...");
+				currentNodeId = resolveNextNodeId(spec, currentNode.id(), result);
+			} else if ("HUMAN_APPROVAL".equalsIgnoreCase(currentNode.type())) {
+				activities.recordLog(sessionId, currentNode.id(), "INFO", "Waiting for human approval signal...");
 				Workflow.await(() -> approvalReceived);
 
-				if (latestSignal.getFeedback() != null && !latestSignal.getFeedback().isBlank()) {
-					contextData.put("approval_feedback", latestSignal.getFeedback());
+				if (latestSignal.feedback() != null && !latestSignal.feedback().isBlank()) {
+					contextData.put("approval_feedback", latestSignal.feedback());
 				}
-				if (latestSignal.getMetadata() != null) {
-					contextData.put("approval_metadata", latestSignal.getMetadata());
+				if (latestSignal.metadata() != null) {
+					contextData.put("approval_metadata", latestSignal.metadata());
 				}
 
-				activities.recordLog(sessionId, currentNode.getId(), "INFO", "Approval signal received: approved="
-						+ latestSignal.isApproved() + ", feedback=" + latestSignal.getFeedback());
+				activities.recordLog(sessionId, currentNode.id(), "INFO", "Approval signal received: approved="
+						+ latestSignal.approved() + ", feedback=" + latestSignal.feedback());
 
-				currentNodeId = resolveNextNodeId(spec, currentNode.getId(), latestSignal.isApproved());
+				currentNodeId = resolveNextNodeId(spec, currentNode.id(), latestSignal.approved());
 				approvalReceived = false;
 			}
 
@@ -74,9 +74,9 @@ public class WorkflowSessionTemporalWorkflowImpl implements WorkflowSessionTempo
 	}
 
 	private String resolveNextNodeId(AiWorkflowSpec spec, String fromNodeId, boolean conditionResult) {
-		return spec.getEdges().stream().filter(e -> e.getFrom().equals(fromNodeId))
-				.filter(e -> e.getCondition() == null || e.getCondition().isEmpty()
-						|| Boolean.parseBoolean(e.getCondition()) == conditionResult)
-				.map(EdgeDefinition::getTo).findFirst().orElse(null);
+		return spec.edges().stream().filter(e -> e.from().equals(fromNodeId))
+				.filter(e -> e.condition() == null || e.condition().isEmpty()
+						|| Boolean.parseBoolean(e.condition()) == conditionResult)
+				.map(EdgeDefinition::to).findFirst().orElse(null);
 	}
 }
