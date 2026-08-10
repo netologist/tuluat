@@ -15,7 +15,10 @@ resources:
   - samples/05_aiworkflow_sample.yaml
   - samples/06_workflowsession_sample.yaml
   - samples/07_mcpserver_postgres.yaml
-
+  - samples/08_risk_analysis_agent.yaml
+  - samples/08_payment_agent.yaml
+  - samples/08_order_fulfillment_agent.yaml
+  - samples/08_order_processing_workflow.yaml
 secretGenerator:
   - name: deepseek-secret
     namespace: tuluat-system
