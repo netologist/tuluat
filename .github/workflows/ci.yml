@@ -127,11 +127,11 @@ jobs:
       - name: Build & Test Sub-Module
         run: |
           ./mvnw test -pl tuluat-${{ matrix.module }} -am -Denable-preview
-  # ── 3. Package Helm Chart & Upload Artifact ──────────────────────────────
+  # ── 3. Lint & Package Helm Chart ──────────────────────────────────────────
   package-helm:
     name: Lint & Package Helm Chart
-    needs: detect-changes
-    if: needs.detect-changes.outputs.has_changes == 'true'
+    needs: [detect-changes, build-module]
+    if: needs.detect-changes.outputs.has_changes == 'true' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -157,10 +157,42 @@ jobs:
           path: dist/*.tgz
           if-no-files-found: error
 
-  # ── 4. Fan-In: KinD Cluster & E2E Acceptance Tests ─────────────────────────
+  # ── 4. Deploy Helm Chart OCI Artifact to GHCR ─────────────────────────────
+  publish-helm:
+    name: Deploy Helm Chart OCI Artifact to GHCR
+    needs: [detect-changes, build-module, package-helm]
+    if: needs.detect-changes.outputs.has_changes == 'true' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Download Helm Chart Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tuluat-operator-helm-chart
+          path: dist
+
+      - name: Push Helm Chart OCI Artifact to GHCR
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+        env:
+          HELM_EXPERIMENTAL_OCI: "1"
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          helm push dist/*.tgz "oci://ghcr.io/${OWNER_LOWER}/charts"
+
+  # ── 5. KinD Cluster & E2E Acceptance Tests ─────────────────────────────────
   e2e-kind:
     name: KinD Cluster E2E Acceptance Test
-    needs: [detect-changes, build-module, package-helm]
+    needs: [detect-changes, build-module, package-helm, publish-helm]
     if: needs.detect-changes.outputs.has_changes == 'true' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     steps:
@@ -235,38 +267,6 @@ jobs:
           kubectl logs deployment/tuluat-operator -n tuluat-system --tail=150 || true
           kubectl logs deployment/temporal-server -n tuluat-system --tail=100 || true
           kubectl logs deployment/postgres-pgvector -n tuluat-system --tail=50 || true
-
-  # ── 5. Push Helm Chart OCI Artifact to GHCR ─────────────────────────────
-  publish-helm:
-    name: Deploy Helm Chart OCI Artifact to GHCR
-    needs: [e2e-kind, package-helm]
-    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch') && !contains(needs.*.result, 'failure')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: 'v3.14.0'
-
-      - name: Download Helm Chart Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: tuluat-operator-helm-chart
-          path: dist
-
-      - name: Push Helm Chart OCI Artifact to GHCR
-        env:
-          HELM_EXPERIMENTAL_OCI: "1"
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
-          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          helm push dist/*.tgz "oci://ghcr.io/${OWNER_LOWER}/charts"
-
   # ── 6. MkDocs Build & GitHub Pages Deploy ─────────────────────────────────
   build-docs:
     name: Build & Deploy MkDocs Documentation
