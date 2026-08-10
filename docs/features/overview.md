@@ -32,3 +32,7 @@ This document lists all completed and in-progress features across **Phase 1**, *
   - Human-in-the-Loop Approval Inbox API (`/api/v1/sessions/{id}/approve`)
   - Single-Chart Helm Deployment Architecture
   - KinD E2E Automated Integration Suite
+- **[RAG Subsystem & Storage Guide](rag-system-guide.md)**
+  - `RecursiveCharacterChunker` (1200 chars / 150 overlap)
+  - MinIO / S3 (`S3ObjectStorage`) & Local Filesystem (`LocalObjectStorage`)
+  - PostgreSQL `pgvector` HNSW Cosine Similarity Index

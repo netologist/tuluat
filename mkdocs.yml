@@ -56,6 +56,7 @@ nav:
       - Overview & Matrix: features/overview.md
       - "Phase 2: Guardrails, MCP & A2A": features/phase2-guardrails-mcp-a2a.md
       - "Phase 3: HITL, Helm & Orchestration": features/phase3-hitl-helm-orchestration.md
+      - "RAG System & Storage Guide": features/rag-system-guide.md
   - Architecture:
       - High-Level Architecture: architecture/high-level-architecture.md
       - Low-Level Design: architecture/low-level-design.md
