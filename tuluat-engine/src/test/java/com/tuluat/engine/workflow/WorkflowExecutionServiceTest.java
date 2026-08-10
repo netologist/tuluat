@@ -1,5 +1,6 @@
 package com.tuluat.engine.workflow;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tuluat.crd.workflow.AiWorkflowSpec;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
 import com.tuluat.engine.repository.WorkflowSessionRepository;
@@ -17,13 +18,15 @@ class WorkflowExecutionServiceTest {
 
 	private WorkflowSessionRepository sessionRepository;
 	private GraphStateMachineEngine engine;
+	private ObjectMapper objectMapper;
 	private WorkflowExecutionService service;
 
 	@BeforeEach
 	void setUp() {
 		sessionRepository = mock(WorkflowSessionRepository.class);
 		engine = mock(GraphStateMachineEngine.class);
-		service = new WorkflowExecutionService(sessionRepository, engine);
+		objectMapper = new ObjectMapper();
+		service = new WorkflowExecutionService(sessionRepository, engine, objectMapper, null, null);
 
 		when(sessionRepository.save(any(WorkflowSessionEntity.class)))
 				.thenAnswer(invocation -> invocation.getArgument(0));

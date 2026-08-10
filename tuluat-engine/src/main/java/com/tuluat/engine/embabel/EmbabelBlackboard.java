@@ -1,14 +1,17 @@
 package com.tuluat.engine.embabel;
 
+import lombok.NoArgsConstructor;
+
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * NOT thread-safe. Access from a single thread only.
+ */
+@NoArgsConstructor
 public class EmbabelBlackboard {
 
 	private final Map<String, Object> state = new HashMap<>();
-
-	public EmbabelBlackboard() {
-	}
 
 	public EmbabelBlackboard(Map<String, Object> initialState) {
 		if (initialState != null) {

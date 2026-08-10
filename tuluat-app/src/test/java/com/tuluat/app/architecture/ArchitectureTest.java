@@ -6,8 +6,17 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
 
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
+import io.fabric8.kubernetes.client.CustomResource;
+import io.fabric8.kubernetes.model.annotation.Kind;
+import io.fabric8.kubernetes.model.annotation.Plural;
+import io.fabric8.kubernetes.model.annotation.ShortNames;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
+import jakarta.persistence.Entity;
+import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
@@ -15,6 +24,21 @@ import org.springframework.web.bind.annotation.RestController;
 
 @AnalyzeClasses(packages = "com.tuluat")
 public class ArchitectureTest {
+
+	// ── helpers ───────────────────────────────────────────────────────────────
+
+	private static final ArchCondition<com.tngtech.archunit.core.domain.JavaClass> HAVE_CREATION_TIMESTAMP =
+			new ArchCondition<>("have a field annotated with @CreationTimestamp") {
+				@Override
+				public void check(com.tngtech.archunit.core.domain.JavaClass javaClass, ConditionEvents events) {
+					boolean found = javaClass.getAllFields().stream()
+							.anyMatch(f -> f.isAnnotatedWith(CreationTimestamp.class));
+					if (!found) {
+						events.add(SimpleConditionEvent.violated(javaClass,
+								javaClass.getName() + " has no field annotated with @CreationTimestamp"));
+					}
+				}
+			};
 
 	// ── 1. KUBERNETES OPERATOR RULES ──────────────────────────────────────────
 
@@ -61,4 +85,31 @@ public class ArchitectureTest {
 	@ArchTest
 	public static final ArchRule protocols_isolation = noClasses().that().resideInAPackage("..protocols..").should()
 			.dependOnClassesThat().resideInAnyPackage("..operator..", "..app.controller..").allowEmptyShould(true);
+
+	// ── 4. JDK 25 MODERNIZATION RULES ─────────────────────────────────────────
+
+	@ArchTest
+	public static final ArchRule crd_classes_must_have_kind_plural_shortnames = classes().that()
+			.areAssignableTo(CustomResource.class)
+			.should().beAnnotatedWith(Kind.class)
+			.andShould().beAnnotatedWith(Plural.class)
+			.andShould().beAnnotatedWith(ShortNames.class)
+			.allowEmptyShould(true);
+
+	@ArchTest
+	public static final ArchRule no_legacy_date_or_calendar = noFields().should()
+			.haveRawType(java.util.Date.class)
+			.orShould().haveRawType(java.util.Calendar.class)
+			.allowEmptyShould(true);
+
+	@ArchTest
+	public static final ArchRule prefer_slf4j_over_explicit_logger = noFields().should()
+			.haveRawType(org.slf4j.Logger.class)
+			.allowEmptyShould(true);
+
+	@ArchTest
+	public static final ArchRule jpa_entities_must_have_creation_timestamp = classes().that()
+			.areAnnotatedWith(Entity.class)
+			.should(HAVE_CREATION_TIMESTAMP)
+			.allowEmptyShould(true);
 }

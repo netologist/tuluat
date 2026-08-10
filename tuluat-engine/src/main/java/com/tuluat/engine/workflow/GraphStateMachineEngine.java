@@ -54,8 +54,7 @@ public class GraphStateMachineEngine {
 			String errorMsg = String.format("Session %s exceeded max loops (%d)", session.getSessionId(), maxLoops);
 			log.error(errorMsg);
 			recordSessionLog(session.getSessionId(), session.getCurrentNodeId(), "ERROR", errorMsg);
-			session.setStatus("FAILED");
-			session.setUpdatedAt(OffsetDateTime.now());
+		session.setStatus("FAILED");
 			if (telemetryService != null) {
 				telemetryService.recordSessionCompleted(session.getWorkflowName(), "FAILED");
 			}
@@ -108,7 +107,6 @@ public class GraphStateMachineEngine {
 					log.error(errMsg);
 					recordSessionLog(session.getSessionId(), currentNode.getId(), "ERROR", errMsg);
 					session.setStatus("FAILED");
-					session.setUpdatedAt(OffsetDateTime.now());
 					if (telemetryService != null) {
 						telemetryService.recordSessionCompleted(session.getWorkflowName(), "FAILED");
 					}
@@ -164,12 +162,10 @@ public class GraphStateMachineEngine {
 				recordSessionLog(session.getSessionId(), currentNode.getId(), "INFO",
 						"Workflow paused at node '" + currentNode.getId() + "' awaiting human approval.");
 				session.setStatus("WAITING_APPROVAL");
-				session.setUpdatedAt(OffsetDateTime.now());
 				return session;
 			}
 		}
 		session.setLoopCount(session.getLoopCount() + 1);
-		session.setUpdatedAt(OffsetDateTime.now());
 		return session;
 	}
 
