@@ -7,8 +7,8 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
     inputs:
-      build_test:
-        description: 'Build, Spotless Check & Test + Run KinD E2E'
+      build_all:
+        description: 'Build & Test + Run KinD E2E'
         type: boolean
         default: true
       deploy_docs:
@@ -51,7 +51,7 @@ jobs:
         id: set-output
         run: |
           EVENT_NAME="${{ github.event_name }}"
-          FORCE_BUILD="${{ inputs.build_test }}"
+          FORCE_BUILD="${{ inputs.build_all }}"
           FORCE_DOCS="${{ inputs.deploy_docs }}"
           CODE_FILTER="${{ steps.filter.outputs.code }}"
           DOCS_FILTER="${{ steps.filter.outputs.docs }}"
@@ -64,9 +64,9 @@ jobs:
             echo "docs_changed=${DOCS_FILTER}" >> $GITHUB_OUTPUT
           fi
 
-  # ── 2. Spotless Check & Unit Tests ─────────────────────────────────────────
-  build-test:
-    name: Spotless Check & Unit Tests
+  # ── 2. Build (Spotless Check, Unit Tests & Container Image) ─────────────────
+  build:
+    name: Build
     needs: detect-changes
     runs-on: ubuntu-latest
     if: needs.detect-changes.outputs.has_changes == 'true'
@@ -88,15 +88,6 @@ jobs:
       - name: Run Project Unit Tests
         run: |
           ./mvnw test -Denable-preview
-
-  # ── 3. Build & Package Container Image ──────────────────────────────────────
-  build-image:
-    name: Build & Package Container Image
-    needs: [detect-changes, build-test]
-    if: needs.detect-changes.outputs.has_changes == 'true' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -122,7 +113,7 @@ jobs:
           path: image-dist/*.tar.gz
           if-no-files-found: error
 
-  # ── 4. Lint & Package Helm Chart ──────────────────────────────────────────
+  # ── 3. Lint & Package Helm Chart ──────────────────────────────────────────
   package-helm:
     name: Lint & Package Helm Chart
     needs: detect-changes
@@ -152,10 +143,10 @@ jobs:
           path: dist/*.tgz
           if-no-files-found: error
 
-  # ── 5. Push Helm Chart OCI Artifact to GHCR ─────────────────────────────
+  # ── 4. Push Helm Chart OCI Artifact to GHCR ─────────────────────────────
   publish-helm:
     name: Deploy Helm Chart OCI Artifact to GHCR
-    needs: [detect-changes, build-test, build-image, package-helm]
+    needs: [detect-changes, build, package-helm]
     if: needs.detect-changes.outputs.has_changes == 'true' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     permissions:
@@ -184,11 +175,11 @@ jobs:
           OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           helm push dist/*.tgz "oci://ghcr.io/${OWNER_LOWER}/charts"
 
-  # ── 6. KinD Cluster & E2E Acceptance Tests ─────────────────────────────────
+  # ── 5. KinD Cluster & E2E Acceptance Tests ─────────────────────────────────
   e2e-kind:
     name: KinD Cluster E2E Acceptance Test
-    needs: [publish-helm, build-image]
-    if: "needs.publish-helm.result == 'success' && needs.build-image.result == 'success'"
+    needs: [publish-helm, build]
+    if: "needs.publish-helm.result == 'success' && needs.build.result == 'success'"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -265,7 +256,7 @@ jobs:
           kubectl logs deployment/temporal-server -n tuluat-system --tail=100 || true
           kubectl logs deployment/postgres-pgvector -n tuluat-system --tail=50 || true
 
-  # ── 7. MkDocs Build & GitHub Pages Deploy ─────────────────────────────────
+  # ── 6. MkDocs Build & GitHub Pages Deploy ─────────────────────────────────
   build-docs:
     name: Build & Deploy MkDocs Documentation
     needs: detect-changes
