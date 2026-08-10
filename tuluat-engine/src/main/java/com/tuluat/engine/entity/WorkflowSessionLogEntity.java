@@ -1,9 +1,20 @@
 package com.tuluat.engine.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "workflow_session_logs")
 public class WorkflowSessionLogEntity {
@@ -24,37 +35,7 @@ public class WorkflowSessionLogEntity {
 	@Column(name = "message", columnDefinition = "TEXT", nullable = false)
 	private String message;
 
-	@Column(name = "created_at")
+	@CreationTimestamp
+	@Column(name = "created_at", nullable = false, updatable = false)
 	private OffsetDateTime createdAt = OffsetDateTime.now();
-
-	public Long getId() {
-		return id;
-	}
-	public UUID getSessionId() {
-		return sessionId;
-	}
-	public void setSessionId(UUID sessionId) {
-		this.sessionId = sessionId;
-	}
-	public String getNodeId() {
-		return nodeId;
-	}
-	public void setNodeId(String nodeId) {
-		this.nodeId = nodeId;
-	}
-	public String getLogLevel() {
-		return logLevel;
-	}
-	public void setLogLevel(String logLevel) {
-		this.logLevel = logLevel;
-	}
-	public String getMessage() {
-		return message;
-	}
-	public void setMessage(String message) {
-		this.message = message;
-	}
-	public OffsetDateTime getCreatedAt() {
-		return createdAt;
-	}
 }

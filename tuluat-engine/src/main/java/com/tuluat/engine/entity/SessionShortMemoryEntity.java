@@ -1,9 +1,20 @@
 package com.tuluat.engine.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "session_short_memory")
 public class SessionShortMemoryEntity {
@@ -24,37 +35,7 @@ public class SessionShortMemoryEntity {
 	@Column(name = "content", columnDefinition = "TEXT", nullable = false)
 	private String content;
 
-	@Column(name = "created_at")
+	@CreationTimestamp
+	@Column(name = "created_at", nullable = false, updatable = false)
 	private OffsetDateTime createdAt = OffsetDateTime.now();
-
-	public Long getId() {
-		return id;
-	}
-	public UUID getSessionId() {
-		return sessionId;
-	}
-	public void setSessionId(UUID sessionId) {
-		this.sessionId = sessionId;
-	}
-	public String getAgentName() {
-		return agentName;
-	}
-	public void setAgentName(String agentName) {
-		this.agentName = agentName;
-	}
-	public String getRole() {
-		return role;
-	}
-	public void setRole(String role) {
-		this.role = role;
-	}
-	public String getContent() {
-		return content;
-	}
-	public void setContent(String content) {
-		this.content = content;
-	}
-	public OffsetDateTime getCreatedAt() {
-		return createdAt;
-	}
 }

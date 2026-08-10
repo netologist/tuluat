@@ -1,12 +1,20 @@
 package com.tuluat.engine.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "workflow_sessions")
 public class WorkflowSessionEntity {
@@ -31,58 +39,11 @@ public class WorkflowSessionEntity {
 	@Column(name = "context_data", columnDefinition = "jsonb")
 	private String contextData = "{}";
 
-	@Column(name = "created_at")
+	@CreationTimestamp
+	@Column(name = "created_at", nullable = false, updatable = false)
 	private OffsetDateTime createdAt = OffsetDateTime.now();
 
 	@Column(name = "updated_at")
 	private OffsetDateTime updatedAt = OffsetDateTime.now();
 
-	public UUID getSessionId() {
-		return sessionId;
-	}
-	public void setSessionId(UUID sessionId) {
-		this.sessionId = sessionId;
-	}
-	public String getWorkflowName() {
-		return workflowName;
-	}
-	public void setWorkflowName(String workflowName) {
-		this.workflowName = workflowName;
-	}
-	public String getStatus() {
-		return status;
-	}
-	public void setStatus(String status) {
-		this.status = status;
-	}
-	public String getCurrentNodeId() {
-		return currentNodeId;
-	}
-	public void setCurrentNodeId(String currentNodeId) {
-		this.currentNodeId = currentNodeId;
-	}
-	public int getLoopCount() {
-		return loopCount;
-	}
-	public void setLoopCount(int loopCount) {
-		this.loopCount = loopCount;
-	}
-	public String getContextData() {
-		return contextData;
-	}
-	public void setContextData(String contextData) {
-		this.contextData = contextData;
-	}
-	public OffsetDateTime getCreatedAt() {
-		return createdAt;
-	}
-	public void setCreatedAt(OffsetDateTime createdAt) {
-		this.createdAt = createdAt;
-	}
-	public OffsetDateTime getUpdatedAt() {
-		return updatedAt;
-	}
-	public void setUpdatedAt(OffsetDateTime updatedAt) {
-		this.updatedAt = updatedAt;
-	}
 }

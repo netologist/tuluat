@@ -88,10 +88,13 @@ jobs:
       - name: Run Checkstyle Static Code Analysis
         run: |
           ./mvnw checkstyle:check
+
+      - name: Run ArchUnit Architecture Tests
+        run: |
+          ./mvnw test -pl tuluat-app -am -Dtest=ArchitectureTest -Dsurefire.failIfNoSpecifiedTests=false -Denable-preview
       - name: Run Project Unit Tests
         run: |
           ./mvnw test -Denable-preview
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 

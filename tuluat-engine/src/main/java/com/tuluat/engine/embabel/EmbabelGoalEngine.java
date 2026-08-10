@@ -29,8 +29,8 @@ public class EmbabelGoalEngine {
 
 		while (!blackboard.has(goal.getTargetStateKey()) && step < maxSteps) {
 			EmbabelAction nextAction = availableActions.stream()
-					.filter(action -> action.getRequiredPreconditions().stream().allMatch(blackboard::has))
-					.filter(action -> !blackboard.has(action.getOutputKey())).findFirst().orElse(null);
+					.filter(action -> action.requiredPreconditions().stream().allMatch(blackboard::has))
+					.filter(action -> !blackboard.has(action.outputKey())).findFirst().orElse(null);
 
 			if (nextAction == null) {
 				log.warn("Embabel Engine: No eligible actions with satisfied preconditions found for goal '{}'",
@@ -38,12 +38,12 @@ public class EmbabelGoalEngine {
 				break;
 			}
 
-			log.info("Embabel Engine: Executing action '{}' using agent '{}'", nextAction.getName(),
-					nextAction.getAgentRef());
-			String prompt = resolvePromptTemplate(nextAction.getInputTemplate(), blackboard.getState());
+			log.info("Embabel Engine: Executing action '{}' using agent '{}'", nextAction.name(),
+					nextAction.agentRef());
+			String prompt = resolvePromptTemplate(nextAction.inputTemplate(), blackboard.getState());
 
-			AgentResponse response = agentExecutionService.executeAgent(nextAction.getAgentRef(), prompt, null);
-			blackboard.put(nextAction.getOutputKey(), response.answer());
+			AgentResponse response = agentExecutionService.executeAgent(nextAction.agentRef(), prompt, null);
+			blackboard.put(nextAction.outputKey(), response.answer());
 
 			step++;
 		}
