@@ -1,7 +1,7 @@
 site_name: Kubernetes AI Operator & Workflow Runtime
 site_description: Documentation portal for Kubernetes AI Operator, Graph State Machines, Embabel, MCP, and Telemetry.
 site_author: Tuluat AI Team
-
+site_url: https://netologist.github.io/tuluat/
 theme:
   name: material
   palette:
@@ -36,7 +36,8 @@ markdown_extensions:
   - admonition
 
 nav:
-  - Home: ARCHITECTURE.md
+  - Home: index.md
+  - Architecture Overview: ARCHITECTURE.md
   - Custom Resources (CRDs): crds.md
   - Maven Dependencies: dependencies.md
   - Architecture:
