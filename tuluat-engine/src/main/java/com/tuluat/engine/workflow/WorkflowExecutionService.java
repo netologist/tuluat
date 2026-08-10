@@ -12,23 +12,23 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Autowired;
 
 @Slf4j
 @Service
 public class WorkflowExecutionService {
+
 	private final WorkflowSessionRepository sessionRepository;
 	private final GraphStateMachineEngine engine;
 	private final ObjectMapper objectMapper;
-	private final WorkflowTelemetryService telemetryService;
-	private final WorkflowClient workflowClient;
+	private final Optional<WorkflowTelemetryService> telemetryService;
+	private final Optional<WorkflowClient> workflowClient;
 
 	public WorkflowExecutionService(WorkflowSessionRepository sessionRepository, GraphStateMachineEngine engine,
 			ObjectMapper objectMapper,
-			@Autowired(required = false) WorkflowTelemetryService telemetryService,
-			@Autowired(required = false) WorkflowClient workflowClient) {
+			Optional<WorkflowTelemetryService> telemetryService,
+			Optional<WorkflowClient> workflowClient) {
 		this.sessionRepository = sessionRepository;
 		this.engine = engine;
 		this.objectMapper = objectMapper;
@@ -46,9 +46,8 @@ public class WorkflowExecutionService {
 
 		session = sessionRepository.save(session);
 
-		if (telemetryService != null) {
-			telemetryService.recordSessionCreated(workflowName);
-		}
+		telemetryService.ifPresent(ts -> ts.recordSessionCreated(workflowName));
+
 		while ("RUNNING".equalsIgnoreCase(session.getStatus())) {
 			session = engine.executeNextStep(spec, session, maxLoops);
 			session = sessionRepository.save(session);

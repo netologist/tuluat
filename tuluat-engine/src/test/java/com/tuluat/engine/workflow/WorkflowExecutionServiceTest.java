@@ -26,8 +26,8 @@ class WorkflowExecutionServiceTest {
 		sessionRepository = mock(WorkflowSessionRepository.class);
 		engine = mock(GraphStateMachineEngine.class);
 		objectMapper = new ObjectMapper();
-		service = new WorkflowExecutionService(sessionRepository, engine, objectMapper, null, null);
-
+		service = new WorkflowExecutionService(sessionRepository, engine, objectMapper,
+				java.util.Optional.empty(), java.util.Optional.empty());
 		when(sessionRepository.save(any(WorkflowSessionEntity.class)))
 				.thenAnswer(invocation -> invocation.getArgument(0));
 	}
