@@ -63,6 +63,15 @@ postgresql:
     user: postgres
     password: postgres
 
+minio:
+  enabled: true
+  image:
+    repository: minio/minio
+    tag: RELEASE.2024-01-31T20-20-31Z
+  credentials:
+    accessKey: minioadmin
+    secretKey: minioadmin
+
 temporal:
   enabled: true
   image:

@@ -61,11 +61,11 @@ graph TD
 
 | CRD Kind | ApiVersion | Scope | Description |
 | :--- | :--- | :--- | :--- |
-| `LlmProvider` | `ai.tuluat.com/v1alpha1` | Namespaced | Configures LLM backend (OpenAI, DeepSeek, Ollama, vLLM) and secret credentials. |
-| `AiAgent` | `ai.tuluat.com/v1alpha1` | Namespaced | Defines an AI agent with custom system prompts, model overrides, active skills, and Ingress config. |
-| `AiWorkflow` | `ai.tuluat.com/v1alpha1` | Namespaced | Declarative graph template containing nodes (`AGENT`, `CONDITION`, `TOOL`), edges, and memory policies. |
+| `LlmProvider` | `ai.tuluat.com/v1alpha1` | Namespaced | Configures LLM backend (OpenAI, DeepSeek, Ollama, WireMock) and secret credentials. |
+| `AiAgent` | `ai.tuluat.com/v1alpha1` | Namespaced | Defines an AI agent with custom system prompts, model overrides, active skills, guardrails, and Ingress config. |
+| `AiWorkflow` | `ai.tuluat.com/v1alpha1` | Namespaced | Declarative graph template containing nodes (`AGENT`, `CONDITION`, `HUMAN_APPROVAL`, `TOOL`), edges, and memory policies. |
 | `WorkflowSession` | `ai.tuluat.com/v1alpha1` | Namespaced | Kubernetes-native declarative trigger for executing a workflow session and tracking phase/status. |
-
+| `McpServer` | `ai.tuluat.com/v1alpha1` | Namespaced | Registers external Model Context Protocol (MCP) server endpoints over SSE or stdio. |
 ---
 
 ## 3. Hybrid Triggering & Lifecycle Sequence
@@ -214,18 +214,21 @@ The application connects to infrastructure services as follows:
 
 ### Port-Forward Commands
 ```bash
-# Operator REST API & Telemetry (8080)
-kubectl port-forward svc/k8s-ai-operator-service 8080:8080 -n default
+# Control Portal REST API & Telemetry (8089 -> 8080)
+kubectl port-forward svc/tuluat-operator-service 8089:8080 -n tuluat-system
+
+# MinIO S3 Object Storage (API: 9000, Console: 9001)
+kubectl port-forward svc/minio-service 9000:9000 9001:9001 -n tuluat-system
 
 # Temporal Web UI (8233)
-kubectl port-forward svc/temporal-ui-service 8233:8233 -n default
+kubectl port-forward svc/temporal-ui-service 8233:8233 -n tuluat-system
 
 # Grafana Dashboard (3000)
-kubectl port-forward svc/grafana-service 3000:3000 -n default
+kubectl port-forward svc/grafana-service 3000:3000 -n tuluat-system
 
 # Prometheus Metrics Server (9090)
-kubectl port-forward svc/prometheus-service 9090:9090 -n default
+kubectl port-forward svc/prometheus-service 9090:9090 -n tuluat-system
 
 # PostgreSQL + Pgvector Database (5432)
-kubectl port-forward svc/postgres-service 5432:5432 -n default
+kubectl port-forward svc/postgres-service 5432:5432 -n tuluat-system
 ```

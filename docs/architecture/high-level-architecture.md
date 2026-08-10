@@ -154,9 +154,8 @@ graph LR
 | Phase | Status | Deliverables |
 |---|---|---|
 | **Phase 1** | ✅ Complete | CRDs, Reconcilers, Graph Engine, Temporal, Embabel, CI/KinD E2E |
-| **Phase 2** | 🚧 In Progress | Guardrails Pipeline, MCP Client Registry, A2A Adapter, McpServer CRD |
-| **Phase 3** | 📋 Planned | React Flow UI, Approval Inbox, Visual Workflow Builder, Helm Chart |
-
+| **Phase 2** | ✅ Complete | Guardrails Pipeline, MCP Client Registry, A2A Adapter, McpServer CRD |
+| **Phase 3** | ✅ Complete | Control Portal Single-Page Web GUI, HITL Approval Inbox, Visual Workflow Canvas Builder, Single-Chart Helm Deployment |
 ---
 
 ## 4. Core Capabilities (PoC)
