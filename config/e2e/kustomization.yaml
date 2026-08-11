@@ -18,6 +18,9 @@ resources:
   # Sample AiAgents (reference wiremock-provider)
   - samples/04_web_researcher_agent.yaml
   - samples/04_report_writer_agent.yaml
+  # Financial Analyst Agent (financial data E2E scenario)
+  - samples/financial_analyst_agent.yaml
+
 
   # Sample AiWorkflow
   - samples/05_aiworkflow_sample.yaml

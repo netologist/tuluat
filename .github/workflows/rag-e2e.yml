@@ -1,0 +1,51 @@
+name: RAG E2E — Financial Data Retrieval
+
+on:
+  push:
+    paths:
+      - 'tuluat-engine/src/main/java/com/tuluat/engine/rag/**'
+      - 'tuluat-engine/src/test/java/com/tuluat/engine/rag/**'
+      - 'tuluat-engine/pom.xml'
+      - 'config/e2e/samples/financial_analyst_agent.yaml'
+  pull_request:
+    paths:
+      - 'tuluat-engine/src/main/java/com/tuluat/engine/rag/**'
+      - 'tuluat-engine/src/test/java/com/tuluat/engine/rag/**'
+      - 'tuluat-engine/pom.xml'
+      - 'config/e2e/samples/financial_analyst_agent.yaml'
+  workflow_dispatch:
+
+jobs:
+  rag-financial-e2e:
+    name: RAG Financial Data E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run RAG E2E — Financial Data Scenario
+        run: |
+          ./mvnw test -pl tuluat-engine \
+            -Dtest='com.tuluat.engine.rag.FinancialDataRagE2E,com.tuluat.engine.rag.RagEmbabelIntegrationTest' \
+            -am \
+            -Dsurefire.failIfNoSpecifiedTests=false \
+            -Denable-preview
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rag-e2e-results
+          path: |
+            tuluat-engine/target/surefire-reports/*.txt
+            tuluat-engine/target/surefire-reports/*.xml
+          retention-days: 7

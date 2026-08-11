@@ -106,6 +106,70 @@ else
   assert_fail "Approval signal failed: ${APPROVAL_RESP}"
 fi
 
+# 7. RAG E2E: Financial Document Ingestion + Retrieval + Source Attribution
+echo "7. RAG E2E: Financial Document Ingestion and Source Attribution..."
+
+# 7a. Ingest a financial earnings report into the RAG pipeline
+INGEST_RESP=$(curl -s -X POST "${HOST}/api/v1/rag/ingest" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sourceRef": "reports/acme-q4-2025",
+    "content": "Acme Corp Q4 2025 Earnings Report. Revenue: $847M, up 23% year-over-year. Net Income: $142M ($2.34 EPS). Operating Margin: 16.8%. Cloud division revenue grew 47% to $312M."
+  }' || true)
+
+INGEST_SOURCE=$(echo "${INGEST_RESP}" | jq -r '.sourceRef // empty' 2>/dev/null || true)
+INGEST_CHUNKS=$(echo "${INGEST_RESP}" | jq -r '.chunks // 0' 2>/dev/null || true)
+
+if [ -n "${INGEST_SOURCE}" ] && [ "${INGEST_CHUNKS}" -ge 1 ]; then
+  assert_ok "RAG document ingested: ${INGEST_SOURCE} (${INGEST_CHUNKS} chunk(s))"
+else
+  assert_fail "RAG ingest failed: ${INGEST_RESP}"
+fi
+
+# 7b. Query the financial-analyst agent — answer must cite source and data
+CHAT_RESP=$(curl -s --max-time 30 -X POST "${HOST}/api/v1/agents/financial-analyst-agent/chat" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "namespace": "'"${NAMESPACE}"'",
+    "prompt": "What was Acme Corp quarterly revenue and operating margin?"
+  }' || true)
+
+AGENT_NAME=$(echo "${CHAT_RESP}" | jq -r '.agentName // empty' 2>/dev/null || true)
+SYS_PROMPT=$(echo "${CHAT_RESP}" | jq -r '.systemPrompt // empty' 2>/dev/null || true)
+
+if [ -z "${AGENT_NAME}" ]; then
+  assert_fail "Agent chat returned no agentName: ${CHAT_RESP}"
+fi
+
+# 7c. Assert RAG context header present in system prompt
+if echo "${SYS_PROMPT}" | grep -q "Relevant Document Context (RAG):"; then
+  assert_ok "RAG context header present in agent system prompt"
+else
+  assert_fail "Missing RAG context header in system prompt"
+fi
+
+# 7d. Assert source document reference is cited
+if echo "${SYS_PROMPT}" | grep -q "reports/acme-q4-2025"; then
+  assert_ok "Source reference 'reports/acme-q4-2025' cited in system prompt"
+else
+  assert_fail "Source reference not found in system prompt"
+fi
+
+# 7e. Assert financial data from the chunk appears in context
+if echo "${SYS_PROMPT}" | grep -q '\$847M'; then
+  assert_ok "Financial data '\$847M' retrieved from ingested chunk"
+else
+  assert_fail "Financial data not found in RAG context"
+fi
+
+# 7f. Assert source format is [sourceRef #chunkIndex (sim X.XX)]
+if echo "${SYS_PROMPT}" | grep -qE '\[reports/acme-q4-2025 #[0-9]+ \(sim [0-9.]+\)\]'; then
+  assert_ok "Source attribution format: [sourceRef #N (sim X.XX)] verified"
+else
+  assert_fail "Source attribution format incorrect or missing"
+fi
+
+
 echo "=========================================================="
 echo " 🎉 ALL E2E ACCEPTANCE & SMOKE TESTS PASSED!"
 echo "=========================================================="

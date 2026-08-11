@@ -1,4 +1,4 @@
-.PHONY: all build test crd-gen docker-build kind-cluster deploy test-agent clean
+.PHONY: all build test crd-gen docker-build kind-cluster deploy test-agent e2e-rag-test clean
 
 MAVEN := ./mvnw
 ifeq ($(wildcard ./mvnw),)
@@ -34,6 +34,12 @@ deploy:
 test-agent:
 	@echo "Testing deployed AiAgent Ingress endpoint..."
 	./scripts/test-agent.sh
+
+e2e-rag-test:
+	@echo "Running RAG E2E tests (Testcontainers: MinIO + PostgreSQL/pgvector)..."
+	$(MAVEN) test -pl tuluat-engine \
+		-Dtest='com.tuluat.engine.rag.FinancialDataRagE2E,com.tuluat.engine.rag.RagEmbabelIntegrationTest' \
+		-am -Dsurefire.failIfNoSpecifiedTests=false -Denable-preview
 
 clean:
 	@echo "Cleaning target directory..."

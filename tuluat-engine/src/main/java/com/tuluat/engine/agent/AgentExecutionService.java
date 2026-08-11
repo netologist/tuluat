@@ -161,17 +161,20 @@ public class AgentExecutionService {
 		skillRegistry.ifPresent(sr -> sr.loadSkillSources(spec.skillSources()));
 		toolRegistry.loadToolSources(spec.toolSources());
 
-		var systemPromptWithSkills = systemPrompt + buildAgentSkillContext();
-		var prompt = new Prompt(List.of(new SystemMessage(systemPromptWithSkills), new UserMessage(safePrompt)));
+		// RAG context (Embabel goal path): retrieve relevant chunks for the
+		// prompt and inject them alongside skills so agents are grounded in
+		// ingested documents (ADR 008).
+		var systemPromptWithRag = systemPrompt + buildAgentSkillContext() + retrieveRagContext(safePrompt);
+		var prompt = new Prompt(List.of(new SystemMessage(systemPromptWithRag), new UserMessage(safePrompt)));
 
-		var llmResult = invokeLlm(name, model, provider, prompt, systemPromptWithSkills, safePrompt, List.of());
+		var llmResult = invokeLlm(name, model, provider, prompt, systemPromptWithRag, safePrompt, List.of());
 		if (llmResult.blocked()) {
 			return AgentResponse.blocked(name, llmResult.blockReason(), llmResult.errorMessage());
 		}
 
 		validateOutput(name, llmResult.answer(), guardrails);
 		var usage = buildUsage(llmResult, model, 0);
-		return AgentResponse.create(name, model, systemPromptWithSkills, llmResult.answer(), List.of(), usage);
+		return AgentResponse.create(name, model, systemPromptWithRag, llmResult.answer(), List.of(), usage);
 	}
 
 	private LlmProvider resolveProvider(AiAgentSpec spec) {
