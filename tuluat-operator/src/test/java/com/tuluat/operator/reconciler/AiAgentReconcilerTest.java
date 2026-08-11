@@ -93,7 +93,7 @@ class AiAgentReconcilerTest {
 		agent.setMetadata(new ObjectMetaBuilder().withName("support-agent").withNamespace("default").withUid("uid-123")
 				.withGeneration(1L).build());
 		agent.setSpec(new AiAgentSpec(new ProviderRef("openai-provider", "default"), "gpt-4o", "System prompt test",
-				"User query test", List.of(new ToolDefinition("calculator", "Math", true, Map.of())), List.of(), // toolSources
+				"User query test", List.of(), List.of(), List.of(new ToolDefinition("calculator", "Math", true, Map.of())), List.of(), // toolSources
 				List.of(), // mcpServers
 				null, // guardrails
 				null, // a2a

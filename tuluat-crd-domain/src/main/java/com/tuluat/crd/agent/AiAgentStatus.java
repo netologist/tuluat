@@ -9,21 +9,28 @@ import java.util.List;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record AiAgentStatus(@JsonProperty("phase") String phase, @JsonProperty("ingressUrl") String ingressUrl,
+		@JsonProperty("activeSkills") List<String> activeSkills,
 		@JsonProperty("activeTools") List<String> activeTools, @JsonProperty("effectiveModel") String effectiveModel,
 		@JsonProperty("message") String message, @JsonProperty("observedGeneration") Long observedGeneration,
 		@JsonProperty("lastReconciledAt") String lastReconciledAt) {
-	public static AiAgentStatus ready(String ingressUrl, List<String> activeTools, String effectiveModel,
-			String message, Long gen) {
-		return new AiAgentStatus("Ready", ingressUrl, activeTools, effectiveModel, message, gen,
+	public static AiAgentStatus ready(String ingressUrl, List<String> activeSkills, List<String> activeTools,
+			String effectiveModel, String message, Long gen) {
+		return new AiAgentStatus("Ready", ingressUrl, activeSkills, activeTools, effectiveModel, message, gen,
 				java.time.Instant.now().toString());
 	}
 
+	public static AiAgentStatus ready(String ingressUrl, List<String> activeTools, String effectiveModel,
+			String message, Long gen) {
+		return ready(ingressUrl, List.of(), activeTools, effectiveModel, message, gen);
+	}
+
 	public static AiAgentStatus reconciling(String message, Long gen) {
-		return new AiAgentStatus("Reconciling", null, List.of(), null, message, gen,
+		return new AiAgentStatus("Reconciling", null, List.of(), List.of(), null, message, gen,
 				java.time.Instant.now().toString());
 	}
 
 	public static AiAgentStatus failed(String message, Long gen) {
-		return new AiAgentStatus("Failed", null, List.of(), null, message, gen, java.time.Instant.now().toString());
+		return new AiAgentStatus("Failed", null, List.of(), List.of(), null, message, gen,
+				java.time.Instant.now().toString());
 	}
 }

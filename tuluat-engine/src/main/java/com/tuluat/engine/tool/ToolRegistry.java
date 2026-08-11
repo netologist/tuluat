@@ -5,7 +5,7 @@ import com.tuluat.crd.agent.ToolSource;
 import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Service;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -16,9 +16,14 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service managing tool registry and execution using Java Virtual Threads and
- * Streams. Tools are contributed by {@link ToolProvider} implementations:
- * compiled-in (builtin provider) or external JARs loaded from
- * {@code toolSources} folders.
+ * Streams.
+ *
+ * <p>
+ * Tools are contributed by:
+ * <ul>
+ * <li>Compiled-in builtins via {@link BuiltinToolProvider}</li>
+ * <li>External JARs via {@link ToolProvider} SPI (loaded via {@link ToolJarLoader})</li>
+ * </ul>
  */
 @Service
 @Slf4j
@@ -44,7 +49,7 @@ public class ToolRegistry {
 	}
 
 	/**
-	 * Load tools from declared {@link ToolSource} entries (FOLDER / JAR).
+	 * Load tools from declared {@link ToolSource} entries (FOLDER / JAR / CONFIGMAP).
 	 */
 	public void loadToolSources(List<ToolSource> sources) {
 		if (sources == null || sources.isEmpty()) {
@@ -75,6 +80,13 @@ public class ToolRegistry {
 	}
 
 	/**
+	 * Returns unmodifiable view of loaded JAR providers mapped by source path.
+	 */
+	public Map<String, List<ToolJarLoader.LoadedProvider>> getLoadedProviders() {
+		return Collections.unmodifiableMap(loadedProviders);
+	}
+
+	/**
 	 * Executes requested active tools concurrently on Virtual Threads and returns
 	 * results mapped by tool name.
 	 */
@@ -93,7 +105,8 @@ public class ToolRegistry {
 		// Virtual Thread per task execution using modern Java concurrency
 		try {
 			var futures = activeDefs.stream().map(def -> virtualThreadExecutor.submit(() -> {
-				Tool tool = findTool(def.name()).orElseGet(() -> new CustomTool(def.name(), def.description()));
+				Tool tool = findTool(def.name())
+						.orElseGet(() -> new CustomTool(def.name(), def.description()));
 				return tool.execute(userInput, def.parameters());
 			})).toList();
 

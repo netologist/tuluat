@@ -57,7 +57,7 @@ class AiAgentControllerTest {
 		var agent = new AiAgent();
 		agent.setMetadata(new ObjectMetaBuilder().withName("researcher-agent").withNamespace("tuluat-system").build());
 		agent.setSpec(new AiAgentSpec(new ProviderRef("openai-provider", "tuluat-system"), "gpt-4o", "Research prompt",
-				"Input", List.of(), List.of(), List.of(), null, null, null, 1));
+				"Input", List.of(), List.of(), List.of(), List.of(), List.of(), null, null, null, 1));
 
 		var listMock = mock(io.fabric8.kubernetes.api.model.KubernetesResourceList.class);
 		when(listMock.getItems()).thenReturn(List.of(agent));

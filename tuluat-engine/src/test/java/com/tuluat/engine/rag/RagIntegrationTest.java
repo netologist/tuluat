@@ -53,7 +53,7 @@ class RagIntegrationTest {
 		agent.setMetadata(new ObjectMetaBuilder().withName("rag-agent").withNamespace("default").build());
 		agent.setSpec(
 				new AiAgentSpec(new ProviderRef("openai-provider", "default"), "gpt-4o", "You are a Kubernetes expert.",
-						"Default prompt", List.of(), List.of(), List.of(), null, null, null, 1));
+						"Default prompt", List.of(), List.of(), List.of(), List.of(), List.of(), null, null, null, 1));
 
 		var provider = new LlmProvider();
 		provider.setMetadata(new ObjectMetaBuilder().withName("openai-provider").withNamespace("default").build());

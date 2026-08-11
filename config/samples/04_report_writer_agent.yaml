@@ -5,13 +5,21 @@ metadata:
   namespace: tuluat-system
 spec:
   providerRef:
-    name: "openai-provider"
+    name: "wiremock-provider"
     namespace: "tuluat-system"
-  model: "gpt-4o"
+  model: "wiremock-gpt-4o"
   systemPrompt: |
     You are an expert Executive Report Writer AI Agent.
     Your job is to take raw research data from researcher agents and format it into a professional markdown report.
   userPrompt: "Format the research output into an executive summary."
+  skills:
+    - name: "k8s-operator-guide"
+      description: "Kubernetes Operator guidelines"
+      enabled: true
+  skillSources:
+    - type: "FOLDER"
+      path: "/opt/tuluat/skills"
+      watch: true
   tools:
     - name: "calculator"
       description: "Perform calculations if metrics are needed"

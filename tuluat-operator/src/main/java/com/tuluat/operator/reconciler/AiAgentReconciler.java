@@ -85,7 +85,9 @@ public class AiAgentReconciler implements Reconciler<AiAgent> {
 			// Step 3: Reconcile Ingress (Public Exposure)
 			String ingressUrl = reconcileIngress(agent, ownerRef, ns);
 
-			// Calculate active tools using Java Streams
+			// Calculate active skills & tools using Java Streams
+			List<String> activeSkills = spec.skills().stream().filter(s -> Boolean.TRUE.equals(s.enabled()))
+					.map(s -> s.name()).toList();
 			List<String> activeTools = spec.tools().stream().filter(t -> Boolean.TRUE.equals(t.enabled()))
 					.map(t -> t.name()).toList();
 
@@ -95,7 +97,7 @@ public class AiAgentReconciler implements Reconciler<AiAgent> {
 
 			String readyMessage = String.format("AiAgent '%s' successfully reconciled and listening at %s", name,
 					ingressUrl);
-			agent.setStatus(AiAgentStatus.ready(ingressUrl, activeTools, effectiveModel, readyMessage,
+			agent.setStatus(AiAgentStatus.ready(ingressUrl, activeSkills, activeTools, effectiveModel, readyMessage,
 					agent.getMetadata().getGeneration()));
 
 			log.info("Successfully reconciled AiAgent {}/{} -> Status: {}", ns, name, agent.getStatus().phase());

@@ -81,7 +81,7 @@ class AgentChatControllerTest {
 		var agent = new AiAgent();
 		agent.setMetadata(new ObjectMetaBuilder().withName("support-agent").withNamespace("tuluat-system").build());
 		agent.setSpec(new AiAgentSpec(new ProviderRef("openai-provider", "default"), "gpt-4o", "System prompt",
-				"User prompt", List.of(new ToolDefinition("calculator", "Math", true, Map.of())), List.of(), // toolSources
+				"User prompt", List.of(), List.of(), List.of(new ToolDefinition("calculator", "Math", true, Map.of())), List.of(), // toolSources
 				List.of(), // mcpServers
 				null, // guardrails
 				null, // a2a

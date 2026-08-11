@@ -7,6 +7,7 @@
   points to the Secret below, resolved via Kubernetes API.
 
   Enabled only when .Values.samples.install == true (default: false).
+*/}}
 {{- if .Values.samples.install }}
 ---
 apiVersion: v1
@@ -62,10 +63,22 @@ spec:
     You are an expert AI Researcher Agent.
     Your job is to perform deep technical research on assigned topics and return structured findings.
   userPrompt: "Research Kubernetes CRD Operator patterns."
+  skills:
+    - name: "k8s-operator-guide"
+      description: "Kubernetes Operator guidelines"
+      enabled: true
+  skillSources:
+    - type: "FOLDER"
+      path: "/opt/tuluat/skills"
+      watch: true
   tools:
     - name: "web-search"
       description: "Search web for real-time information"
       enabled: true
+  toolSources:
+    - type: "FOLDER"
+      path: "/opt/tuluat/tools"
+      watch: true
   guardrails:
     piiMasking:
       enabled: true
@@ -95,10 +108,22 @@ spec:
     You are an expert Executive Report Writer AI Agent.
     Your job is to take raw research data and format it into a professional markdown report.
   userPrompt: "Format the research output into an executive summary."
+  skills:
+    - name: "k8s-operator-guide"
+      description: "Kubernetes Operator guidelines"
+      enabled: true
+  skillSources:
+    - type: "FOLDER"
+      path: "/opt/tuluat/skills"
+      watch: true
   tools:
     - name: "calculator"
       description: "Perform calculations if metrics are needed"
       enabled: true
+  toolSources:
+    - type: "FOLDER"
+      path: "/opt/tuluat/tools"
+      watch: true
   guardrails:
     piiMasking:
       enabled: true

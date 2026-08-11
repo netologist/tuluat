@@ -46,7 +46,7 @@ class AgentExecutionServiceTest {
 		var a = new AiAgent();
 		a.setMetadata(new ObjectMetaBuilder().withName(name).withNamespace("default").build());
 		a.setSpec(new AiAgentSpec(new ProviderRef("p", "ns"), "gpt-4o", "You are helpful.", "Hello",
-				List.of(new ToolDefinition("calc", "Math", true, Map.of())), List.of(), List.of(), guardrails, null,
+				List.of(), List.of(), List.of(new ToolDefinition("calc", "Math", true, Map.of())), List.of(), List.of(), guardrails, null,
 				null, 1));
 		return a;
 	}
@@ -105,8 +105,8 @@ class AgentExecutionServiceTest {
 	void processAgentPrompt_ProviderDefaultModel() {
 		var a = new AiAgent();
 		a.setMetadata(new ObjectMetaBuilder().withName("a").withNamespace("default").build());
-		a.setSpec(new AiAgentSpec(new ProviderRef("p", "ns"), null, "Prompt", "Hello", List.of(), List.of(), List.of(),
-				null, null, null, 1));
+		a.setSpec(new AiAgentSpec(new ProviderRef("p", "ns"), null, "Prompt", "Hello", List.of(), List.of(), List.of(), List.of(),
+				List.of(), null, null, null, 1));
 
 		var p = provider("prov", "provider-model");
 		var response = service.processAgentPrompt(a, p, null);

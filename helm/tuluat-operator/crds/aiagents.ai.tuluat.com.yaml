@@ -41,8 +41,38 @@ spec:
                 userPrompt:
                   type: string
                   description: "Default user query / prompt template"
+                skills:
+                  type: array
+                  description: "Agent Skills (SKILL.md instructions/guidelines based on agentskills.io spec)"
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      description:
+                        type: string
+                      enabled:
+                        type: boolean
+                      parameters:
+                        type: object
+                        additionalProperties:
+                          type: string
+                skillSources:
+                  type: array
+                  description: "Folder or ConfigMap paths containing SKILL.md / SKILLS.md files"
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        enum: ["FOLDER", "CONFIGMAP"]
+                      path:
+                        type: string
+                      watch:
+                        type: boolean
                 tools:
                   type: array
+                  description: "Executable function-calling tools (calculator, web-search, custom JARs)"
                   items:
                     type: object
                     properties:
@@ -58,6 +88,7 @@ spec:
                           type: string
                 toolSources:
                   type: array
+                  description: "Executable tool plugin sources (JAR files or folders)"
                   items:
                     type: object
                     properties:
@@ -148,6 +179,10 @@ spec:
                   type: string
                 ingressUrl:
                   type: string
+                activeSkills:
+                  type: array
+                  items:
+                    type: string
                 activeTools:
                   type: array
                   items:

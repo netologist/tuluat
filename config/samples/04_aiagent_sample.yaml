@@ -12,6 +12,14 @@ spec:
     You are an expert enterprise customer support AI assistant.
     Always be concise, accurate, polite, and execute relevant tools when required.
   userPrompt: "Calculate 150 * 4 and check weather in Istanbul."
+  skills:
+    - name: "k8s-operator-guide"
+      description: "Kubernetes Operator development and status guidelines"
+      enabled: true
+  skillSources:
+    - type: "FOLDER"
+      path: "/opt/tuluat/skills"
+      watch: true
   tools:
     - name: "calculator"
       description: "Perform math calculations"

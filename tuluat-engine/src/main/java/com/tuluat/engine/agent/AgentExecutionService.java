@@ -7,6 +7,7 @@ import com.tuluat.crd.provider.LlmProvider;
 import com.tuluat.engine.gateway.ModelGateway;
 import com.tuluat.engine.gateway.ProviderResolver;
 import com.tuluat.engine.rag.RagService;
+import com.tuluat.engine.skill.SkillRegistry;
 import com.tuluat.engine.tool.ToolRegistry;
 import com.tuluat.engine.tool.ToolResult;
 import com.tuluat.guardrails.GuardrailBlockedException;
@@ -23,17 +24,18 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
- * Core engine for executing AI Agent prompts with Tools, Guardrails, and Model
- * Gateway.
+ * Core engine for executing AI Agent prompts with Tools, Agent Skills (SKILL.md),
+ * Guardrails, and Model Gateway.
  *
  * <h3>Execution pipeline:</h3>
  * <ol>
  * <li>Resolve model and query from agent spec</li>
  * <li>Apply pre-execution guardrails (PII masking, injection defense)</li>
  * <li>Execute active tools on virtual threads</li>
- * <li>Build system prompt with tool context and RAG</li>
+ * <li>Build system prompt with tool context, agent skills (SKILL.md), and RAG</li>
  * <li>Invoke LLM via ModelGateway → ChatModel → simulated fallback</li>
  * <li>Validate output against guardrail policy</li>
  * </ol>
@@ -53,6 +55,7 @@ public class AgentExecutionService {
 	private static final int RAG_RESULT_COUNT = 3;
 
 	private final ToolRegistry toolRegistry;
+	private final Optional<SkillRegistry> skillRegistry;
 	private final Optional<ChatModel> chatModel;
 	private final GuardrailPipeline guardrailPipeline;
 	private final Optional<ModelGateway> modelGateway;
@@ -60,17 +63,27 @@ public class AgentExecutionService {
 	private final Optional<AgentResolver> agentResolver;
 	private final Optional<RagService> ragService;
 
-	public AgentExecutionService(ToolRegistry toolRegistry, @Qualifier("openAiChatModel") Optional<ChatModel> chatModel,
-			GuardrailPipeline guardrailPipeline, Optional<ModelGateway> modelGateway,
-			Optional<ProviderResolver> providerResolver, Optional<AgentResolver> agentResolver,
-			Optional<RagService> ragService) {
+	@org.springframework.beans.factory.annotation.Autowired
+	public AgentExecutionService(ToolRegistry toolRegistry,
+			Optional<SkillRegistry> skillRegistry,
+			@Qualifier("openAiChatModel") Optional<ChatModel> chatModel, GuardrailPipeline guardrailPipeline,
+			Optional<ModelGateway> modelGateway, Optional<ProviderResolver> providerResolver,
+			Optional<AgentResolver> agentResolver, Optional<RagService> ragService) {
 		this.toolRegistry = toolRegistry;
+		this.skillRegistry = skillRegistry;
 		this.chatModel = chatModel;
 		this.guardrailPipeline = guardrailPipeline;
 		this.modelGateway = modelGateway;
 		this.providerResolver = providerResolver;
 		this.agentResolver = agentResolver;
 		this.ragService = ragService;
+	}
+
+	public AgentExecutionService(ToolRegistry toolRegistry,
+			@Qualifier("openAiChatModel") Optional<ChatModel> chatModel, GuardrailPipeline guardrailPipeline,
+			Optional<ModelGateway> modelGateway, Optional<ProviderResolver> providerResolver,
+			Optional<AgentResolver> agentResolver, Optional<RagService> ragService) {
+		this(toolRegistry, Optional.empty(), chatModel, guardrailPipeline, modelGateway, providerResolver, agentResolver, ragService);
 	}
 
 	// ── Public API ──────────────────────────────────────────────────────────
@@ -90,6 +103,10 @@ public class AgentExecutionService {
 			log.warn("Agent '{}' blocked by guardrail [{}]: {}", agentName, e.getFilterName(), e.getMessage());
 			return AgentResponse.blocked(agentName, e.getFilterName(), e.getMessage());
 		}
+
+		// Load Agent Skills (SKILL.md) and Tools
+		skillRegistry.ifPresent(sr -> sr.loadSkillSources(spec.skillSources()));
+		toolRegistry.loadToolSources(spec.toolSources());
 
 		var toolResults = executeTools(agentName, spec.tools(), safeQuery);
 		var systemPrompt = buildSystemPrompt(spec.systemPrompt(), safeQuery, toolResults);
@@ -134,26 +151,26 @@ public class AgentExecutionService {
 		return response;
 	}
 
-	/**
-	 * Workflow-node invocation for a resolved agent CR: applies the spec's model
-	 * and provider, invokes the LLM via ModelGateway → ChatModel → simulated
-	 * fallback, then validates the output against the agent's guardrails.
-	 */
 	private AgentResponse invokeResolvedAgent(String name, AiAgentSpec spec, String safePrompt,
 			com.tuluat.crd.agent.GuardrailsConfig guardrails) {
 		var provider = resolveProvider(spec);
 		var model = resolveModel(spec, provider);
 		var systemPrompt = spec.systemPrompt() != null ? spec.systemPrompt() : DEFAULT_SYSTEM_PROMPT;
-		var prompt = new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(safePrompt)));
 
-		var llmResult = invokeLlm(name, model, provider, prompt, systemPrompt, safePrompt, List.of());
+		skillRegistry.ifPresent(sr -> sr.loadSkillSources(spec.skillSources()));
+		toolRegistry.loadToolSources(spec.toolSources());
+
+		var systemPromptWithSkills = systemPrompt + buildAgentSkillContext();
+		var prompt = new Prompt(List.of(new SystemMessage(systemPromptWithSkills), new UserMessage(safePrompt)));
+
+		var llmResult = invokeLlm(name, model, provider, prompt, systemPromptWithSkills, safePrompt, List.of());
 		if (llmResult.blocked()) {
 			return AgentResponse.blocked(name, llmResult.blockReason(), llmResult.errorMessage());
 		}
 
 		validateOutput(name, llmResult.answer(), guardrails);
 		var usage = buildUsage(llmResult, model, 0);
-		return AgentResponse.create(name, model, systemPrompt, llmResult.answer(), List.of(), usage);
+		return AgentResponse.create(name, model, systemPromptWithSkills, llmResult.answer(), List.of(), usage);
 	}
 
 	private LlmProvider resolveProvider(AiAgentSpec spec) {
@@ -190,7 +207,7 @@ public class AgentExecutionService {
 
 	private String buildSystemPrompt(String basePrompt, String query, List<ToolResult> tools) {
 		var prompt = basePrompt != null ? basePrompt : DEFAULT_SYSTEM_PROMPT;
-		return prompt + buildToolContext(tools) + retrieveRagContext(query);
+		return prompt + buildToolContext(tools) + buildAgentSkillContext() + retrieveRagContext(query);
 	}
 
 	private String buildToolContext(List<ToolResult> tools) {
@@ -199,6 +216,16 @@ public class AgentExecutionService {
 		}
 		return "\n\nAvailable Context from Tools:\n" + tools.stream()
 				.map(t -> "[%s]: %s".formatted(t.toolName(), t.output())).reduce((a, b) -> a + "\n" + b).orElse("");
+	}
+
+	private String buildAgentSkillContext() {
+		if (skillRegistry.isEmpty() || skillRegistry.get().getRegisteredSkills().isEmpty()) {
+			return "";
+		}
+		String skillsText = skillRegistry.get().getRegisteredSkills().values().stream()
+				.map(s -> "### Skill: %s\n%s\n\n%s".formatted(s.name(), s.description(), s.instructions()))
+				.collect(Collectors.joining("\n---\n"));
+		return "\n\nAgent Skills & Guidelines (SKILL.md):\n" + skillsText;
 	}
 
 	private String retrieveRagContext(String query) {

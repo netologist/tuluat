@@ -10,11 +10,20 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record AiAgentSpec(@JsonProperty("providerRef") ProviderRef providerRef, @JsonProperty("model") String model,
 		@JsonProperty("systemPrompt") String systemPrompt, @JsonProperty("userPrompt") String userPrompt,
-		@JsonProperty("tools") List<ToolDefinition> tools, @JsonProperty("toolSources") List<ToolSource> toolSources,
+		@JsonProperty("skills") List<SkillDefinition> skills,
+		@JsonProperty("skillSources") List<SkillSource> skillSources,
+		@JsonProperty("tools") List<ToolDefinition> tools,
+		@JsonProperty("toolSources") List<ToolSource> toolSources,
 		@JsonProperty("mcpServers") List<McpServerRef> mcpServers,
 		@JsonProperty("guardrails") GuardrailsConfig guardrails, @JsonProperty("a2a") A2aConfig a2a,
 		@JsonProperty("ingress") IngressSpec ingress, @JsonProperty("replicas") Integer replicas) {
 	public AiAgentSpec {
+		if (skills == null) {
+			skills = List.of();
+		}
+		if (skillSources == null) {
+			skillSources = List.of();
+		}
 		if (tools == null) {
 			tools = List.of();
 		}
