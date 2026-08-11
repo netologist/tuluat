@@ -1,0 +1,47 @@
+apiVersion: ai.tuluat.com/v1alpha1
+kind: AiAgent
+metadata:
+  name: web-researcher-agent
+  namespace: tuluat-system
+spec:
+  providerRef:
+    name: "wiremock-provider"
+    namespace: "tuluat-system"
+  model: "wiremock-gpt-4o"
+  systemPrompt: |
+    You are an expert AI Researcher Agent.
+    Your job is to perform deep technical research on assigned topics and return structured findings.
+  userPrompt: "Research Kubernetes CRD Operator patterns."
+  skills:
+    - name: "k8s-operator-guide"
+      description: "Kubernetes Operator guidelines"
+      enabled: true
+  skillSources:
+    - type: "FOLDER"
+      path: "/opt/tuluat/skills"
+      watch: true
+  tools:
+    - name: "web-search"
+      description: "Search web for real-time information"
+      enabled: true
+  toolSources:
+    - type: "FOLDER"
+      path: "/opt/tuluat/tools"
+      watch: true
+  mcpServers:
+    - name: "postgres-mcp"
+      namespace: "tuluat-system"
+  guardrails:
+    piiMasking:
+      enabled: true
+      modes: ["EMAIL", "CREDIT_CARD", "SSN", "PHONE"]
+      replacementToken: "[REDACTED]"
+    promptInjection:
+      enabled: true
+      strategy: "BLOCK"
+    outputValidation:
+      enabled: true
+      minConfidence: 0.5
+  a2a:
+    enabled: false
+  replicas: 1

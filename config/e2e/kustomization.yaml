@@ -8,18 +8,19 @@ namespace: tuluat-system
 # wiremock-service which returns stub responses.
 
 resources:
-  # WireMock stub server (ConfigMap + Deployment + Service)
-  - ../../manifests/testing/wiremock-stub.yaml
+  # WireMock stub server is applied directly in step 3 of deploy-operator.sh
+  # (manifests/testing/wiremock-stub.yaml) — not referenced here because kustomize
+  # 5+ blocks paths that escape the kustomization root (../../ is forbidden).
 
   # WireMock-backed LlmProvider (no real API key needed)
-  - ../samples/03_llmprovider_wiremock.yaml
+  - samples/03_llmprovider_wiremock.yaml
 
   # Sample AiAgents (reference wiremock-provider)
-  - ../samples/04_web_researcher_agent.yaml
-  - ../samples/04_report_writer_agent.yaml
+  - samples/04_web_researcher_agent.yaml
+  - samples/04_report_writer_agent.yaml
 
   # Sample AiWorkflow
-  - ../samples/05_aiworkflow_sample.yaml
+  - samples/05_aiworkflow_sample.yaml
 
 secretGenerator:
   - name: openai-secret
