@@ -16,29 +16,20 @@ public class WorkflowTelemetryService {
 	}
 
 	public void recordSessionCreated(String workflowName) {
-		meterRegistry.ifPresent(registry -> Counter.builder("ai.workflow.session.created.total")
-				.tag("workflow", workflowName)
-				.description("Total workflow sessions created")
-				.register(registry)
-				.increment());
+		meterRegistry.ifPresent(
+				registry -> Counter.builder("ai.workflow.session.created.total").tag("workflow", workflowName)
+						.description("Total workflow sessions created").register(registry).increment());
 	}
 
 	public void recordSessionCompleted(String workflowName, String status) {
 		meterRegistry.ifPresent(registry -> Counter.builder("ai.workflow.session.completed.total")
-				.tag("workflow", workflowName)
-				.tag("status", status)
-				.description("Total workflow sessions completed")
-				.register(registry)
-				.increment());
+				.tag("workflow", workflowName).tag("status", status).description("Total workflow sessions completed")
+				.register(registry).increment());
 	}
 
 	public void recordNodeExecuted(String workflowName, String nodeType, String nodeId) {
 		meterRegistry.ifPresent(registry -> Counter.builder("ai.workflow.node.executed.total")
-				.tag("workflow", workflowName)
-				.tag("node_type", nodeType)
-				.tag("node_id", nodeId)
-				.description("Total workflow node executions")
-				.register(registry)
-				.increment());
+				.tag("workflow", workflowName).tag("node_type", nodeType).tag("node_id", nodeId)
+				.description("Total workflow node executions").register(registry).increment());
 	}
 }

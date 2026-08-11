@@ -6,6 +6,8 @@ import com.tuluat.engine.agent.AgentResponse;
 import com.tuluat.engine.entity.WorkflowSessionLogEntity;
 import com.tuluat.engine.repository.WorkflowSessionLogRepository;
 import com.tuluat.engine.telemetry.WorkflowTelemetryService;
+import com.tuluat.guardrails.GuardrailPipeline;
+import com.tuluat.guardrails.ValidationResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
@@ -23,13 +25,12 @@ public class GraphNodeActivitiesImpl implements GraphNodeActivities {
 	private final AgentExecutionService agentExecutionService;
 	private final Optional<WorkflowSessionLogRepository> logRepository;
 	private final Optional<WorkflowTelemetryService> telemetryService;
-	private final Optional<com.tuluat.guardrails.GuardrailPipeline> guardrailPipeline;
+	private final Optional<GuardrailPipeline> guardrailPipeline;
 	private final ExpressionParser parser = new SpelExpressionParser();
 
 	public GraphNodeActivitiesImpl(AgentExecutionService agentExecutionService,
-			Optional<WorkflowSessionLogRepository> logRepository,
-			Optional<WorkflowTelemetryService> telemetryService,
-			Optional<com.tuluat.guardrails.GuardrailPipeline> guardrailPipeline) {
+			Optional<WorkflowSessionLogRepository> logRepository, Optional<WorkflowTelemetryService> telemetryService,
+			Optional<GuardrailPipeline> guardrailPipeline) {
 		this.agentExecutionService = agentExecutionService;
 		this.logRepository = logRepository;
 		this.telemetryService = telemetryService;
@@ -47,16 +48,15 @@ public class GraphNodeActivitiesImpl implements GraphNodeActivities {
 		contextData.put(node.outputKey(), response.answer());
 
 		if (guardrailPipeline.isPresent() && node.outputSchema() != null && !node.outputSchema().isBlank()) {
-			com.tuluat.guardrails.ValidationResult vr = guardrailPipeline.get()
-					.validateOutput(response.answer(), null, node.outputSchema());
+			ValidationResult vr = guardrailPipeline.get().validateOutput(response.answer(), null, node.outputSchema());
 			if (!vr.valid()) {
 				String errMsg = String.format("Node '%s' output failed schema validation (confidence=%.2f): %s",
 						node.id(), vr.confidence(), vr.errors());
 				log.error(errMsg);
 				recordLog(sessionId, node.id(), "ERROR", errMsg);
 				telemetryService.ifPresent(ts -> ts.recordNodeExecuted("temporal-activity", node.type(), node.id()));
-				throw new RuntimeException("GraphNodeActivities: Node '" + node.id() + "' output validation failed: "
-						+ vr.errors());
+				throw new RuntimeException(
+						"GraphNodeActivities: Node '" + node.id() + "' output validation failed: " + vr.errors());
 			}
 			recordLog(sessionId, node.id(), "INFO", "Node '" + node.id() + "' output passed schema validation");
 		}

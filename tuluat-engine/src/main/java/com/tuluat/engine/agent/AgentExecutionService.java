@@ -37,12 +37,9 @@ public class AgentExecutionService {
 	private final Optional<RagService> ragService;
 
 	public AgentExecutionService(SkillRegistry skillRegistry,
-			@Qualifier("openAiChatModel") Optional<ChatModel> chatModel,
-			GuardrailPipeline guardrailPipeline,
-			Optional<ModelGateway> modelGateway,
-			Optional<ProviderResolver> providerResolver,
-			Optional<AgentResolver> agentResolver,
-			Optional<RagService> ragService) {
+			@Qualifier("openAiChatModel") Optional<ChatModel> chatModel, GuardrailPipeline guardrailPipeline,
+			Optional<ModelGateway> modelGateway, Optional<ProviderResolver> providerResolver,
+			Optional<AgentResolver> agentResolver, Optional<RagService> ragService) {
 		this.skillRegistry = skillRegistry;
 		this.chatModel = chatModel;
 		this.guardrailPipeline = guardrailPipeline;
@@ -79,8 +76,7 @@ public class AgentExecutionService {
 		Map<String, SkillResult> skillResultsMap = skillRegistry.executeActiveSkills(spec.skills(), safeQuery);
 		List<SkillResult> skillResults = new ArrayList<>(skillResultsMap.values());
 
-		String skillContext = skillResults.stream()
-				.map(res -> String.format("[%s]: %s", res.skillName(), res.output()))
+		String skillContext = skillResults.stream().map(res -> String.format("[%s]: %s", res.skillName(), res.output()))
 				.collect(Collectors.joining("\n"));
 
 		String baseSystemPrompt = spec.systemPrompt() != null ? spec.systemPrompt() : "You are a helpful AI assistant.";
@@ -188,8 +184,7 @@ public class AgentExecutionService {
 				"Workflow Agent System Prompt", "Execution completed for: " + safePrompt, List.of(),
 				UsageStats.calculate(10, 10, "deepseek-chat", 50));
 
-		if (guardrails != null && guardrails.outputValidation() != null
-				&& guardrails.outputValidation().isEnabled()) {
+		if (guardrails != null && guardrails.outputValidation() != null && guardrails.outputValidation().isEnabled()) {
 			ValidationResult vr = guardrailPipeline.validateOutput(response.answer(), guardrails, null);
 			if (!vr.valid()) {
 				log.warn("Agent '{}' output rejected by guardrails: confidence={}, errors={}", agentRef,

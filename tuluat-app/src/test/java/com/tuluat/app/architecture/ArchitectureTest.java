@@ -101,15 +101,9 @@ public class ArchitectureTest {
 	@ArchTest
 	public static final ArchRule entities_have_creation_timestamp = classes().that().areAnnotatedWith(Entity.class)
 			.should(HAVE_CREATION_TIMESTAMP).allowEmptyShould(true);
-	/*
-	 * TODO: Re-enable when all @Service/@Component constructors use Optional<T>.
-	 * Violators: WorkflowEventPublisher, AgentExecutionService,
-	 * WorkflowTelemetryService, GraphNodeActivitiesImpl, GraphStateMachineEngine
-	 */
-	/*
-	 * @ArchTest public static final ArchRule no_autowired_on_constructor_params =
-	 * classes().that()
-	 * .areAnnotatedWith(Service.class).or().areAnnotatedWith(Component.class)
-	 * .should(NO_AUTOWIRED_PARAMS).allowEmptyShould(true);
-	 */
+
+	@ArchTest
+	public static final ArchRule no_autowired_on_constructor_params = classes().that().areAnnotatedWith(Service.class)
+			.or().areAnnotatedWith(Component.class).should(NO_AUTOWIRED_PARAMS).allowEmptyShould(true);
+
 }

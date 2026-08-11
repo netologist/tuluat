@@ -30,14 +30,10 @@ class AgentExecutionServiceTest {
 	@BeforeEach
 	void setUp() {
 		skillRegistry = new SkillRegistry();
-		agentExecutionService = new AgentExecutionService(skillRegistry,
-				Optional.empty(),
+		agentExecutionService = new AgentExecutionService(skillRegistry, Optional.empty(),
 				new GuardrailPipeline(List.of(new PiiMaskingFilter(), new PromptInjectionFilter()),
 						List.of(new OutputValidationFilter())),
-				Optional.empty(),
-				Optional.empty(),
-				Optional.empty(),
-				Optional.empty());
+				Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
 	}
 
 	@Test
@@ -47,8 +43,8 @@ class AgentExecutionServiceTest {
 		agent.setMetadata(new ObjectMetaBuilder().withName("test-agent").withNamespace("default").build());
 		agent.setSpec(new AiAgentSpec(new ProviderRef("openai-provider", "default"), "gpt-4o",
 				"You are a helpful test assistant.", "Default user query",
-				List.of(new SkillDefinition("calculator", "Math", true, Map.of())), List.of(),
-				List.of(), null, null, null, 1));
+				List.of(new SkillDefinition("calculator", "Math", true, Map.of())), List.of(), List.of(), null, null,
+				null, 1));
 
 		var provider = new LlmProvider();
 		provider.setMetadata(new ObjectMetaBuilder().withName("openai-provider").withNamespace("default").build());
