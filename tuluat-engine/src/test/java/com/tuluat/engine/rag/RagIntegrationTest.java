@@ -12,7 +12,7 @@ import com.tuluat.engine.rag.embedding.LocalHashEmbeddingProvider;
 import com.tuluat.engine.rag.storage.LocalObjectStorage;
 import com.tuluat.engine.skill.SkillRegistry;
 import com.tuluat.guardrails.GuardrailPipeline;
-
+import java.util.Optional;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,8 +39,9 @@ class RagIntegrationTest {
 		LocalObjectStorage storage = new LocalObjectStorage(tempDir.toString());
 		ragService = new RagService(new RecursiveCharacterChunker(), embeddings, retriever, storage);
 
-		agentExecutionService = new AgentExecutionService(new SkillRegistry(), null, // simulated execution
-				new GuardrailPipeline(List.of(), List.of()), null, null, null, ragService);
+		agentExecutionService = new AgentExecutionService(new SkillRegistry(), Optional.empty(),
+				new GuardrailPipeline(List.of(), List.of()), Optional.empty(), Optional.empty(), Optional.empty(),
+				Optional.of(ragService));
 	}
 
 	@Test

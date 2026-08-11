@@ -1,22 +1,22 @@
 package com.tuluat.app.websocket;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
 public class WorkflowEventPublisher {
-	private final SimpMessagingTemplate messagingTemplate;
 
-	@Autowired
-	public WorkflowEventPublisher(@Autowired(required = false) SimpMessagingTemplate messagingTemplate) {
+	private final Optional<SimpMessagingTemplate> messagingTemplate;
+
+	public WorkflowEventPublisher(Optional<SimpMessagingTemplate> messagingTemplate) {
 		this.messagingTemplate = messagingTemplate;
 	}
 
@@ -73,13 +73,13 @@ public class WorkflowEventPublisher {
 	}
 
 	private void sendToTopic(String destination, Object payload) {
-		if (messagingTemplate != null) {
+		messagingTemplate.ifPresent(template -> {
 			try {
-				messagingTemplate.convertAndSend(destination, payload);
+				template.convertAndSend(destination, payload);
 			} catch (Exception e) {
 				log.warn("Failed to broadcast WebSocket STOMP event to destination {}: {}", destination,
 						e.getMessage());
 			}
-		}
+		});
 	}
 }

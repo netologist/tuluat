@@ -6,6 +6,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class WorkflowTelemetryServiceTest {
@@ -16,7 +18,7 @@ class WorkflowTelemetryServiceTest {
 	@BeforeEach
 	void setUp() {
 		meterRegistry = new SimpleMeterRegistry();
-		telemetryService = new WorkflowTelemetryService(meterRegistry);
+		telemetryService = new WorkflowTelemetryService(Optional.of(meterRegistry));
 	}
 
 	@Test
