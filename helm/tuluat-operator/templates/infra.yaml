@@ -222,7 +222,7 @@ data:
     {
       "request": {
         "method": "POST",
-        "urlPathPattern": "/v1/chat/completions"
+        "urlPathPattern": ".*chat/completions"
       },
       "response": {
         "status": 200,

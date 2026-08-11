@@ -26,6 +26,8 @@ spec:
           env:
             - name: SPRING_THREADS_VIRTUAL_ENABLED
               value: "true"
+            - name: SPRING_AI_OPENAI_BASE_URL
+              value: "http://wiremock-service.tuluat-system.svc.cluster.local:8080/v1"
           readinessProbe:
             httpGet:
               path: /actuator/health

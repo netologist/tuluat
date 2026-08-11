@@ -62,7 +62,7 @@ fi
 
 # 4. Multi-Agent Workflow Session Execution Acceptance Test
 echo "4. Executing Multi-Agent Workflow Session Acceptance Test..."
-CREATE_RESP=$(curl -s -X POST "${HOST}/api/v1/workflows/multi-agent-researcher/sessions" \
+CREATE_RESP=$(curl -s --max-time 60 -X POST "${HOST}/api/v1/workflows/multi-agent-researcher/sessions" \
   -H "Content-Type: application/json" \
   -d '{"input": "KinD E2E Acceptance Test Execution", "maxLoops": 10}' || true)
 
