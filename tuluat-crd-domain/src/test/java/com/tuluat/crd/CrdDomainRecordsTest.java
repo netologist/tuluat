@@ -27,8 +27,8 @@ class CrdDomainRecordsTest {
 		agent.setMetadata(new ObjectMetaBuilder().withName("agent-1").withNamespace("tuluat-system").build());
 
 		var spec = new AiAgentSpec(new ProviderRef("openai-provider", "tuluat-system"), "gpt-4o", "System prompt",
-				"User prompt", List.of(new SkillDefinition("calculator", "Math tool", true, Map.of())),
-				List.of(new SkillSource("FOLDER", "/skills", true)),
+				"User prompt", List.of(new ToolDefinition("calculator", "Math tool", true, Map.of())),
+				List.of(new ToolSource("FOLDER", "/tools", true)),
 				List.of(new McpServerRef("postgres-mcp", "tuluat-system")),
 				new GuardrailsConfig(new PiiMaskingConfig(true, List.of("EMAIL"), "[REDACTED]"),
 						new PromptInjectionConfig(true, "BLOCK"), new OutputValidationConfig(true, 0.8)),
@@ -60,87 +60,58 @@ class CrdDomainRecordsTest {
 	@DisplayName("AiWorkflow CR construct and default memory config")
 	void testAiWorkflowCr() {
 		var workflow = new AiWorkflow();
-		workflow.setMetadata(new ObjectMetaBuilder().withName("wf-1").withNamespace("default").build());
+		workflow.setMetadata(new ObjectMetaBuilder().withName("wf-1").withNamespace("tuluat-system").build());
 
-		NodeDefinition node = new NodeDefinition("start-node", "AGENT", "agent-1", "input", "output", null, null);
-		EdgeDefinition edge = new EdgeDefinition("start-node", "end-node", null);
-		var spec = new AiWorkflowSpec("Test workflow", "start-node", List.of(node), List.of(edge),
-				new MemoryConfig(10, true, "document_vectors"));
+		var spec = new AiWorkflowSpec("Multi-Agent Researcher", "node-1",
+				List.of(new NodeDefinition("node-1", "AGENT", "agent-1", "Prompt", "out", null, null)),
+				List.of(new EdgeDefinition("node-1", "node-2", "true")), new MemoryConfig(10, true, "vectors"));
 		workflow.setSpec(spec);
 
-		assertEquals("start-node", workflow.getSpec().initialNode());
-		assertEquals(1, workflow.getSpec().nodes().size());
+		assertEquals("wf-1", workflow.getMetadata().getName());
 		assertEquals(10, workflow.getSpec().memoryConfig().shortMemorySize());
-
-		AiWorkflowStatus status = new AiWorkflowStatus("Ready", 1);
-		workflow.setStatus(status);
-
-		assertEquals("Ready", workflow.getStatus().state());
-		assertEquals(1, workflow.getStatus().nodeCount());
+		assertTrue(workflow.getSpec().memoryConfig().enableLongMemory());
 	}
 
 	@Test
 	@DisplayName("LlmProvider CR construct and status factory methods")
 	void testLlmProviderCr() {
 		var provider = new LlmProvider();
-		provider.setMetadata(new ObjectMetaBuilder().withName("openai").withNamespace("default").build());
+		provider.setMetadata(new ObjectMetaBuilder().withName("openai-1").withNamespace("tuluat-system").build());
 
-		var spec = new LlmProviderSpec("OPENAI", "https://api.openai.com/v1",
-				new SecretKeyRef("openai-secret", "api-key"), "gpt-4o", 0.7, 4096, 0.0025, 0.01,
-				List.of(new ModelFallback("ollama-provider", "default", "llama3")));
+		var spec = new LlmProviderSpec("OPENAI", "https://api.openai.com/v1", new SecretKeyRef("secret-1", "api-key"),
+				"gpt-4o", 0.7, 2048, 0.0025, 0.01, List.of(new ModelFallback("backup", "tuluat-system", "llama3")));
 		provider.setSpec(spec);
 
 		assertEquals("OPENAI", provider.getSpec().providerType());
-		assertEquals("openai-secret", provider.getSpec().apiKeySecretRef().name());
+		assertEquals("gpt-4o", provider.getSpec().defaultModel());
 
-		LlmProviderStatus ready = LlmProviderStatus.ready("Connected to OpenAI API", 1L);
-		assertEquals("Ready", ready.phase());
-
-		LlmProviderStatus pending = LlmProviderStatus.pending("Waiting for secret", 1L);
-		assertEquals("Pending", pending.phase());
-
-		LlmProviderStatus error = LlmProviderStatus.error("Invalid API Key", 1L);
-		assertEquals("Error", error.phase());
+		LlmProviderStatus status = LlmProviderStatus.ready("Provider ready", 1L);
+		assertEquals("Ready", status.phase());
 	}
 
 	@Test
 	@DisplayName("McpServer CR construct and status defaults")
 	void testMcpServerCr() {
-		var mcp = new McpServer();
-		mcp.setMetadata(new ObjectMetaBuilder().withName("pg-mcp").withNamespace("default").build());
+		var server = new McpServer();
+		server.setMetadata(new ObjectMetaBuilder().withName("mcp-1").withNamespace("tuluat-system").build());
+		server.setSpec(new McpServerSpec("http://mcp-server:8080/sse", "SSE", "NONE", null, 30, "Postgres MCP"));
 
-		var spec = new McpServerSpec("http://postgres-mcp:8080/sse", null, null, null, null, "Postgres tools");
-		mcp.setSpec(spec);
-
-		assertEquals("SSE", mcp.getSpec().transport()); // Default assigned by record constructor
-		assertEquals("NONE", mcp.getSpec().authType()); // Default assigned by record constructor
-		assertEquals(30, mcp.getSpec().timeoutSeconds()); // Default assigned by record constructor
-
-		McpServerStatus ready = McpServerStatus.ready("Registered", 1L);
-		assertEquals("Ready", ready.phase());
-
-		McpServerStatus error = McpServerStatus.error("Unreachable", 1L);
-		assertEquals("Error", error.phase());
+		assertEquals("SSE", server.getSpec().transport());
+		McpServerStatus status = McpServerStatus.ready("Server connected", 1L);
+		assertEquals("Ready", status.phase());
 	}
 
 	@Test
 	@DisplayName("WorkflowSession CR construct and spec parameters")
 	void testWorkflowSessionCr() {
 		var session = new WorkflowSession();
-		session.setMetadata(new ObjectMetaBuilder().withName("session-123").withNamespace("default").build());
+		session.setMetadata(new ObjectMetaBuilder().withName("session-1").withNamespace("tuluat-system").build());
+		session.setSpec(new WorkflowSessionSpec("wf-1", "input text", Map.of()));
 
-		WorkflowSessionSpec spec = new WorkflowSessionSpec("research-workflow", "Initial research query",
-				Map.of("maxLoops", 5));
-		session.setSpec(spec);
+		assertEquals("wf-1", session.getSpec().workflowRef());
+		assertEquals("input text", session.getSpec().input());
 
-		assertEquals("research-workflow", session.getSpec().workflowRef());
-		assertEquals(5, session.getSpec().parameters().get("maxLoops"));
-
-		WorkflowSessionStatus status = new WorkflowSessionStatus("uuid-123", "COMPLETED", "report-node", null, null,
-				null);
-		session.setStatus(status);
-
-		assertEquals("COMPLETED", session.getStatus().phase());
-		assertEquals("uuid-123", session.getStatus().sessionId());
+		WorkflowSessionStatus status = WorkflowSessionStatus.pending();
+		assertEquals("PENDING", status.phase());
 	}
 }

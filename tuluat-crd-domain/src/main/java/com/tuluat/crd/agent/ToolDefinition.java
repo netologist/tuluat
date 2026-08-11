@@ -5,12 +5,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
 
 /**
- * Definition of a Skill / Tool enabled for the AiAgent.
+ * Definition of a Tool enabled for the AiAgent.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record SkillDefinition(@JsonProperty("name") String name, @JsonProperty("description") String description,
+public record ToolDefinition(@JsonProperty("name") String name, @JsonProperty("description") String description,
 		@JsonProperty("enabled") Boolean enabled, @JsonProperty("parameters") Map<String, String> parameters) {
-	public SkillDefinition {
+	public ToolDefinition {
 		if (enabled == null) {
 			enabled = true;
 		}

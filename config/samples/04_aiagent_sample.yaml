@@ -10,9 +10,9 @@ spec:
   model: "deepseek-chat"
   systemPrompt: |
     You are an expert enterprise customer support AI assistant.
-    Always be concise, accurate, polite, and execute relevant tools/skills when required.
+    Always be concise, accurate, polite, and execute relevant tools when required.
   userPrompt: "Calculate 150 * 4 and check weather in Istanbul."
-  skills:
+  tools:
     - name: "calculator"
       description: "Perform math calculations"
       enabled: true
@@ -28,9 +28,9 @@ spec:
       parameters:
         table: "customers"
         limit: "10"
-  skillSources:
+  toolSources:
     - type: "FOLDER"
-      path: "/opt/tuluat/skills"
+      path: "/opt/tuluat/tools"
       watch: true
   mcpServers:
     - name: "postgres-mcp"

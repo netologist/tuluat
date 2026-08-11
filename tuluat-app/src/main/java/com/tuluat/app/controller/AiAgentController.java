@@ -42,7 +42,7 @@ public class AiAgentController {
 			map.put("providerRef", agent.getSpec() != null ? agent.getSpec().providerRef() : null);
 			map.put("model", agent.getSpec() != null ? agent.getSpec().model() : "");
 			map.put("systemPrompt", agent.getSpec() != null ? agent.getSpec().systemPrompt() : "");
-			map.put("skills", agent.getSpec() != null ? agent.getSpec().skills() : List.of());
+			map.put("tools", agent.getSpec() != null ? agent.getSpec().tools() : List.of());
 			map.put("guardrails", agent.getSpec() != null ? agent.getSpec().guardrails() : null);
 			map.put("status", agent.getStatus());
 			return map;

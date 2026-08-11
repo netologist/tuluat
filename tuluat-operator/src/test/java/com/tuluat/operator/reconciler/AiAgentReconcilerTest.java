@@ -4,7 +4,7 @@ import com.tuluat.crd.agent.AiAgent;
 import com.tuluat.crd.agent.AiAgentSpec;
 import com.tuluat.crd.agent.IngressSpec;
 import com.tuluat.crd.agent.ProviderRef;
-import com.tuluat.crd.agent.SkillDefinition;
+import com.tuluat.crd.agent.ToolDefinition;
 import com.tuluat.crd.provider.LlmProvider;
 import com.tuluat.crd.provider.LlmProviderSpec;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
@@ -93,7 +93,7 @@ class AiAgentReconcilerTest {
 		agent.setMetadata(new ObjectMetaBuilder().withName("support-agent").withNamespace("default").withUid("uid-123")
 				.withGeneration(1L).build());
 		agent.setSpec(new AiAgentSpec(new ProviderRef("openai-provider", "default"), "gpt-4o", "System prompt test",
-				"User query test", List.of(new SkillDefinition("calculator", "Math", true, Map.of())), List.of(), // skillSources
+				"User query test", List.of(new ToolDefinition("calculator", "Math", true, Map.of())), List.of(), // toolSources
 				List.of(), // mcpServers
 				null, // guardrails
 				null, // a2a
@@ -104,7 +104,7 @@ class AiAgentReconcilerTest {
 		assertNotNull(control);
 		assertNotNull(agent.getStatus());
 		assertEquals("Ready", agent.getStatus().phase());
-		assertEquals("http://agent.tuluat.com", agent.getStatus().ingressUrl());
-		assertEquals(List.of("calculator"), agent.getStatus().activeSkills());
+		assertEquals("http://agent.tuluat.com/", agent.getStatus().ingressUrl());
+		assertEquals(List.of("calculator"), agent.getStatus().activeTools());
 	}
 }

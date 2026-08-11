@@ -6,7 +6,7 @@ import com.tuluat.crd.agent.GuardrailsConfig;
 import com.tuluat.crd.agent.OutputValidationConfig;
 import com.tuluat.crd.agent.PiiMaskingConfig;
 import com.tuluat.crd.agent.PromptInjectionConfig;
-import com.tuluat.engine.skill.SkillRegistry;
+import com.tuluat.engine.tool.ToolRegistry;
 import com.tuluat.guardrails.GuardrailPipeline;
 import com.tuluat.guardrails.OutputValidationFilter;
 import com.tuluat.guardrails.PiiMaskingFilter;
@@ -34,7 +34,7 @@ class ExecuteAgentGuardrailsTest {
 	@BeforeEach
 	void setUp() {
 		resolver = (name, ns) -> Optional.of(agent(name));
-		service = new AgentExecutionService(new SkillRegistry(), Optional.empty(),
+		service = new AgentExecutionService(new ToolRegistry(), Optional.empty(),
 				new GuardrailPipeline(List.of(new PiiMaskingFilter(), new PromptInjectionFilter()),
 						List.of(new OutputValidationFilter())),
 				Optional.empty(), Optional.empty(), Optional.ofNullable(resolver), Optional.empty());
@@ -76,7 +76,7 @@ class ExecuteAgentGuardrailsTest {
 
 	@Test
 	void unguardedWhenNoResolverConfigured() {
-		AgentExecutionService bare = new AgentExecutionService(new SkillRegistry(), Optional.empty(),
+		AgentExecutionService bare = new AgentExecutionService(new ToolRegistry(), Optional.empty(),
 				new GuardrailPipeline(List.of(new PiiMaskingFilter(), new PromptInjectionFilter()),
 						List.of(new OutputValidationFilter())),
 				Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());

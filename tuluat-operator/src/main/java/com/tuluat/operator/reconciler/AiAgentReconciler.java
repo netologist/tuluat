@@ -85,9 +85,9 @@ public class AiAgentReconciler implements Reconciler<AiAgent> {
 			// Step 3: Reconcile Ingress (Public Exposure)
 			String ingressUrl = reconcileIngress(agent, ownerRef, ns);
 
-			// Calculate active skills using Java Streams
-			List<String> activeSkills = spec.skills().stream().filter(s -> Boolean.TRUE.equals(s.enabled()))
-					.map(s -> s.name()).toList();
+			// Calculate active tools using Java Streams
+			List<String> activeTools = spec.tools().stream().filter(t -> Boolean.TRUE.equals(t.enabled()))
+					.map(t -> t.name()).toList();
 
 			String effectiveModel = (spec.model() != null && !spec.model().isBlank())
 					? spec.model()
@@ -95,7 +95,7 @@ public class AiAgentReconciler implements Reconciler<AiAgent> {
 
 			String readyMessage = String.format("AiAgent '%s' successfully reconciled and listening at %s", name,
 					ingressUrl);
-			agent.setStatus(AiAgentStatus.ready(ingressUrl, activeSkills, effectiveModel, readyMessage,
+			agent.setStatus(AiAgentStatus.ready(ingressUrl, activeTools, effectiveModel, readyMessage,
 					agent.getMetadata().getGeneration()));
 
 			log.info("Successfully reconciled AiAgent {}/{} -> Status: {}", ns, name, agent.getStatus().phase());
@@ -110,73 +110,98 @@ public class AiAgentReconciler implements Reconciler<AiAgent> {
 
 	private void reconcileDeployment(AiAgent agent, OwnerReference ownerRef, String ns) {
 		String deployName = agent.getMetadata().getName() + "-deployment";
-		Map<String, String> labels = Map.of("app", agent.getMetadata().getName(), "component", "ai-agent");
+		int replicas = (agent.getSpec().replicas() != null) ? agent.getSpec().replicas() : 1;
 
 		Deployment deployment = new DeploymentBuilder().withNewMetadata().withName(deployName).withNamespace(ns)
-				.withOwnerReferences(ownerRef).withLabels(labels).endMetadata().withNewSpec()
-				.withReplicas(agent.getSpec().replicas()).withNewSelector().withMatchLabels(labels).endSelector()
-				.withNewTemplate().withNewMetadata().withLabels(labels).endMetadata().withNewSpec()
-				.withServiceAccountName("k8s-ai-operator-sa").addNewContainer().withName("ai-agent-app")
-				.withImage("k8s-crd-ai-operator:latest").withImagePullPolicy("IfNotPresent").addNewPort()
-				.withContainerPort(8080).withName("http").endPort().addNewEnv().withName("AGENT_NAME")
-				.withValue(agent.getMetadata().getName()).endEnv().endContainer().endSpec().endTemplate().endSpec()
-				.build();
+				.withOwnerReferences(ownerRef).endMetadata().withNewSpec().withReplicas(replicas).withNewSelector()
+				.withMatchLabels(Map.of("app", agent.getMetadata().getName())).endSelector().withNewTemplate()
+				.withNewMetadata().withLabels(Map.of("app", agent.getMetadata().getName())).endMetadata().withNewSpec()
+				.addNewContainer().withName("agent-runtime").withImage("tuluat-operator:latest").addNewEnv()
+				.withName("AGENT_NAME").withValue(agent.getMetadata().getName()).endEnv().endContainer().endSpec()
+				.endTemplate().endSpec().build();
 
-		client.apps().deployments().inNamespace(ns).resource(deployment).serverSideApply();
+		client.apps().deployments().inNamespace(ns).resource(deployment).createOrReplace();
+		log.info("Deployment {} reconciled for agent {}", deployName, agent.getMetadata().getName());
 	}
 
 	private void reconcileService(AiAgent agent, OwnerReference ownerRef, String ns) {
 		String svcName = agent.getMetadata().getName() + "-svc";
-		Map<String, String> labels = Map.of("app", agent.getMetadata().getName());
-
 		Service service = new ServiceBuilder().withNewMetadata().withName(svcName).withNamespace(ns)
-				.withOwnerReferences(ownerRef).withLabels(labels).endMetadata().withNewSpec().withSelector(labels)
-				.addNewPort().withName("http").withPort(80).withTargetPort(new IntOrString(8080)).withProtocol("TCP")
-				.endPort().withType("ClusterIP").endSpec().build();
+				.withOwnerReferences(ownerRef).endMetadata().withNewSpec()
+				.withSelector(Map.of("app", agent.getMetadata().getName())).addNewPort().withProtocol("TCP")
+				.withPort(8080).withTargetPort(new IntOrString(8080)).endPort().endSpec().build();
 
-		client.services().inNamespace(ns).resource(service).serverSideApply();
+		client.services().inNamespace(ns).resource(service).createOrReplace();
+		log.info("Service {} reconciled for agent {}", svcName, agent.getMetadata().getName());
 	}
 
 	private String reconcileIngress(AiAgent agent, OwnerReference ownerRef, String ns) {
-		var ingressSpec = agent.getSpec().ingress();
-		if (ingressSpec == null || !Boolean.TRUE.equals(ingressSpec.enabled())) {
-			return "http://localhost:8080/api/v1/agents/" + agent.getMetadata().getName() + "/chat";
+		var spec = agent.getSpec();
+		if (spec.ingress() == null || !Boolean.TRUE.equals(spec.ingress().enabled())) {
+			return "http://" + agent.getMetadata().getName() + "-svc." + ns + ".svc.cluster.local:8080";
 		}
 
-		String ingressName = agent.getMetadata().getName() + "-ingress";
-		String host = (ingressSpec.host() != null && !ingressSpec.host().isBlank())
-				? ingressSpec.host()
-				: "ai-agent.tuluat.com";
-		String path = (ingressSpec.path() != null) ? ingressSpec.path() : "/";
+		var ingSpec = spec.ingress();
+		String ingName = agent.getMetadata().getName() + "-ingress";
+		String host = (ingSpec.host() != null && !ingSpec.host().isBlank())
+				? ingSpec.host()
+				: agent.getMetadata().getName() + ".tuluat.local";
+		String path = (ingSpec.path() != null) ? ingSpec.path() : "/";
+		String pathType = (ingSpec.pathType() != null) ? ingSpec.pathType() : "Prefix";
 		String svcName = agent.getMetadata().getName() + "-svc";
 
-		var ingressBuilder = new IngressBuilder().withNewMetadata().withName(ingressName).withNamespace(ns)
-				.withOwnerReferences(ownerRef).withAnnotations(ingressSpec.annotations()).endMetadata().withNewSpec();
+		var ingRuleValueBuilder = new HTTPIngressRuleValueBuilder().addNewPath().withPath(path).withPathType(pathType)
+				.withNewBackend().withNewService().withName(svcName).withNewPort().withNumber(8080).endPort()
+				.endService().endBackend().endPath();
 
-		if (ingressSpec.ingressClassName() != null) {
-			ingressBuilder.withIngressClassName(ingressSpec.ingressClassName());
+		var ingRule = new IngressRuleBuilder().withHost(host).withHttp(ingRuleValueBuilder.build()).build();
+
+		var builder = new IngressBuilder().withNewMetadata().withName(ingName).withNamespace(ns)
+				.withOwnerReferences(ownerRef);
+		if (ingSpec.annotations() != null && !ingSpec.annotations().isEmpty()) {
+			builder.withAnnotations(ingSpec.annotations());
+		}
+		Ingress meta = builder.endMetadata().build();
+
+		var specBuilder = new IngressSpecBuilderLike(ingRule);
+		if (ingSpec.ingressClassName() != null) {
+			specBuilder.ingressClassName = ingSpec.ingressClassName();
+		}
+		if (ingSpec.tls() != null && ingSpec.tls().secretName() != null) {
+			specBuilder.tlsSecretName = ingSpec.tls().secretName();
+			specBuilder.tlsHosts = ingSpec.tls().hosts();
 		}
 
-		var pathRule = new HTTPIngressPathBuilder().withPath(path).withPathType(ingressSpec.pathType()).withNewBackend()
-				.withNewService().withName(svcName).withNewPort().withNumber(80).endPort().endService().endBackend()
-				.build();
+		Ingress ingress = specBuilder.build(meta);
+		client.network().v1().ingresses().inNamespace(ns).resource(ingress).createOrReplace();
 
-		var rule = new IngressRuleBuilder().withHost(host)
-				.withHttp(new HTTPIngressRuleValueBuilder().withPaths(pathRule).build()).build();
+		String scheme = (ingSpec.tls() != null && ingSpec.tls().secretName() != null) ? "https" : "http";
+		return scheme + "://" + host + path;
+	}
 
-		ingressBuilder.withRules(rule);
+	private static final class IngressSpecBuilderLike {
+		private final io.fabric8.kubernetes.api.model.networking.v1.IngressRule rule;
+		private String ingressClassName;
+		private String tlsSecretName;
+		private List<String> tlsHosts;
 
-		if (ingressSpec.tls() != null) {
-			var tls = new IngressTLSBuilder().withSecretName(ingressSpec.tls().secretName())
-					.withHosts(ingressSpec.tls().hosts()).build();
-			ingressBuilder.withTls(tls);
+		private IngressSpecBuilderLike(io.fabric8.kubernetes.api.model.networking.v1.IngressRule rule) {
+			this.rule = rule;
 		}
 
-		Ingress ingress = ingressBuilder.endSpec().build();
-		client.network().v1().ingresses().inNamespace(ns).resource(ingress).serverSideApply();
-
-		String protocol = (ingressSpec.tls() != null) ? "https" : "http";
-		return String.format("%s://%s%s", protocol, host,
-				path.endsWith("/") ? path.substring(0, path.length() - 1) : path);
+		private Ingress build(Ingress meta) {
+			var builder = new IngressBuilder(meta).withNewSpec().withRules(rule);
+			if (ingressClassName != null) {
+				builder.withIngressClassName(ingressClassName);
+			}
+			if (tlsSecretName != null) {
+				var tlsBuilder = new IngressTLSBuilder().withSecretName(tlsSecretName);
+				if (tlsHosts != null && !tlsHosts.isEmpty()) {
+					tlsBuilder.withHosts(tlsHosts);
+				}
+				builder.withTls(tlsBuilder.build());
+			}
+			return builder.endSpec().build();
+		}
 	}
 }

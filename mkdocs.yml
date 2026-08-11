@@ -56,7 +56,7 @@ nav:
   - Home: index.md
   - Features:
       - LLM Providers: features/llm-providers.md
-      - Agents & Skills: features/agents-and-skills.md
+      - Agents & Tools: features/agents-and-tools.md
       - Workflows & Sessions: features/workflows-and-sessions.md
       - Safety Guardrails: features/guardrails.md
       - MCP & A2A Protocols: features/mcp-and-a2a.md

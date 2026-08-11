@@ -13,7 +13,7 @@ spec:
     Analyze incoming transaction details (userId, amount, location, velocity).
     Calculate a risk score between 0.0 and 1.0 and assign a riskLevel: LOW, HIGH, or CRITICAL.
     Return structured JSON output with riskScore, riskLevel, and riskReason.
-  skills:
+  tools:
     - name: calculator
       enabled: true
   mcpServers:

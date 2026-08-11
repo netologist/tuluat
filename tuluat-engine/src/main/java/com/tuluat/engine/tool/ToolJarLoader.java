@@ -1,4 +1,4 @@
-package com.tuluat.engine.skill;
+package com.tuluat.engine.tool;
 
 import java.io.IOException;
 import java.net.URL;
@@ -12,19 +12,19 @@ import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Loads {@link SkillProvider} implementations from external JARs dropped into a
- * skill folder (ADR 007). Each JAR is loaded in its own {@link URLClassLoader}
+ * Loads {@link ToolProvider} implementations from external JARs dropped into a
+ * tool folder (ADR 007). Each JAR is loaded in its own {@link URLClassLoader}
  * and must be closed after use to avoid classloader leaks.
  */
 @Slf4j
-public final class SkillJarLoader {
+public final class ToolJarLoader {
 
 	/**
-	 * Scans a folder for {@code *.jar} files and loads all {@link SkillProvider}
+	 * Scans a folder for {@code *.jar} files and loads all {@link ToolProvider}
 	 * implementations found in them.
 	 *
 	 * @return loaded providers; their classloaders are owned by the caller (the
-	 *         registry keeps them for the lifetime of the skills)
+	 *         registry keeps them for the lifetime of the tools)
 	 */
 	public static List<LoadedProvider> loadFromFolder(Path folder) {
 		List<LoadedProvider> providers = new ArrayList<>();
@@ -34,7 +34,7 @@ public final class SkillJarLoader {
 		try (Stream<Path> jars = Files.list(folder)) {
 			jars.filter(p -> p.toString().endsWith(".jar")).sorted().forEach(jar -> providers.addAll(loadJar(jar)));
 		} catch (IOException e) {
-			log.warn("Failed to scan skill folder {}: {}", folder, e.getMessage());
+			log.warn("Failed to scan tool folder {}: {}", folder, e.getMessage());
 		}
 		return providers;
 	}
@@ -43,14 +43,14 @@ public final class SkillJarLoader {
 		List<LoadedProvider> providers = new ArrayList<>();
 		URLClassLoader loader = null;
 		try {
-			loader = new URLClassLoader(new URL[]{jar.toUri().toURL()}, SkillJarLoader.class.getClassLoader());
-			ServiceLoader<SkillProvider> serviceLoader = ServiceLoader.load(SkillProvider.class, loader);
-			for (SkillProvider provider : serviceLoader) {
+			loader = new URLClassLoader(new URL[]{jar.toUri().toURL()}, ToolJarLoader.class.getClassLoader());
+			ServiceLoader<ToolProvider> serviceLoader = ServiceLoader.load(ToolProvider.class, loader);
+			for (ToolProvider provider : serviceLoader) {
 				providers.add(new LoadedProvider(provider, loader));
-				log.info("Loaded skill provider [{}] from {}", provider.providerName(), jar.getFileName());
+				log.info("Loaded tool provider [{}] from {}", provider.providerName(), jar.getFileName());
 			}
 		} catch (Exception e) {
-			log.warn("Failed to load skill JAR {}: {}", jar, e.getMessage());
+			log.warn("Failed to load tool JAR {}: {}", jar, e.getMessage());
 			if (loader != null) {
 				try {
 					loader.close();
@@ -64,8 +64,8 @@ public final class SkillJarLoader {
 
 	/**
 	 * A loaded provider together with the classloader that must stay open while its
-	 * skills are in use.
+	 * tools are in use.
 	 */
-	public record LoadedProvider(SkillProvider provider, URLClassLoader classLoader) {
+	public record LoadedProvider(ToolProvider provider, URLClassLoader classLoader) {
 	}
 }

@@ -41,7 +41,7 @@ spec:
                 userPrompt:
                   type: string
                   description: "Default user query / prompt template"
-                skills:
+                tools:
                   type: array
                   items:
                     type: object
@@ -56,7 +56,7 @@ spec:
                         type: object
                         additionalProperties:
                           type: string
-                skillSources:
+                toolSources:
                   type: array
                   items:
                     type: object
@@ -148,7 +148,7 @@ spec:
                   type: string
                 ingressUrl:
                   type: string
-                activeSkills:
+                activeTools:
                   type: array
                   items:
                     type: string

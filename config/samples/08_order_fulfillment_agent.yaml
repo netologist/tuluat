@@ -11,6 +11,6 @@ spec:
   systemPrompt: |
     You are an Order Fulfillment & Invoice Generation Agent.
     Finalize the order, generate a digital invoice PDF summary, reserve inventory items, and issue confirmation notification.
-  skills:
+  tools:
     - name: web-search
       enabled: true

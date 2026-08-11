@@ -9,12 +9,12 @@ import java.util.List;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record AiAgentStatus(@JsonProperty("phase") String phase, @JsonProperty("ingressUrl") String ingressUrl,
-		@JsonProperty("activeSkills") List<String> activeSkills, @JsonProperty("effectiveModel") String effectiveModel,
+		@JsonProperty("activeTools") List<String> activeTools, @JsonProperty("effectiveModel") String effectiveModel,
 		@JsonProperty("message") String message, @JsonProperty("observedGeneration") Long observedGeneration,
 		@JsonProperty("lastReconciledAt") String lastReconciledAt) {
-	public static AiAgentStatus ready(String ingressUrl, List<String> activeSkills, String effectiveModel,
+	public static AiAgentStatus ready(String ingressUrl, List<String> activeTools, String effectiveModel,
 			String message, Long gen) {
-		return new AiAgentStatus("Ready", ingressUrl, activeSkills, effectiveModel, message, gen,
+		return new AiAgentStatus("Ready", ingressUrl, activeTools, effectiveModel, message, gen,
 				java.time.Instant.now().toString());
 	}
 

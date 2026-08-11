@@ -56,7 +56,7 @@ tuluat/ (tuluat-parent)
 5. **`tuluat-engine`** *(Core Runtime Engine)*
    * The orchestration core containing:
      * **`GraphStateMachineEngine`**: Evaluates SpEL conditions, handles state transitions, and steps through workflow DAG nodes.
-     * **`AgentExecutionService`**: Executes prompt pipelines, invoking guardrails, active skills, and LLM gateways.
+     * **`AgentExecutionService`**: Executes prompt pipelines, invoking guardrails, active tools, and LLM gateways.
      * **`ModelGateway`**: Routes model calls across providers with fallback chains, cost estimation, and budget limits.
      * **`RagService`**: Manages document chunking, `pgvector` vector storage, and MinIO S3 object storage.
      * **`Temporal Workflows`**: Provides durable, crash-resilient workflow activities and human-in-the-loop approval signaling.

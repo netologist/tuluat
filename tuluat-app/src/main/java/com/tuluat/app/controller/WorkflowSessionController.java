@@ -249,7 +249,7 @@ public class WorkflowSessionController {
 									? spec.systemPrompt()
 									: "You are a specialized AI domain agent.");
 					detail.put("role", getRoleForAgent(effectiveRef));
-					detail.put("skills", spec.skills() != null ? spec.skills() : List.of());
+					detail.put("tools", spec.tools() != null ? spec.tools() : List.of());
 					detail.put("mcpServers", spec.mcpServers() != null ? spec.mcpServers() : List.of());
 					detail.put("guardrails", spec.guardrails() != null
 							? spec.guardrails()
@@ -261,8 +261,8 @@ public class WorkflowSessionController {
 		}
 
 		return Map.of("name", effectiveRef, "model", "deepseek-chat", "role", getRoleForAgent(effectiveRef),
-				"systemPrompt", getSystemPromptForAgent(effectiveRef), "skills",
-				List.of("domain-execution-skill", "mcp-tools-registry"), "mcpServers",
+				"systemPrompt", getSystemPromptForAgent(effectiveRef), "tools",
+				List.of("domain-execution-tool", "mcp-tools-registry"), "mcpServers",
 				List.of(Map.of("name", "pgvector-mcp", "endpoint", "http://postgres-pgvector:5432/sse", "tools",
 						List.of("semantic_vector_search"))),
 				"guardrails", Map.of("piiMasking", true, "promptInjectionDefense", true, "outputValidation", true));

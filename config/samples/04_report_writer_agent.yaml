@@ -12,13 +12,13 @@ spec:
     You are an expert Executive Report Writer AI Agent.
     Your job is to take raw research data from researcher agents and format it into a professional markdown report.
   userPrompt: "Format the research output into an executive summary."
-  skills:
+  tools:
     - name: "calculator"
       description: "Perform calculations if metrics are needed"
       enabled: true
-  skillSources:
+  toolSources:
     - type: "FOLDER"
-      path: "/opt/tuluat/skills"
+      path: "/opt/tuluat/tools"
       watch: true
   mcpServers:
     - name: "postgres-mcp"

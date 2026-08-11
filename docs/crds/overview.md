@@ -72,7 +72,7 @@ Defines an autonomous AI agent personality, system prompt, tool skills (folder/C
 | `model` | `string` | Model name override (optional; defaults to provider default model). |
 | `systemPrompt` | `string` | System instruction template grounding agent behavior. |
 | `userPrompt` | `string` | Default prompt template for single-agent executions. |
-| `skills` | `array` | List of enabled capabilities/tools (`name`, `description`, `enabled`, `parameters`). |
+ | `tools` | `array` | List of enabled capabilities/tools (`name`, `description`, `enabled`, `parameters`). |
 | `mcpServers` | `array` | Model Context Protocol servers linked to this agent (`name`, `namespace`). |
 | `guardrails` | `object` | Safety filters (`piiMasking`, `promptInjection`, `outputValidation`). |
 | `a2a` | `object` | Agent-to-Agent communication settings (`enabled`, `remoteDiscovery`). |
@@ -92,7 +92,7 @@ spec:
   systemPrompt: |
     You are a meticulous technical researcher. Search for accurate information, 
     synthesize insights, and structure output with concrete references.
-  skills:
+  tools:
     - name: web-search
       description: "Search web for recent technical documentation"
       enabled: true

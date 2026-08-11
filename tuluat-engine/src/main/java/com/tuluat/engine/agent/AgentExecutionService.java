@@ -2,12 +2,13 @@ package com.tuluat.engine.agent;
 
 import com.tuluat.crd.agent.AiAgent;
 import com.tuluat.crd.agent.AiAgentSpec;
+import com.tuluat.crd.agent.ToolDefinition;
 import com.tuluat.crd.provider.LlmProvider;
 import com.tuluat.engine.gateway.ModelGateway;
 import com.tuluat.engine.gateway.ProviderResolver;
 import com.tuluat.engine.rag.RagService;
-import com.tuluat.engine.skill.SkillRegistry;
-import com.tuluat.engine.skill.SkillResult;
+import com.tuluat.engine.tool.ToolRegistry;
+import com.tuluat.engine.tool.ToolResult;
 import com.tuluat.guardrails.GuardrailBlockedException;
 import com.tuluat.guardrails.GuardrailPipeline;
 import lombok.extern.slf4j.Slf4j;
@@ -24,15 +25,15 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Core engine for executing AI Agent prompts with Skills, Guardrails, and Model
+ * Core engine for executing AI Agent prompts with Tools, Guardrails, and Model
  * Gateway.
  *
  * <h3>Execution pipeline:</h3>
  * <ol>
  * <li>Resolve model and query from agent spec</li>
  * <li>Apply pre-execution guardrails (PII masking, injection defense)</li>
- * <li>Execute active skills on virtual threads</li>
- * <li>Build system prompt with skill context and RAG</li>
+ * <li>Execute active tools on virtual threads</li>
+ * <li>Build system prompt with tool context and RAG</li>
  * <li>Invoke LLM via ModelGateway → ChatModel → simulated fallback</li>
  * <li>Validate output against guardrail policy</li>
  * </ol>
@@ -51,7 +52,7 @@ public class AgentExecutionService {
 	private static final String DEFAULT_USER_PROMPT = "Hello AI Agent";
 	private static final int RAG_RESULT_COUNT = 3;
 
-	private final SkillRegistry skillRegistry;
+	private final ToolRegistry toolRegistry;
 	private final Optional<ChatModel> chatModel;
 	private final GuardrailPipeline guardrailPipeline;
 	private final Optional<ModelGateway> modelGateway;
@@ -59,11 +60,11 @@ public class AgentExecutionService {
 	private final Optional<AgentResolver> agentResolver;
 	private final Optional<RagService> ragService;
 
-	public AgentExecutionService(SkillRegistry skillRegistry,
-			@Qualifier("openAiChatModel") Optional<ChatModel> chatModel, GuardrailPipeline guardrailPipeline,
-			Optional<ModelGateway> modelGateway, Optional<ProviderResolver> providerResolver,
-			Optional<AgentResolver> agentResolver, Optional<RagService> ragService) {
-		this.skillRegistry = skillRegistry;
+	public AgentExecutionService(ToolRegistry toolRegistry, @Qualifier("openAiChatModel") Optional<ChatModel> chatModel,
+			GuardrailPipeline guardrailPipeline, Optional<ModelGateway> modelGateway,
+			Optional<ProviderResolver> providerResolver, Optional<AgentResolver> agentResolver,
+			Optional<RagService> ragService) {
+		this.toolRegistry = toolRegistry;
 		this.chatModel = chatModel;
 		this.guardrailPipeline = guardrailPipeline;
 		this.modelGateway = modelGateway;
@@ -90,11 +91,11 @@ public class AgentExecutionService {
 			return AgentResponse.blocked(agentName, e.getFilterName(), e.getMessage());
 		}
 
-		var skillResults = executeSkills(agentName, spec.skills(), safeQuery);
-		var systemPrompt = buildSystemPrompt(spec.systemPrompt(), safeQuery, skillResults);
+		var toolResults = executeTools(agentName, spec.tools(), safeQuery);
+		var systemPrompt = buildSystemPrompt(spec.systemPrompt(), safeQuery, toolResults);
 		var prompt = new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(safeQuery)));
 
-		var llmResult = invokeLlm(agentName, model, provider, prompt, systemPrompt, safeQuery, skillResults);
+		var llmResult = invokeLlm(agentName, model, provider, prompt, systemPrompt, safeQuery, toolResults);
 		if (llmResult.blocked()) {
 			return AgentResponse.blocked(agentName, llmResult.blockReason(), llmResult.errorMessage());
 		}
@@ -103,7 +104,7 @@ public class AgentExecutionService {
 
 		var latency = System.currentTimeMillis() - startTime;
 		var usage = buildUsage(llmResult, model, latency);
-		return AgentResponse.create(agentName, model, systemPrompt, llmResult.answer(), skillResults, usage);
+		return AgentResponse.create(agentName, model, systemPrompt, llmResult.answer(), toolResults, usage);
 	}
 
 	public AgentResponse executeAgent(String agentRef, String prompt, String context) {
@@ -182,23 +183,22 @@ public class AgentExecutionService {
 		return spec.userPrompt() != null ? spec.userPrompt() : DEFAULT_USER_PROMPT;
 	}
 
-	private List<SkillResult> executeSkills(String agentName, List<com.tuluat.crd.agent.SkillDefinition> skillDefs,
-			String query) {
-		log.info("Executing skills for Agent '{}' on Virtual Thread", agentName);
-		return skillRegistry.executeActiveSkills(skillDefs, query).values().stream().toList();
+	private List<ToolResult> executeTools(String agentName, List<ToolDefinition> toolDefs, String query) {
+		log.info("Executing tools for Agent '{}' on Virtual Thread", agentName);
+		return toolRegistry.executeActiveTools(toolDefs, query).values().stream().toList();
 	}
 
-	private String buildSystemPrompt(String basePrompt, String query, List<SkillResult> skills) {
+	private String buildSystemPrompt(String basePrompt, String query, List<ToolResult> tools) {
 		var prompt = basePrompt != null ? basePrompt : DEFAULT_SYSTEM_PROMPT;
-		return prompt + buildSkillContext(skills) + retrieveRagContext(query);
+		return prompt + buildToolContext(tools) + retrieveRagContext(query);
 	}
 
-	private String buildSkillContext(List<SkillResult> skills) {
-		if (skills.isEmpty()) {
+	private String buildToolContext(List<ToolResult> tools) {
+		if (tools.isEmpty()) {
 			return "";
 		}
-		return "\n\nAvailable Context from Tools/Skills:\n" + skills.stream()
-				.map(s -> "[%s]: %s".formatted(s.skillName(), s.output())).reduce((a, b) -> a + "\n" + b).orElse("");
+		return "\n\nAvailable Context from Tools:\n" + tools.stream()
+				.map(t -> "[%s]: %s".formatted(t.toolName(), t.output())).reduce((a, b) -> a + "\n" + b).orElse("");
 	}
 
 	private String retrieveRagContext(String query) {
@@ -229,19 +229,19 @@ public class AgentExecutionService {
 	}
 
 	private LlmResult invokeLlm(String agentName, String model, LlmProvider provider, Prompt prompt,
-			String systemPrompt, String query, List<SkillResult> skills) {
+			String systemPrompt, String query, List<ToolResult> tools) {
 
 		if (modelGateway.isPresent() && chatModel.isPresent()) {
-			return invokeViaGateway(agentName, model, provider, prompt, systemPrompt, query, skills);
+			return invokeViaGateway(agentName, model, provider, prompt, systemPrompt, query, tools);
 		}
 		if (chatModel.isPresent()) {
-			return invokeViaChatModel(agentName, model, prompt, systemPrompt, query, skills);
+			return invokeViaChatModel(agentName, model, prompt, systemPrompt, query, tools);
 		}
-		return invokeSimulated(agentName, model, systemPrompt, query, skills);
+		return invokeSimulated(agentName, model, systemPrompt, query, tools);
 	}
 
 	private LlmResult invokeViaGateway(String agentName, String model, LlmProvider provider, Prompt prompt,
-			String systemPrompt, String query, List<SkillResult> skills) {
+			String systemPrompt, String query, List<ToolResult> tools) {
 		try {
 			var result = modelGateway.get().invoke(prompt, provider, model, providerResolver.orElse(null), null,
 					agentName);
@@ -252,12 +252,12 @@ public class AgentExecutionService {
 			return LlmResult.blocked("model-gateway-budget", e.getMessage());
 		} catch (ModelGateway.ModelGatewayException e) {
 			log.warn("Model Gateway failed for '{}', falling back: {}", agentName, e.getMessage());
-			return invokeSimulated(agentName, model, systemPrompt, query, skills);
+			return invokeSimulated(agentName, model, systemPrompt, query, tools);
 		}
 	}
 
 	private LlmResult invokeViaChatModel(String agentName, String model, Prompt prompt, String systemPrompt,
-			String query, List<SkillResult> skills) {
+			String query, List<ToolResult> tools) {
 		try {
 			log.info("Calling Spring AI ChatModel [{}] for agent '{}'", model, agentName);
 			var response = chatModel.get().call(prompt);
@@ -266,21 +266,20 @@ public class AgentExecutionService {
 			return LlmResult.success(answer, usage.inputTokens, usage.outputTokens, 0.0, false);
 		} catch (Exception e) {
 			log.warn("Spring AI call failed for '{}', falling back: {}", agentName, e.getMessage());
-			return invokeSimulated(agentName, model, systemPrompt, query, skills);
+			return invokeSimulated(agentName, model, systemPrompt, query, tools);
 		}
 	}
 
 	private TokenCount extractUsage(ChatResponse response, String systemPrompt, String query, String answer) {
-
 		return Optional.of(response).map(ChatResponse::getMetadata).map(ChatResponseMetadata::getUsage)
 				.map(u -> new TokenCount(u.getPromptTokens().intValue(), u.getCompletionTokens().intValue()))
 				.orElse(new TokenCount(estimateTokens(systemPrompt + query), estimateTokens(answer)));
 	}
 
 	private LlmResult invokeSimulated(String agentName, String model, String systemPrompt, String query,
-			List<SkillResult> skills) {
+			List<ToolResult> tools) {
 		log.info("Generating simulated response for '{}'", agentName);
-		var answer = generateSimulatedResponse(agentName, model, systemPrompt, query, skills);
+		var answer = generateSimulatedResponse(agentName, model, systemPrompt, query, tools);
 		return LlmResult.simulated(answer, estimateTokens(systemPrompt + query), estimateTokens(answer));
 	}
 
@@ -312,13 +311,13 @@ public class AgentExecutionService {
 	}
 
 	private String generateSimulatedResponse(String agentName, String model, String systemPrompt, String query,
-			List<SkillResult> skills) {
+			List<ToolResult> tools) {
 		var sb = new StringBuilder();
 		sb.append("[Simulated response from agent '%s' using model '%s']\n\n".formatted(agentName, model));
 		sb.append("Query: %s\n\n".formatted(query));
-		if (!skills.isEmpty()) {
-			sb.append("Skills executed:\n");
-			skills.forEach(s -> sb.append("  - %s: %s\n".formatted(s.skillName(), s.output())));
+		if (!tools.isEmpty()) {
+			sb.append("Tools executed:\n");
+			tools.forEach(t -> sb.append("  - %s: %s\n".formatted(t.toolName(), t.output())));
 		}
 		sb.append("System prompt: %s\n".formatted(systemPrompt));
 		return sb.toString();

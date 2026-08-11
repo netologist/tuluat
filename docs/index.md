@@ -60,7 +60,7 @@ Explore the documentation across core categories:
 
 1. **[Features & Capabilities](features/llm-providers.md)**
    * **[LLM Providers](features/llm-providers.md)**: Provider management, routing, fallbacks, token cost tracking.
-   * **[Agents & Skills](features/agents-and-skills.md)**: Autonomous AI agents, prompt templates, dynamic skill registry.
+   * **[Agents & Tools](features/agents-and-tools.md)**: Autonomous AI agents, prompt templates, dynamic tool registry.
    * **[Workflows & Sessions](features/workflows-and-sessions.md)**: Declarative DAG workflows, state machines, execution sessions.
    * **[Safety Guardrails](features/guardrails.md)**: PII masking, prompt injection defense, JSON schema validation.
    * **[MCP & A2A Protocols](features/mcp-and-a2a.md)**: Model Context Protocol tools and Agent-to-Agent communication.

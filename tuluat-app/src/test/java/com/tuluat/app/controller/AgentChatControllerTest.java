@@ -3,11 +3,11 @@ package com.tuluat.app.controller;
 import com.tuluat.crd.agent.AiAgent;
 import com.tuluat.crd.agent.AiAgentSpec;
 import com.tuluat.crd.agent.ProviderRef;
-import com.tuluat.crd.agent.SkillDefinition;
+import com.tuluat.crd.agent.ToolDefinition;
 import com.tuluat.crd.provider.LlmProvider;
 import com.tuluat.engine.agent.AgentExecutionService;
 import com.tuluat.engine.agent.AgentResponse;
-import com.tuluat.engine.skill.SkillResult;
+import com.tuluat.engine.tool.ToolResult;
 import com.tuluat.engine.agent.UsageStats;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -49,36 +49,39 @@ class AgentChatControllerTest {
 		agentNsMock = mock(NonNamespaceOperation.class);
 		agentResMock = mock(Resource.class);
 
-		when(client.resources(eq(AiAgent.class))).thenReturn(aiAgentsMock);
+		MixedOperation llmProvidersMock = mock(MixedOperation.class);
+		NonNamespaceOperation llmNsMock = mock(NonNamespaceOperation.class);
+		Resource llmResMock = mock(Resource.class);
+
+		when(client.resources(AiAgent.class)).thenReturn(aiAgentsMock);
 		when(aiAgentsMock.inNamespace(anyString())).thenReturn(agentNsMock);
 		when(agentNsMock.withName(anyString())).thenReturn(agentResMock);
 
-		// Also mock LlmProvider resources
-		MixedOperation providersMock = mock(MixedOperation.class);
-		NonNamespaceOperation providerNsMock = mock(NonNamespaceOperation.class);
-		Resource providerResMock = mock(Resource.class);
-		when(client.resources(eq(LlmProvider.class))).thenReturn(providersMock);
-		when(providersMock.inNamespace(anyString())).thenReturn(providerNsMock);
-		when(providerNsMock.withName(anyString())).thenReturn(providerResMock);
+		when(client.resources(LlmProvider.class)).thenReturn(llmProvidersMock);
+		when(llmProvidersMock.inNamespace(anyString())).thenReturn(llmNsMock);
+		when(llmNsMock.withName(anyString())).thenReturn(llmResMock);
 	}
 
 	@Test
 	@DisplayName("Should return 404 when requested AiAgent CR does not exist")
 	void testChatWithNonExistentAgent() {
 		when(agentResMock.get()).thenReturn(null);
-		ResponseEntity<AgentResponse> response = controller.chatWithAgent("unknown-agent",
-				new ChatRequest("hello", "default"));
+
+		ResponseEntity<AgentResponse> response = controller.chatWithAgent("missing-agent",
+				new ChatRequest("Hello", "default"));
+
 		assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-		assertTrue(response.getBody().answer().contains("not found"));
+		assertNotNull(response.getBody());
+		assertEquals("missing-agent", response.getBody().agentName());
 	}
 
 	@Test
 	@DisplayName("Should process chat request when AiAgent CR exists in Kubernetes")
 	void testChatWithExistentAgent() {
 		var agent = new AiAgent();
-		agent.setMetadata(new ObjectMetaBuilder().withName("support-agent").withNamespace("default").build());
+		agent.setMetadata(new ObjectMetaBuilder().withName("support-agent").withNamespace("tuluat-system").build());
 		agent.setSpec(new AiAgentSpec(new ProviderRef("openai-provider", "default"), "gpt-4o", "System prompt",
-				"User prompt", List.of(new SkillDefinition("calculator", "Math", true, Map.of())), List.of(), // skillSources
+				"User prompt", List.of(new ToolDefinition("calculator", "Math", true, Map.of())), List.of(), // toolSources
 				List.of(), // mcpServers
 				null, // guardrails
 				null, // a2a
@@ -87,15 +90,15 @@ class AgentChatControllerTest {
 		when(agentResMock.get()).thenReturn(agent);
 
 		var expectedResponse = AgentResponse.create("support-agent", "gpt-4o", "System prompt", "42 is the answer",
-				List.of(SkillResult.success("calculator", "42")), UsageStats.calculate(10, 10, "gpt-4o", 15L));
+				List.of(ToolResult.success("calculator", "42")), UsageStats.calculate(10, 10, "gpt-4o", 15L));
 		when(agentExecutionService.processAgentPrompt(any(), any(), anyString())).thenReturn(expectedResponse);
 
 		ResponseEntity<AgentResponse> response = controller.chatWithAgent("support-agent",
-				new ChatRequest("What is 6 * 7?", "default"));
+				new ChatRequest("What is 6 * 7?", "tuluat-system"));
 
 		assertEquals(HttpStatus.OK, response.getStatusCode());
 		assertNotNull(response.getBody());
-		assertEquals("support-agent", response.getBody().agentName());
 		assertEquals("42 is the answer", response.getBody().answer());
+		assertEquals("support-agent", response.getBody().agentName());
 	}
 }

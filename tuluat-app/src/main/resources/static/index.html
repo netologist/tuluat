@@ -1554,7 +1554,7 @@ ${nodesYaml}`;
                     model: 'deepseek-chat',
                     role: 'Specialized Autonomous Domain Agent',
                     systemPrompt: 'You are an autonomous AI agent.',
-                    skills: ['domain-execution-skill'],
+                    tools: ['domain-execution-tool'],
                     mcpServers: [{ name: 'pgvector-mcp', endpoint: 'http://postgres-pgvector:5432/sse' }],
                     guardrails: { piiMasking: true, promptInjectionDefense: true, outputValidation: true }
                 };
