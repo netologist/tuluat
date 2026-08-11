@@ -27,10 +27,10 @@ spec:
               properties:
                 providerType:
                   type: string
-                  description: "Provider type e.g. OPENAI, OLLAMA, ANTHROPIC"
+                  description: "Provider type: OPENAI, ANTHROPIC, or OLLAMA. Use OPENAI for any OpenAI-compatible API (DeepSeek, Groq, Together AI, xAI, etc.)."
                 baseUrl:
                   type: string
-                  description: "Base API URL for the provider endpoint"
+                  description: "Base API URL for the provider endpoint. For OpenAI-compatible providers, this is the root URL (e.g. https://api.deepseek.com)."
                 apiKeySecretRef:
                   type: object
                   properties:

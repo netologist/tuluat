@@ -4,6 +4,8 @@ metadata:
   name: openai-provider
   namespace: tuluat-system
 spec:
+  # Embabel GOAP engine discovers models from LlmProvider CRDs at startup.
+  # apiKeySecretRef → resolved from Kubernetes Secret → injected into ChatModel.
   providerType: "OPENAI"
   baseUrl: "https://api.openai.com/v1"
   apiKeySecretRef:

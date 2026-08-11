@@ -1,8 +1,12 @@
 {{/*
   E2E sample CRs — LlmProvider (wiremock), AiAgent (researcher + writer),
   AiWorkflow (multi-agent-researcher), Secret (placeholder api-keys).
+
+  The LlmProvider is discovered by Embabel's CrdEmbabelConfiguration at
+  startup and registered as an OpenAI ChatModel bean. apiKeySecretRef
+  points to the Secret below, resolved via Kubernetes API.
+
   Enabled only when .Values.samples.install == true (default: false).
-*/}}
 {{- if .Values.samples.install }}
 ---
 apiVersion: v1

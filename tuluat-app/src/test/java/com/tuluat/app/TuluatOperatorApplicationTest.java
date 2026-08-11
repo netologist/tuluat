@@ -15,7 +15,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 		"spring.datasource.url=jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
 		"spring.datasource.driver-class-name=org.h2.Driver", "spring.datasource.username=sa",
 		"spring.datasource.password=", "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
-		"AGENT_NAME=test-agent"})
+		"AGENT_NAME=test-agent", "embabel.models.default-llm=deepseek-chat",
+		"embabel.agent.platform.models.openai.custom.api-key=sk-test-key",
+		"embabel.agent.platform.models.openai.custom.base-url=https://api.deepseek.com",
+		"embabel.agent.platform.models.openai.custom.models=deepseek-chat", "spring.ai.openai.api-key=sk-test-key",
+		"spring.ai.openai.base-url=https://api.deepseek.com"})
 class TuluatOperatorApplicationTest {
 
 	@MockitoBean

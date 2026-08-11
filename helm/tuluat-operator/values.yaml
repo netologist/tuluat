@@ -115,22 +115,31 @@ rag:
       secretKey: ""
       bucket: ""
 
-# --- External LLM Providers ---
+# ── LLM Providers (CRD-backed Embabel integration) ──────────────────────
+# These values feed the LlmProvider CRDs that Embabel discovers at startup.
+# Each provider type maps to a ChatModel bean in the operator.
+#
+# providerType: OPENAI (incl. DeepSeek, Groq, Together AI), ANTHROPIC, OLLAMA
+# apiKeySecretRef → references a Kubernetes Secret in the same namespace
 llmProviders:
-  openai:
+  # Each entry creates one LlmProvider CRD in tuluat-system.
+  - name: deepseek-provider
     enabled: false
+    providerType: OPENAI          # DeepSeek is OpenAI-compatible
+    apiKey: ""
+    baseUrl: https://api.deepseek.com
+    defaultModel: deepseek-chat
+  - name: openai-provider
+    enabled: false
+    providerType: OPENAI
     apiKey: ""
     baseUrl: https://api.openai.com/v1
     defaultModel: gpt-4o
-  deepseek:
+  - name: ollama-provider
     enabled: false
-    apiKey: ""
-    baseUrl: https://api.deepseek.com/v1
-    defaultModel: deepseek-chat
-  ollama:
-    enabled: false
+    providerType: OLLAMA
     baseUrl: http://ollama-service:11434
-    defaultModel: llama3
+    defaultModel: llama3.2
 
 # --- WireMock (E2E testing stub) ---
 wiremock:

@@ -16,8 +16,8 @@ docker build -f Dockerfile.local -t "${IMAGE_NAME}" .
 echo "2. Loading Docker Image into Kind Cluster (${CLUSTER_NAME})..."
 kind load docker-image "${IMAGE_NAME}" --name "${CLUSTER_NAME}"
 
-echo "3. Deploying Infrastructure, CRDs, Operator & Samples..."
-./scripts/deploy-operator.sh "${NAMESPACE}"
+echo "3. Deploying Infrastructure, CRDs, Operator & E2E Samples (WireMock-backed)..."
+E2E_MODE=true ./scripts/deploy-operator.sh "${NAMESPACE}"
 kubectl apply -f manifests/operator/deployment.yaml -n "${NAMESPACE}"
 
 echo "4. Restarting Operator Deployment & Waiting for Pod Readiness..."

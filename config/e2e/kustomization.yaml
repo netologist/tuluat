@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tuluat-system
+
+# E2E overlay: only deploys WireMock-backed resources.
+# No real LLM API keys are needed — all agent calls go through
+# wiremock-service which returns stub responses.
+
+resources:
+  # WireMock stub server (ConfigMap + Deployment + Service)
+  - ../../manifests/testing/wiremock-stub.yaml
+
+  # WireMock-backed LlmProvider (no real API key needed)
+  - ../samples/03_llmprovider_wiremock.yaml
+
+  # Sample AiAgents (reference wiremock-provider)
+  - ../samples/04_web_researcher_agent.yaml
+  - ../samples/04_report_writer_agent.yaml
+
+  # Sample AiWorkflow
+  - ../samples/05_aiworkflow_sample.yaml
+
+secretGenerator:
+  - name: openai-secret
+    namespace: tuluat-system
+    literals:
+      - api-key=sk-e2e-wiremock-placeholder
+
+generatorOptions:
+  disableNameSuffixHash: true

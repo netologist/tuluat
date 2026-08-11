@@ -4,6 +4,7 @@ metadata:
   name: ollama-provider
   namespace: tuluat-system
 spec:
+  # Local Ollama instance — no apiKeySecretRef needed.
   providerType: "OLLAMA"
   baseUrl: "http://ollama-service.tuluat-system.svc.cluster.local:11434"
   defaultModel: "llama3.2"

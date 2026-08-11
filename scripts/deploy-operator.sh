@@ -7,7 +7,7 @@ echo "=========================================="
 
 NAMESPACE=${1:-tuluat-system}
 SKIP_OPERATOR_MANIFESTS=${2:-${SKIP_OPERATOR_MANIFESTS:-false}}
-echo "0. Ensuring Target Namespace (${NAMESPACE}) exists..."
+E2E_MODE=${E2E_MODE:-false}
 kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
 
 echo "1. Applying Custom Resource Definitions (CRDs)..."
@@ -28,8 +28,13 @@ kubectl apply -f manifests/telemetry/prometheus-servicemonitor.yaml || true
 kubectl apply -f manifests/temporal/temporal-cluster.yaml
 kubectl apply -f manifests/storage/minio.yaml
 kubectl apply -f manifests/testing/wiremock-stub.yaml
-echo "4. Applying Sample Custom Resources & Kustomize Dynamic Secrets..."
-kubectl apply -k config/
+if [ "${E2E_MODE}" = "true" ]; then
+  echo "4. Applying E2E Sample Resources (WireMock-backed, no real API keys)..."
+  kubectl apply -k config/e2e/
+else
+  echo "4. Applying Sample Custom Resources & Kustomize Dynamic Secrets..."
+  kubectl apply -k config/
+fi
 
 echo "5. Checking status of CRDs and Custom Resources..."
 kubectl get crds | grep ai.tuluat.com || true
