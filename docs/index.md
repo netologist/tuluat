@@ -1,12 +1,12 @@
 # Kubernetes AI Operator & Workflow Architecture
 
-This document provides a comprehensive technical overview of the **Kubernetes AI Operator & Workflow Engine** architecture, detailing custom resources, graph state machines, hybrid triggering mechanisms, PostgreSQL/Pgvector memory management, and deployment topology.
+Welcome to the technical documentation portal for the **Tuluat Kubernetes AI Operator & Workflow Engine**.
 
 ---
 
-## 1. System Overview & High-Level Architecture
+## 🏛️ System Overview
 
-The operator extends Kubernetes with declarative AI resources (`LlmProvider`, `AiAgent`, `AiWorkflow`, `WorkflowSession`). It orchestrates multi-agent workflows using an embedded **Graph State Machine Engine** and persists session states, conversation history, and vector embeddings in PostgreSQL (with `pgvector`).
+The operator extends Kubernetes with declarative AI resources (`LlmProvider`, `AiAgent`, `AiWorkflow`, `WorkflowSession`, `McpServer`). It orchestrates multi-agent workflows using an embedded **Graph State Machine Engine** and persists session states, conversation history, and vector embeddings in PostgreSQL (with `pgvector`).
 
 ```mermaid
 graph TD
@@ -15,69 +15,67 @@ graph TD
         CRD2[AiAgent CRD]
         CRD3[AiWorkflow CRD]
         CRD4[WorkflowSession CRD]
+        CRD5[McpServer CRD]
     end
 
     subgraph AI Operator Service Pod
-        Rec1[LlmProviderReconciler]
-        Rec2[AiAgentReconciler]
-        Rec3[AiWorkflowReconciler]
-        Rec4[WorkflowSessionReconciler]
-        
-        API[REST & WebSocket API Controller]
+        Rec[JOSDK Reconcilers]
+        API[REST & WebSocket API]
         ExecSvc[WorkflowExecutionService]
         Engine[GraphStateMachineEngine]
         AgentExec[AgentExecutionService]
-        MemMgr[SessionMemoryManager]
+        Guardrails[Safety Guardrails Engine]
+        RagSvc[RAG & Object Storage]
     end
 
-    subgraph Data & Persistence Layer
-        Postgres[(PostgreSQL DB)]
-        PgVector[(Pgvector Vector Store)]
+    subgraph Persistence Layer
+        Postgres[(PostgreSQL DB + pgvector)]
+        MinIO[(MinIO S3 Storage)]
     end
 
-    subgraph External LLM Providers
-        OpenAI[OpenAI API / DeepSeek / Ollama]
-    end
+    CRD1 --> Rec
+    CRD2 --> Rec
+    CRD3 --> Rec
+    CRD4 --> Rec
+    CRD5 --> Rec
 
-    CRD1 --> Rec1
-    CRD2 --> Rec2
-    CRD3 --> Rec3
-    CRD4 --> Rec4
-
-    Rec4 --> ExecSvc
+    API --> ExecSvc
+    Rec --> ExecSvc
     ExecSvc --> Engine
     Engine --> AgentExec
-    Engine --> MemMgr
+    AgentExec --> Guardrails
+    AgentExec --> RagSvc
 
-    AgentExec --> OpenAI
-    MemMgr --> Postgres
-    MemMgr --> PgVector
+    Engine --> Postgres
+    RagSvc --> Postgres
+    RagSvc --> MinIO
 ```
 
 ---
 
-## 2. Core Components & Responsibilities
+## 📚 Documentation Navigation Map
 
-### 2.1 Reconciler Layer
-- **`LlmProviderReconciler`**: Validates API credentials, registers health status, and provisions connection beans.
-- **`AiAgentReconciler`**: Resolves LLM provider bindings, validates system prompts, and registers agent specs.
-- **`AiWorkflowReconciler`**: Validates DAG topology, ensures initial node exists, and marks workflow as `READY`.
-- **`WorkflowSessionReconciler`**: Watches `WorkflowSession` CRs and triggers session execution asynchronously.
+Explore the documentation across 6 core categories:
 
-### 2.2 Execution Engine
-- **`WorkflowExecutionService`**: Manages workflow session lifecycle (`RUNNING`, `COMPLETED`, `WAITING_APPROVAL`, `FAILED`).
-- **`GraphStateMachineEngine`**: Evaluates graph nodes (`AGENT`, `CONDITION`, `HUMAN_APPROVAL`, `TOOL`) and SpEL condition expressions.
-- **`AgentExecutionService`**: Executes AI Agent prompts using Spring AI, applying guardrails and skills.
+1. **[Architecture](architecture/overview.md)**
+   * **[Overview](architecture/overview.md)**: High-level system context, DAG execution, pod crash recovery.
+   * **[Low-Level Design](architecture/low-level-design.md)**: Java class models, JPA entities, database schema DDL.
+   * **[Safety & Guardrails](architecture/safety-and-guardrails.md)**: PII masking, prompt injection defense, output validation, MCP client registry, A2A protocol.
+   * **[HITL Approval System](architecture/hitl-approval-system.md)**: Human-in-the-Loop workflow signals and approval inbox.
+   * **[RAG Subsystem](architecture/rag-system.md)**: Document chunking, pgvector search, MinIO S3 object storage.
 
----
+2. **[Custom Resources (CRDs)](crds/overview.md)**
+   * Specifications and complete sample YAML manifests for `LlmProvider`, `AiAgent`, `AiWorkflow`, `WorkflowSession`, and `McpServer`.
 
-## 3. Quick Links & Documentation Map
+3. **[Modules](modules/overview.md)**
+   * **[Overview](modules/overview.md)**: 7-module Maven Reactor architecture, step-by-step layer breakdown, responsibilities.
+   * **[Dependencies](modules/dependencies.md)**: Inventory of global BOMs and module-by-module Maven dependencies.
 
-- **[Custom Resource Definitions (CRDs)](crds.md)**: Detailed specification for all 5 Tuluat CRDs.
-- **[Maven Dependencies & Architecture](dependencies.md)**: Reactor module structure and dependencies.
-- **[High-Level Architecture](architecture/high-level-architecture.md)**: System topology and control loops.
-- **[Low-Level Design](architecture/low-level-design.md)**: Code-level class diagrams and state machine details.
-- **[Architecture Decision Records (ADRs)](adrs/001-durable-execution-engine.md)**: Key design decisions (ADR 001 to ADR 010).
-- **[Feature Matrix & Capabilities](features/overview.md)**: Full breakdown of Phase 1, Phase 2, and Phase 3 capabilities.
-  - **[Phase 2 Features](features/phase2-guardrails-mcp-a2a.md)**: Safety Guardrails, Model Context Protocol (MCP), and Agent-to-Agent (A2A) protocol.
-  - **[Phase 3 Features](features/phase3-hitl-helm-orchestration.md)**: Human-in-the-Loop (HITL) approval, Helm chart deployment, and KinD E2E testing.
+4. **[Tests](tests/testing-guide.md)**
+   * Unit testing, ArchUnit architecture rules, Spotless/Checkstyle checks, and KinD E2E acceptance test suite.
+
+5. **[Dev Environment](dev-environment/setup.md)**
+   * Local setup, KinD cluster creation, Helm deployment, port-forwarding guide, REST API curl examples, Web GUI Control Portal.
+
+6. **[ADRs (Architecture Decision Records)](adrs/001-durable-execution-engine.md)**
+   * Design decisions ADR 001 through ADR 011.

@@ -1,6 +1,6 @@
-# Phase 2 Features: Safety Guardrails, MCP & A2A Protocols
+# Safety Guardrails, MCP & A2A Protocols
 
-Phase 2 focuses on safety guarantees, standard tool interoperability via Model Context Protocol (MCP), and direct Agent-to-Agent (A2A) communication.
+This document details the safety guarantees, Model Context Protocol (MCP) tool integration, and Agent-to-Agent (A2A) communication protocols provided by `tuluat-guardrails` and `tuluat-protocols`.
 
 ---
 
@@ -18,31 +18,31 @@ graph LR
 ```
 
 ### 1.1 PII Masking Filter (`PiiMaskingFilter`)
-- **Modes Supported**: `EMAIL`, `CREDIT_CARD`, `SSN`, `PHONE`
+- **Supported Modes**: `EMAIL`, `CREDIT_CARD`, `SSN`, `PHONE`
 - **Replacement Token**: Customizable per agent (e.g. `[REDACTED]`)
-- **Behavior**: Uses regex pattern matching to mask sensitive telemetry or customer data before transmitting prompts to cloud LLM providers.
+- **Behavior**: Uses high-performance regex pattern matching to mask sensitive data before transmitting prompts to external LLM providers.
 
 ### 1.2 Prompt Injection Filter (`PromptInjectionFilter`)
 - **Strategies**:
-  - `BLOCK`: Immediately halts execution and throws `PromptInjectionDetectedException` if injection heuristics (jailbreak phrases, system instruction overrides) match.
+  - `BLOCK`: Immediately halts execution and throws `GuardrailBlockedException` if injection heuristics (jailbreak phrases, system instruction overrides) match.
   - `SANITIZE`: Strips out malicious payload instructions and allows execution with sanitized text.
 
 ### 1.3 Output Validation Filter (`OutputValidationFilter`)
-- **Confidence Threshold**: Validates output structure and minimum confidence score (e.g. `minConfidence: 0.7`).
-- **Behavior**: Rejects incomplete or low-confidence model responses, signaling retry or fallback execution.
+- **Hard Schema Validation**: Validates model output against node-declared JSON Schema specifications.
+- **Confidence Scoring**: Assigns a confidence score (`1.0` for schema-valid output, `0.2` for malformed output) and rejects non-compliant responses.
 
 ---
 
 ## 2. Model Context Protocol (MCP) Client Registry (`tuluat-protocols`)
 
-The MCP registry allows agents to discover and invoke tools exported by external MCP servers (`McpServer` CRD).
+The MCP registry enables agents to discover and invoke tools exported by external MCP servers (`McpServer` CRD).
 
 ### 2.1 Component Specifications
 - **`McpServer` CRD**: Defines connection endpoint (`sse` or `stdio`), authentication secret reference, and active tool capabilities.
 - **`McpClientRegistryImpl`**:
   - Manages active SSE/stdio transports to registered MCP servers.
-  - Discovers tool manifests (`listTools()`) and maps them into Spring AI / Embabel skill definitions.
-  - Handles tool invocation (`callTool(serverName, toolName, arguments)`) with error wrapping.
+  - Discovers tool manifests (`listTools()`) and maps them into dynamic skill definitions.
+  - Handles tool invocation (`callTool(serverName, toolName, arguments)`) with structured error handling.
 
 ---
 
@@ -52,8 +52,8 @@ The A2A module enables decentralized discovery and communication between autonom
 
 ### 3.1 A2A Card (`A2aCard`)
 - Exports agent metadata: `agentId`, `capabilities`, `inputSchema`, `outputSchema`, `endpointUrl`.
-- Allows automatic agent capability matching in multi-agent workflows.
+- Enables automatic agent capability matching in multi-agent workflows.
 
 ### 3.2 Inter-Agent Message Relay (`A2aAdapterImpl`)
-- Relays messages between agents via HTTP/gRPC.
-- Supports asynchronous delegation where a leader agent delegates a sub-task to a remote domain-specialist agent.
+- Relays messages between agents via HTTP/gRPC endpoints.
+- Supports asynchronous delegation where a leader agent delegates sub-tasks to remote domain-specialist agents.

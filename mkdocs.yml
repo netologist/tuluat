@@ -2,6 +2,7 @@ site_name: Kubernetes AI Operator & Workflow Runtime
 site_description: Documentation portal for Kubernetes AI Operator, Graph State Machines, Embabel, MCP, and Telemetry.
 site_author: Tuluat AI Team
 site_url: https://netologist.github.io/tuluat/
+
 theme:
   name: material
   palette:
@@ -43,38 +44,39 @@ markdown_extensions:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
+          format: "!!python/name:pymdownx.superfences.fence_code_format"
   - tables
   - admonition
 
 nav:
   - Home: index.md
-  - Architecture Overview: ARCHITECTURE.md
-  - Custom Resources (CRDs): crds.md
-  - Maven Dependencies: dependencies.md
-  - Features & Capabilities:
-      - Overview & Matrix: features/overview.md
-      - "Phase 2: Guardrails, MCP & A2A": features/phase2-guardrails-mcp-a2a.md
-      - "Phase 3: HITL, Helm & Orchestration": features/phase3-hitl-helm-orchestration.md
-      - "RAG System & Storage Guide": features/rag-system-guide.md
   - Architecture:
-      - High-Level Architecture: architecture/high-level-architecture.md
+      - Overview: architecture/overview.md
       - Low-Level Design: architecture/low-level-design.md
-      - System Specifications: superpowers/specs/2026-08-06-workflow-operator-design.md
-      - Implementation Plan: superpowers/plans/2026-08-06-workflow-operator.md
-      - Phase 1 Execution Plan: superpowers/plans/2026-08-06-phase1-embabel-temporal.md
-      - Embabel Migration & HITL Plan: superpowers/plans/2026-08-07-embabel-migration-freeform-approval.md
-  - ADRs (Architecture Decision Records):
+      - Safety & Guardrails: architecture/safety-and-guardrails.md
+      - HITL Approval System: architecture/hitl-approval-system.md
+      - RAG System: architecture/rag-system.md
+  - CRDs:
+      - Specification & Manifests: crds/overview.md
+  - Modules:
+      - Overview & Reactor Layers: modules/overview.md
+      - Maven Dependencies: modules/dependencies.md
+  - Tests:
+      - Testing & Quality Guide: tests/testing-guide.md
+  - Dev Environment:
+      - Local Setup & Port-Forwarding: dev-environment/setup.md
+  - ADRs:
       - "ADR 001: Durable Execution Engine": adrs/001-durable-execution-engine.md
       - "ADR 002: Embabel Agent Framework": adrs/002-embabel-agent-framework.md
       - "ADR 003: MCP & A2A Protocols": adrs/003-mcp-and-a2a-protocols.md
       - "ADR 004: Guardrails & Verification": adrs/004-guardrails-and-verification.md
       - "ADR 005: Visual Builder & HITL GUI": adrs/005-visual-builder-and-hitl-gui.md
       - "ADR 006: Multi-Module Architecture and Tuluat Rebranding": adrs/006-multi-module-architecture-and-tuluat-rebranding.md
-      - "ADR 007: Skill Provisioning vs Binding, Model Gateway, and Evre 2 Configuration Placement": adrs/007-skill-provisioning-model-gateway-evre2-placement.md
+      - "ADR 007: Skill Provisioning vs Binding, Model Gateway": adrs/007-skill-provisioning-model-gateway-evre2-placement.md
       - "ADR 008: Retrieval-Augmented Generation (RAG) System": adrs/008-rag-system.md
       - "ADR 009: Agent Harness — Sandboxed Execution Runtime": adrs/009-agent-harness.md
       - "ADR 010: GraalVM Native Image Transition": adrs/010-graalvm-native-image-tech-debt.md
+      - "ADR 011: Optional<T> Constructor Injection": adrs/011-optional-constructor-injection.md
 
 validation:
   nav:

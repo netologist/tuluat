@@ -1,6 +1,6 @@
-# Retrieval-Augmented Generation (RAG) Architecture & Guide
+# Retrieval-Augmented Generation (RAG) Architecture
 
-This document details the architecture, chunking pipeline, object storage options (MinIO / S3 vs Local), and vector retrieval mechanisms implemented in `tuluat-engine`.
+This document details the RAG architecture, chunking pipeline, object storage options (MinIO / S3 vs Local), and vector retrieval mechanisms implemented in `tuluat-engine`.
 
 ---
 
@@ -54,7 +54,7 @@ Document text is processed by `RecursiveCharacterChunker` to create retrieval-op
   2. `\n` (Line boundaries)
   3. `. ` (Sentence boundaries)
   4. ` ` (Word boundaries)
-  5. Fallback hard character split if single segment exceeds target size.
+  5. Fallback character split if single segment exceeds target size.
 
 ---
 
@@ -64,19 +64,18 @@ Raw uploaded documents are preserved in binary object storage for auditability a
 
 ### 3.1 MinIO / S3 Compatibility (`S3ObjectStorage`)
 - **Active when**: `tuluat.rag.storage.type=s3`
-- **SDK**: Uses official MinIO Java SDK (`io.minio:minio:8.5.12`).
+- **SDK**: Uses MinIO Java SDK (`io.minio:minio:8.5.12`).
 - **Ingestion Pipeline**: When `RagService.ingest("manuals/k8s", text)` is called, the original document is stored in bucket `rag-documents` at `documents/manuals/k8s/{docId}.txt` **and** concurrently chunked & stored in `pgvector`.
-- **Note on MinIO Buckets**: Document uploads via the API trigger programmatically through `RagService.ingest()`. (S3 bucket notifications can also be linked to `/api/v1/rag/ingest`).
 
 ### 3.2 Development Filesystem Storage (`LocalObjectStorage`)
 - **Active when**: `tuluat.rag.storage.type=local` (default)
-- Stores raw files locally under `./data/rag/documents/...` with strict path traversal protection.
+- Stores raw files locally under `./data/rag/documents/...` with path traversal protection.
 
 ---
 
 ## 4. Vector Storage & Search (`PgVectorRetriever`)
 
-Chunks and embeddings are stored in PostgreSQL using the `pgvector` extension (schema version `V3__rag_chunks.sql`).
+Chunks and embeddings are stored in PostgreSQL using the `pgvector` extension:
 
 ```sql
 CREATE TABLE IF NOT EXISTS rag_chunks (
@@ -95,17 +94,9 @@ CREATE INDEX IF NOT EXISTS idx_rag_chunks_embedding
 ON rag_chunks USING hnsw (embedding vector_cosine_ops);
 ```
 
-### Retrieval Query
-```sql
-SELECT chunk_index, content, source_ref, 1 - (embedding <=> ?::vector) AS similarity
-FROM rag_chunks
-ORDER BY embedding <=> ?::vector
-LIMIT ?;
-```
-
 ---
 
-## 5. Spring Boot Property Configuration Reference
+## 5. Spring Boot Property Configuration
 
 ```yaml
 tuluat:

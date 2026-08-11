@@ -1,4 +1,4 @@
-# Kubernetes Custom Resource Definitions (CRDs) & Manifest Guide
+# Custom Resource Definitions (CRDs) & Manifest Guide
 
 Tuluat provides five declarative Kubernetes Custom Resource Definitions (CRDs) in the `ai.tuluat.com/v1alpha1` API group. These CRDs turn AI model providers, agent specifications, multi-agent workflows, execution sessions, and Model Context Protocol (MCP) integrations into native Kubernetes resources managed via GitOps.
 
@@ -8,10 +8,10 @@ Tuluat provides five declarative Kubernetes Custom Resource Definitions (CRDs) i
 
 ```mermaid
 graph TD
-    LlmProvider["LlmProvider CRD<br/>(OpenAI, Ollama, DeepSeek)"] -->|referenced by| AiAgent["AiAgent CRD<br/>(System Prompts, Skills, Guardrails)"]
+    LlmProvider["LlmProvider CRD<br/>(OpenAI, Ollama, DeepSeek, WireMock)"] -->|referenced by| AiAgent["AiAgent CRD<br/>(System Prompts, Skills, Guardrails)"]
     McpServer["McpServer CRD<br/>(PostgreSQL, Custom Tools)"] -->|referenced by| AiAgent
     AiAgent -->|node step| AiWorkflow["AiWorkflow CRD<br/>(Graph DAG, Edge Conditions, Schemas)"]
-    AiWorkflow -->|instantiated by| WorkflowSession["WorkflowSession CRD<br/>(Inputs, Temporal SessionId, Execution Logs)"]
+    AiWorkflow -->|instantiated by| WorkflowSession["WorkflowSession CRD<br/>(Inputs, Execution Logs, Status)"]
 ```
 
 ---
@@ -25,22 +25,14 @@ Declares downstream AI model endpoints (OpenAI, Ollama, DeepSeek, WireMock, Anth
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `providerType` | `string` | Provider implementation (`OPENAI`, `OLLAMA`, `DEEPSEEK`, `WIREMOCK`, `ANTHROPIC`). |
-| `baseUrl` | `string` | Base API URL endpoint (e.g., `https://api.openai.com/v1`, `http://ollama-service:11434`). |
+| `baseUrl` | `string` | Base API URL endpoint (e.g., `https://api.openai.com/v1`, `http://wiremock-service:8080/v1`). |
 | `apiKeySecretRef` | `object` | Reference to a Kubernetes `Secret` containing the API key (`name`, `key`). |
-| `defaultModel` | `string` | Default model identifier (e.g., `gpt-4o`, `llama3.2`, `deepseek-r1`). |
+| `defaultModel` | `string` | Default model identifier (e.g., `gpt-4o`, `llama3.2`, `deepseek-chat`). |
 | `temperature` | `number` | Sampling temperature (`0.0` to `2.0`). |
 | `maxTokens` | `integer` | Maximum output token ceiling per completion request. |
 | `costPer1kInputTokens` | `number` | USD cost per 1,000 input tokens (for Model Gateway expenditure tracking). |
 | `costPer1kOutputTokens` | `number` | USD cost per 1,000 output tokens. |
 | `fallbacks` | `array` | Ordered list of fallback providers (`providerName`, `namespace`, `model`) when primary endpoint fails. |
-
-### Status (`status`)
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `phase` | `string` | Lifecycle phase (`Ready`, `Reconciling`, `Failed`). |
-| `message` | `string` | Status or failure details from reconciliation. |
-| `observedGeneration` | `integer` | The generation of the spec last reconciled by the operator. |
-| `lastUpdated` | `string` | ISO-8601 timestamp of last reconciliation. |
 
 ### Complete Sample Manifest (`config/samples/02_llmprovider_openai.yaml`)
 ```yaml
@@ -81,19 +73,9 @@ Defines an autonomous AI agent personality, system prompt, tool skills (folder/C
 | `systemPrompt` | `string` | System instruction template grounding agent behavior. |
 | `userPrompt` | `string` | Default prompt template for single-agent executions. |
 | `skills` | `array` | List of enabled capabilities/tools (`name`, `description`, `enabled`, `parameters`). |
-| `skillSources` | `array` | Dynamic skill loading configurations (`type`: `FOLDER`/`JAR`/`CONFIGMAP`, `path`, `watch`). |
 | `mcpServers` | `array` | Model Context Protocol servers linked to this agent (`name`, `namespace`). |
 | `guardrails` | `object` | Safety filters (`piiMasking`, `promptInjection`, `outputValidation`). |
 | `a2a` | `object` | Agent-to-Agent communication settings (`enabled`, `remoteDiscovery`). |
-| `ingress` | `object` | Optional Kubernetes Ingress configuration for external HTTP/REST access. |
-
-### Status (`status`)
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `phase` | `string` | Readiness status (`Ready`, `Reconciling`, `Failed`). |
-| `effectiveModel` | `string` | Model currently bound and verified for execution. |
-| `activeSkills` | `array` | List of successfully loaded skill names. |
-| `ingressUrl` | `string` | External Ingress URL if ingress is enabled. |
 
 ### Complete Sample Manifest (`config/samples/04_web_researcher_agent.yaml`)
 ```yaml
@@ -146,12 +128,6 @@ Defines a multi-agent workflow graph (DAG / State Machine) composed of agent exe
 | `edges` | `array` | Graph transitions (`from`, `to`, `condition`). |
 | `memoryConfig` | `object` | Short-term conversation history size & long-term vector memory config (`shortMemorySize`, `enableLongMemory`, `vectorTableName`). |
 
-### Node Types
-* `AGENT`: Executes an `AiAgent` with given input template and saves output into workflow state under `outputKey`.
-* `CONDITION`: Evaluates SpEL `expression` over workflow memory to choose edge paths.
-* `HUMAN_APPROVAL`: Pauses Temporal workflow execution into state `WAITING_APPROVAL` until REST signal `POST /api/v1/sessions/{id}/approve` is received.
-* `TOOL`: Executes a direct tool/MCP call.
-
 ### Complete Sample Manifest (`config/samples/05_aiworkflow_sample.yaml`)
 ```yaml
 apiVersion: ai.tuluat.com/v1alpha1
@@ -168,16 +144,6 @@ spec:
       agentRef: web-researcher-agent
       inputTemplate: "Research topic: {{input}}"
       outputKey: researchResult
-      outputSchema: |
-        {
-          "$schema": "http://json-schema.org/draft-07/schema#",
-          "type": "object",
-          "properties": {
-            "summary": { "type": "string" },
-            "findings": { "type": "array", "items": { "type": "string" } }
-          },
-          "required": ["summary", "findings"]
-        }
     - id: approval-node
       type: HUMAN_APPROVAL
       inputTemplate: "Review research findings before drafting: {{researchResult}}"
@@ -213,31 +179,6 @@ Represents an active or completed execution instance of an `AiWorkflow`. Created
 | `input` | `string` | Initial user query or input text for workflow entry node. |
 | `parameters` | `object` | Key-value dictionary of dynamic execution parameters. |
 
-### Status (`status`)
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `sessionId` | `string` | Unique Temporal Workflow Execution ID (UUID). |
-| `phase` | `string` | Execution phase (`PENDING`, `RUNNING`, `WAITING_APPROVAL`, `COMPLETED`, `FAILED`). |
-| `currentNode` | `string` | ID of the node currently executing or awaiting approval. |
-| `output` | `string` | Final workflow execution result payload. |
-| `startTime` | `string` | Session start timestamp. |
-| `endTime` | `string` | Session termination timestamp. |
-
-### Complete Sample Manifest (`config/samples/06_workflowsession_sample.yaml`)
-```yaml
-apiVersion: ai.tuluat.com/v1alpha1
-kind: WorkflowSession
-metadata:
-  name: research-session-001
-  namespace: tuluat-system
-spec:
-  workflowRef: multi-agent-researcher
-  input: "Evaluate Kubernetes CRD Operator Best Practices and Java 25 Virtual Threads"
-  parameters:
-    maxDepth: 3
-    priority: "HIGH"
-```
-
 ---
 
 ## 5. McpServer (`mcpservers.ai.tuluat.com`)
@@ -253,30 +194,3 @@ Registers external Model Context Protocol (MCP) tool servers. The operator recon
 | `authType` | `string` | Authentication mechanism (`NONE`, `API_KEY`, `OAUTH2`). |
 | `apiKeySecretRef` | `object` | Kubernetes Secret reference (`name`, `key`) holding authorization credentials. |
 | `timeoutSeconds` | `integer` | Request timeout ceiling in seconds. |
-| `description` | `string` | Human-readable explanation of capabilities served by this MCP server. |
-
-### Status (`status`)
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `phase` | `string` | Readiness state (`Ready`, `Reconciling`, `Failed`). |
-| `message` | `string` | Health or connection status message. |
-| `observedGeneration` | `integer` | Last reconciled generation. |
-| `lastUpdated` | `string` | ISO timestamp of last reconciliation. |
-
-### Complete Sample Manifest (`config/samples/07_mcpserver_postgres.yaml`)
-```yaml
-apiVersion: ai.tuluat.com/v1alpha1
-kind: McpServer
-metadata:
-  name: postgres-mcp
-  namespace: tuluat-system
-spec:
-  endpoint: http://postgres-mcp-service.tuluat-system.svc.cluster.local:8090/mcp
-  transport: SSE
-  authType: API_KEY
-  apiKeySecretRef:
-    name: mcp-auth-secret
-    key: token
-  timeoutSeconds: 30
-  description: "Enterprise PostgreSQL schema inspection, SQL query validation, and vector lookup MCP tool server"
-```
