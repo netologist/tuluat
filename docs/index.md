@@ -8,6 +8,7 @@ Welcome to the technical documentation portal for the **Tuluat Kubernetes AI Ope
 
 The operator extends Kubernetes with declarative AI resources (`LlmProvider`, `AiAgent`, `AiWorkflow`, `WorkflowSession`, `McpServer`). It orchestrates multi-agent workflows using an embedded **Graph State Machine Engine** and persists session states, conversation history, and vector embeddings in PostgreSQL (with `pgvector`).
 
+![Tuluat High-Level Architecture Diagram](assets/architecture-diagram.png)
 ```mermaid
 graph TD
     subgraph Kubernetes Control Plane
