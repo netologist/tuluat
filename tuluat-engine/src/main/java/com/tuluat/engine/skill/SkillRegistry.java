@@ -13,8 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Registry managing Markdown-based {@link AgentSkill} specifications
- * compliant with <a href="https://agentskills.io">Agent Skills</a>.
+ * Registry managing Markdown-based {@link AgentSkill} specifications compliant
+ * with <a href="https://agentskills.io">Agent Skills</a>.
  *
  * <p>
  * Agent Skills provide instructions, guidelines, and prompt context to agents.
@@ -26,13 +26,15 @@ public class SkillRegistry {
 	private final Map<String, AgentSkill> registeredSkills = new ConcurrentHashMap<>();
 
 	public void registerSkill(AgentSkill skill) {
-		if (skill == null || skill.name() == null) return;
+		if (skill == null || skill.name() == null)
+			return;
 		registeredSkills.put(skill.name().toLowerCase(), skill);
 		log.info("Registered Agent Skill [{}] ({})", skill.name(), skill.description());
 	}
 
 	public Optional<AgentSkill> findSkill(String name) {
-		if (name == null) return Optional.empty();
+		if (name == null)
+			return Optional.empty();
 		return Optional.ofNullable(registeredSkills.get(name.toLowerCase()));
 	}
 
@@ -49,10 +51,12 @@ public class SkillRegistry {
 	}
 
 	public void loadSkillSources(List<SkillSource> sources) {
-		if (sources == null || sources.isEmpty()) return;
+		if (sources == null || sources.isEmpty())
+			return;
 
 		for (SkillSource source : sources) {
-			if (source == null || source.path() == null || source.path().isBlank()) continue;
+			if (source == null || source.path() == null || source.path().isBlank())
+				continue;
 			Path path = Paths.get(source.path());
 			loadSkillsFromFolder(path);
 		}

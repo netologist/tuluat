@@ -9,9 +9,9 @@ import java.util.List;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record AiAgentStatus(@JsonProperty("phase") String phase, @JsonProperty("ingressUrl") String ingressUrl,
-		@JsonProperty("activeSkills") List<String> activeSkills,
-		@JsonProperty("activeTools") List<String> activeTools, @JsonProperty("effectiveModel") String effectiveModel,
-		@JsonProperty("message") String message, @JsonProperty("observedGeneration") Long observedGeneration,
+		@JsonProperty("activeSkills") List<String> activeSkills, @JsonProperty("activeTools") List<String> activeTools,
+		@JsonProperty("effectiveModel") String effectiveModel, @JsonProperty("message") String message,
+		@JsonProperty("observedGeneration") Long observedGeneration,
 		@JsonProperty("lastReconciledAt") String lastReconciledAt) {
 	public static AiAgentStatus ready(String ingressUrl, List<String> activeSkills, List<String> activeTools,
 			String effectiveModel, String message, Long gen) {

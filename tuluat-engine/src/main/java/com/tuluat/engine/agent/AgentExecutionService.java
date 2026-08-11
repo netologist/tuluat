@@ -27,15 +27,16 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Core engine for executing AI Agent prompts with Tools, Agent Skills (SKILL.md),
- * Guardrails, and Model Gateway.
+ * Core engine for executing AI Agent prompts with Tools, Agent Skills
+ * (SKILL.md), Guardrails, and Model Gateway.
  *
  * <h3>Execution pipeline:</h3>
  * <ol>
  * <li>Resolve model and query from agent spec</li>
  * <li>Apply pre-execution guardrails (PII masking, injection defense)</li>
  * <li>Execute active tools on virtual threads</li>
- * <li>Build system prompt with tool context, agent skills (SKILL.md), and RAG</li>
+ * <li>Build system prompt with tool context, agent skills (SKILL.md), and
+ * RAG</li>
  * <li>Invoke LLM via ModelGateway → ChatModel → simulated fallback</li>
  * <li>Validate output against guardrail policy</li>
  * </ol>
@@ -64,8 +65,7 @@ public class AgentExecutionService {
 	private final Optional<RagService> ragService;
 
 	@org.springframework.beans.factory.annotation.Autowired
-	public AgentExecutionService(ToolRegistry toolRegistry,
-			Optional<SkillRegistry> skillRegistry,
+	public AgentExecutionService(ToolRegistry toolRegistry, Optional<SkillRegistry> skillRegistry,
 			@Qualifier("openAiChatModel") Optional<ChatModel> chatModel, GuardrailPipeline guardrailPipeline,
 			Optional<ModelGateway> modelGateway, Optional<ProviderResolver> providerResolver,
 			Optional<AgentResolver> agentResolver, Optional<RagService> ragService) {
@@ -79,11 +79,12 @@ public class AgentExecutionService {
 		this.ragService = ragService;
 	}
 
-	public AgentExecutionService(ToolRegistry toolRegistry,
-			@Qualifier("openAiChatModel") Optional<ChatModel> chatModel, GuardrailPipeline guardrailPipeline,
-			Optional<ModelGateway> modelGateway, Optional<ProviderResolver> providerResolver,
-			Optional<AgentResolver> agentResolver, Optional<RagService> ragService) {
-		this(toolRegistry, Optional.empty(), chatModel, guardrailPipeline, modelGateway, providerResolver, agentResolver, ragService);
+	public AgentExecutionService(ToolRegistry toolRegistry, @Qualifier("openAiChatModel") Optional<ChatModel> chatModel,
+			GuardrailPipeline guardrailPipeline, Optional<ModelGateway> modelGateway,
+			Optional<ProviderResolver> providerResolver, Optional<AgentResolver> agentResolver,
+			Optional<RagService> ragService) {
+		this(toolRegistry, Optional.empty(), chatModel, guardrailPipeline, modelGateway, providerResolver,
+				agentResolver, ragService);
 	}
 
 	// ── Public API ──────────────────────────────────────────────────────────

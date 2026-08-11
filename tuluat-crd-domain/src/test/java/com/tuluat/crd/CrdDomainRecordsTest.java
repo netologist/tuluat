@@ -47,8 +47,8 @@ class CrdDomainRecordsTest {
 		assertTrue(agent.getSpec().guardrails().piiMasking().enabled());
 
 		// Status factories
-		AiAgentStatus readyStatus = AiAgentStatus.ready("http://agent.example.com", List.of("pdf-processing"), List.of("calculator"), "gpt-4o",
-				"Agent active", 1L);
+		AiAgentStatus readyStatus = AiAgentStatus.ready("http://agent.example.com", List.of("pdf-processing"),
+				List.of("calculator"), "gpt-4o", "Agent active", 1L);
 		assertEquals("Ready", readyStatus.phase());
 		assertEquals("http://agent.example.com", readyStatus.ingressUrl());
 		assertEquals(List.of("pdf-processing"), readyStatus.activeSkills());

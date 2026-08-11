@@ -22,7 +22,8 @@ import lombok.extern.slf4j.Slf4j;
  * Tools are contributed by:
  * <ul>
  * <li>Compiled-in builtins via {@link BuiltinToolProvider}</li>
- * <li>External JARs via {@link ToolProvider} SPI (loaded via {@link ToolJarLoader})</li>
+ * <li>External JARs via {@link ToolProvider} SPI (loaded via
+ * {@link ToolJarLoader})</li>
  * </ul>
  */
 @Service
@@ -49,7 +50,8 @@ public class ToolRegistry {
 	}
 
 	/**
-	 * Load tools from declared {@link ToolSource} entries (FOLDER / JAR / CONFIGMAP).
+	 * Load tools from declared {@link ToolSource} entries (FOLDER / JAR /
+	 * CONFIGMAP).
 	 */
 	public void loadToolSources(List<ToolSource> sources) {
 		if (sources == null || sources.isEmpty()) {
@@ -105,8 +107,7 @@ public class ToolRegistry {
 		// Virtual Thread per task execution using modern Java concurrency
 		try {
 			var futures = activeDefs.stream().map(def -> virtualThreadExecutor.submit(() -> {
-				Tool tool = findTool(def.name())
-						.orElseGet(() -> new CustomTool(def.name(), def.description()));
+				Tool tool = findTool(def.name()).orElseGet(() -> new CustomTool(def.name(), def.description()));
 				return tool.execute(userInput, def.parameters());
 			})).toList();
 

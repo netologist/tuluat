@@ -43,7 +43,8 @@ class ExecuteAgentGuardrailsTest {
 	private AiAgent agent(String name) {
 		var a = new AiAgent();
 		a.setMetadata(new ObjectMetaBuilder().withName(name).withNamespace("tuluat-system").build());
-		a.setSpec(new AiAgentSpec(null, "deepseek-chat", "sys", "user", List.of(), List.of(), List.of(), List.of(), List.of(),
+		a.setSpec(new AiAgentSpec(null, "deepseek-chat", "sys", "user", List.of(), List.of(), List.of(), List.of(),
+				List.of(),
 				new GuardrailsConfig(new PiiMaskingConfig(true, List.of("EMAIL"), "[REDACTED]"),
 						new PromptInjectionConfig(true, "BLOCK"), new OutputValidationConfig(true, 0.5)),
 				null, null, 1));

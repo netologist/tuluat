@@ -4,7 +4,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Skill provisioning source: folder or ConfigMap containing SKILL.md / SKILLS.md specification files.
+ * Skill provisioning source: folder or ConfigMap containing SKILL.md /
+ * SKILLS.md specification files.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record SkillSource(@JsonProperty("type") String type, // FOLDER, CONFIGMAP

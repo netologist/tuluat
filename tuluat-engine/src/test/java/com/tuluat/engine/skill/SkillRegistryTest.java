@@ -33,7 +33,8 @@ class SkillRegistryTest {
 		@Test
 		@DisplayName("registers and finds AgentSkill by name case-insensitively")
 		void registersAndFindsSkill() {
-			AgentSkill skill = new AgentSkill("pdf-parser", "Parses PDF files", null, null, null, Map.of(), "Instructions", null);
+			AgentSkill skill = new AgentSkill("pdf-parser", "Parses PDF files", null, null, null, Map.of(),
+					"Instructions", null);
 			registry.registerSkill(skill);
 
 			Optional<AgentSkill> found = registry.findSkill("PDF-PARSER");

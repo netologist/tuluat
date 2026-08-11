@@ -171,7 +171,8 @@ class AgentSkillLoaderTest {
 			Path refFile = refDir.resolve("guide.md");
 			Files.writeString(refFile, "Reference Guide Content");
 
-			AgentSkill skill = new AgentSkill("ref-skill", "Ref skill", null, null, null, null, "Main instructions", skillDir);
+			AgentSkill skill = new AgentSkill("ref-skill", "Ref skill", null, null, null, null, "Main instructions",
+					skillDir);
 
 			String content = skill.readReferenceFile("references/guide.md");
 

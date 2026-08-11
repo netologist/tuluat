@@ -23,8 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public final class AgentSkillLoader {
 
-	private static final Pattern FRONTMATTER_PATTERN = Pattern.compile(
-			"^---\\s*\\r?\\n(.*?)\\r?\\n---\\s*\\r?\\n?(.*)$", Pattern.DOTALL);
+	private static final Pattern FRONTMATTER_PATTERN = Pattern
+			.compile("^---\\s*\\r?\\n(.*?)\\r?\\n---\\s*\\r?\\n?(.*)$", Pattern.DOTALL);
 
 	private AgentSkillLoader() {
 	}
@@ -32,7 +32,9 @@ public final class AgentSkillLoader {
 	/**
 	 * Loads an Agent Skill from a file path or skill directory.
 	 *
-	 * @param path file path (e.g. {@code SKILL.md}) or directory containing a {@code SKILL.md}/{@code SKILLS.md}
+	 * @param path
+	 *            file path (e.g. {@code SKILL.md}) or directory containing a
+	 *            {@code SKILL.md}/{@code SKILLS.md}
 	 * @return Optional containing the loaded AgentSkill, if valid
 	 */
 	public static Optional<AgentSkill> loadFromPath(Path path) {
@@ -52,10 +54,11 @@ public final class AgentSkillLoader {
 	}
 
 	/**
-	 * Scans a folder for all Agent Skills (directories with {@code SKILL.md} / {@code SKILLS.md}
-	 * or standalone Markdown skill files).
+	 * Scans a folder for all Agent Skills (directories with {@code SKILL.md} /
+	 * {@code SKILLS.md} or standalone Markdown skill files).
 	 *
-	 * @param folder folder to scan
+	 * @param folder
+	 *            folder to scan
 	 * @return list of loaded AgentSkill instances
 	 */
 	public static List<AgentSkill> loadFromFolder(Path folder) {
@@ -108,16 +111,9 @@ public final class AgentSkillLoader {
 
 		Map<String, String> metadata = extractMetadataSubmap(yamlBlock);
 
-		return Optional.of(new AgentSkill(
-				name.trim().toLowerCase(),
-				description.trim(),
-				license != null ? license.trim() : null,
-				compatibility != null ? compatibility.trim() : null,
-				allowedTools != null ? allowedTools.trim() : null,
-				metadata,
-				markdownBody,
-				skillDir
-		));
+		return Optional.of(new AgentSkill(name.trim().toLowerCase(), description.trim(),
+				license != null ? license.trim() : null, compatibility != null ? compatibility.trim() : null,
+				allowedTools != null ? allowedTools.trim() : null, metadata, markdownBody, skillDir));
 	}
 
 	private static Optional<AgentSkill> loadFromFile(Path file, Path skillDir) {
@@ -134,16 +130,20 @@ public final class AgentSkillLoader {
 
 	private static Path findSkillFileInDirectory(Path dir) {
 		Path skillMd = dir.resolve("SKILL.md");
-		if (Files.exists(skillMd)) return skillMd;
+		if (Files.exists(skillMd))
+			return skillMd;
 
 		Path skillsMd = dir.resolve("SKILLS.md");
-		if (Files.exists(skillsMd)) return skillsMd;
+		if (Files.exists(skillsMd))
+			return skillsMd;
 
 		Path lowerSkillMd = dir.resolve("skill.md");
-		if (Files.exists(lowerSkillMd)) return lowerSkillMd;
+		if (Files.exists(lowerSkillMd))
+			return lowerSkillMd;
 
 		Path lowerSkillsMd = dir.resolve("skills.md");
-		if (Files.exists(lowerSkillsMd)) return lowerSkillsMd;
+		if (Files.exists(lowerSkillsMd))
+			return lowerSkillsMd;
 
 		return null;
 	}
@@ -158,7 +158,8 @@ public final class AgentSkillLoader {
 	 */
 	private static Map<String, String> parseYamlSimple(String yaml) {
 		Map<String, String> result = new HashMap<>();
-		if (yaml == null) return result;
+		if (yaml == null)
+			return result;
 
 		String[] lines = yaml.split("\\r?\\n");
 		String currentKey = null;
@@ -178,7 +179,8 @@ public final class AgentSkillLoader {
 				currentKey = line.substring(0, colonIdx).trim().toLowerCase();
 				currentValue = new StringBuilder(stripQuotes(line.substring(colonIdx + 1).trim()));
 			} else if (currentKey != null) {
-				if (currentValue.length() > 0) currentValue.append("\n");
+				if (currentValue.length() > 0)
+					currentValue.append("\n");
 				currentValue.append(trimmed);
 			}
 		}
@@ -195,7 +197,8 @@ public final class AgentSkillLoader {
 	 */
 	private static Map<String, String> extractMetadataSubmap(String yaml) {
 		Map<String, String> metadata = new HashMap<>();
-		if (yaml == null || !yaml.contains("metadata:")) return metadata;
+		if (yaml == null || !yaml.contains("metadata:"))
+			return metadata;
 
 		String[] lines = yaml.split("\\r?\\n");
 		boolean inMetadataBlock = false;
@@ -224,7 +227,8 @@ public final class AgentSkillLoader {
 	}
 
 	private static String stripQuotes(String str) {
-		if (str == null) return "";
+		if (str == null)
+			return "";
 		if ((str.startsWith("\"") && str.endsWith("\"")) || (str.startsWith("'") && str.endsWith("'"))) {
 			return str.substring(1, str.length() - 1);
 		}
