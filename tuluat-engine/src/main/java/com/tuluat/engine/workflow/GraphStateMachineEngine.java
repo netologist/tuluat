@@ -33,16 +33,9 @@ public class GraphStateMachineEngine {
 	private final ExpressionParser parser = new SpelExpressionParser();
 	private final ObjectMapper mapper = new ObjectMapper();
 
-	/** Test-only convenience constructor. */
-	@Deprecated
-	public GraphStateMachineEngine(AgentExecutionService agentExecutionService) {
-		this(agentExecutionService, Optional.empty(), Optional.empty(), Optional.empty());
-	}
-
 	@Autowired
 	public GraphStateMachineEngine(AgentExecutionService agentExecutionService,
-			Optional<WorkflowSessionLogRepository> logRepository,
-			Optional<WorkflowTelemetryService> telemetryService,
+			Optional<WorkflowSessionLogRepository> logRepository, Optional<WorkflowTelemetryService> telemetryService,
 			Optional<com.tuluat.guardrails.GuardrailPipeline> guardrailPipeline) {
 		this.agentExecutionService = agentExecutionService;
 		this.logRepository = logRepository;
@@ -68,9 +61,7 @@ public class GraphStateMachineEngine {
 		}
 
 		final String targetId = currentNodeId;
-		NodeDefinition currentNode = workflowSpec.nodes().stream()
-				.filter(n -> n.id().equals(targetId))
-				.findFirst()
+		NodeDefinition currentNode = workflowSpec.nodes().stream().filter(n -> n.id().equals(targetId)).findFirst()
 				.orElseThrow(() -> new IllegalArgumentException("Node not found: " + session.getCurrentNodeId()));
 
 		Map<String, Object> contextData = parseContext(session.getContextData());
@@ -80,8 +71,8 @@ public class GraphStateMachineEngine {
 		log.info(infoMsg);
 		recordSessionLog(session.getSessionId(), currentNode.id(), "INFO", infoMsg);
 
-		telemetryService.ifPresent(ts -> ts.recordNodeExecuted(session.getWorkflowName(), currentNode.type(),
-				currentNode.id()));
+		telemetryService.ifPresent(
+				ts -> ts.recordNodeExecuted(session.getWorkflowName(), currentNode.type(), currentNode.id()));
 
 		if ("AGENT".equalsIgnoreCase(currentNode.type())) {
 			String prompt = resolvePromptTemplate(currentNode.inputTemplate(), contextData);
@@ -92,14 +83,13 @@ public class GraphStateMachineEngine {
 			contextData.put(currentNode.outputKey(), response.answer());
 			session.setContextData(writeContext(contextData));
 
-			recordSessionLog(session.getSessionId(), currentNode.id(), "INFO",
-					"Agent '" + currentNode.agentRef() + "' output saved to key '" + currentNode.outputKey()
-							+ "': " + response.answer());
+			recordSessionLog(session.getSessionId(), currentNode.id(), "INFO", "Agent '" + currentNode.agentRef()
+					+ "' output saved to key '" + currentNode.outputKey() + "': " + response.answer());
 
 			if (guardrailPipeline.isPresent() && currentNode.outputSchema() != null
 					&& !currentNode.outputSchema().isBlank()) {
-				com.tuluat.guardrails.ValidationResult vr = guardrailPipeline.get()
-						.validateOutput(response.answer(), null, currentNode.outputSchema());
+				com.tuluat.guardrails.ValidationResult vr = guardrailPipeline.get().validateOutput(response.answer(),
+						null, currentNode.outputSchema());
 				if (!vr.valid()) {
 					String errMsg = String.format("Node '%s' output failed schema validation (confidence=%.2f): %s",
 							currentNode.id(), vr.confidence(), vr.errors());
@@ -116,8 +106,7 @@ public class GraphStateMachineEngine {
 			String nextNodeId = resolveNextNodeId(workflowSpec, currentNode.id(), true);
 			if (nextNodeId == null) {
 				log.info("No next node found for session {}. Marking COMPLETED.", session.getSessionId());
-				recordSessionLog(session.getSessionId(), currentNode.id(), "INFO",
-						"Workflow execution completed.");
+				recordSessionLog(session.getSessionId(), currentNode.id(), "INFO", "Workflow execution completed.");
 				session.setStatus("COMPLETED");
 				telemetryService.ifPresent(ts -> ts.recordSessionCompleted(session.getWorkflowName(), "COMPLETED"));
 			} else {
@@ -172,12 +161,10 @@ public class GraphStateMachineEngine {
 	}
 
 	public String resolveNextNodeId(AiWorkflowSpec spec, String fromNodeId, boolean conditionResult) {
-		return spec.edges().stream()
-				.filter(e -> e.from().equals(fromNodeId))
+		return spec.edges().stream().filter(e -> e.from().equals(fromNodeId))
 				.filter(e -> e.condition() == null || e.condition().isEmpty()
 						|| Boolean.parseBoolean(e.condition()) == conditionResult)
-				.map(EdgeDefinition::to)
-				.findFirst().orElse(null);
+				.map(EdgeDefinition::to).findFirst().orElse(null);
 	}
 
 	private void recordSessionLog(UUID sessionId, String nodeId, String level, String message) {

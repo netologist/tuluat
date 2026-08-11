@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,14 +20,14 @@ class GraphStateMachineEngineTest {
 
 	@BeforeEach
 	void setUp() {
-		engine = new GraphStateMachineEngine(null);
+		engine = new GraphStateMachineEngine(null, Optional.empty(), Optional.empty(), Optional.empty());
 	}
 
 	@Test
 	@DisplayName("Should evaluate condition node expression correctly using SpEL")
 	void shouldEvaluateConditionNodeExpression() {
-		NodeDefinition condNode = new NodeDefinition("check-result", "CONDITION", null, null, null,
-				"#status == 'OK'", null);
+		NodeDefinition condNode = new NodeDefinition("check-result", "CONDITION", null, null, null, "#status == 'OK'",
+				null);
 
 		Map<String, Object> context = new HashMap<>();
 		context.put("status", "OK");
