@@ -26,7 +26,7 @@ class GraphStateMachineEngineTest {
 	@DisplayName("Should evaluate condition node expression correctly using SpEL")
 	void shouldEvaluateConditionNodeExpression() {
 		NodeDefinition condNode = new NodeDefinition("check-result", "CONDITION", null, null, null,
-				"#data['status'] == 'OK'", null);
+				"#status == 'OK'", null);
 
 		Map<String, Object> context = new HashMap<>();
 		context.put("status", "OK");

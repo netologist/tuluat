@@ -7,39 +7,43 @@ import com.tuluat.crd.workflow.EdgeDefinition;
 import com.tuluat.crd.workflow.NodeDefinition;
 import com.tuluat.engine.agent.AgentExecutionService;
 import com.tuluat.engine.agent.AgentResponse;
-import com.tuluat.engine.telemetry.WorkflowTelemetryService;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
 import com.tuluat.engine.entity.WorkflowSessionLogEntity;
 import com.tuluat.engine.repository.WorkflowSessionLogRepository;
+import com.tuluat.engine.telemetry.WorkflowTelemetryService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
-import java.util.*;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @Component
 @Slf4j
 public class GraphStateMachineEngine {
+
 	private final AgentExecutionService agentExecutionService;
-	private final WorkflowSessionLogRepository logRepository;
-	private final WorkflowTelemetryService telemetryService;
-	private final com.tuluat.guardrails.GuardrailPipeline guardrailPipeline;
+	private final Optional<WorkflowSessionLogRepository> logRepository;
+	private final Optional<WorkflowTelemetryService> telemetryService;
+	private final Optional<com.tuluat.guardrails.GuardrailPipeline> guardrailPipeline;
 	private final ExpressionParser parser = new SpelExpressionParser();
 	private final ObjectMapper mapper = new ObjectMapper();
 
+	/** Test-only convenience constructor. */
+	@Deprecated
 	public GraphStateMachineEngine(AgentExecutionService agentExecutionService) {
-		this(agentExecutionService, null, null, null);
+		this(agentExecutionService, Optional.empty(), Optional.empty(), Optional.empty());
 	}
 
 	@Autowired
 	public GraphStateMachineEngine(AgentExecutionService agentExecutionService,
-			@Autowired(required = false) WorkflowSessionLogRepository logRepository,
-			@Autowired(required = false) WorkflowTelemetryService telemetryService,
-			@Autowired(required = false) com.tuluat.guardrails.GuardrailPipeline guardrailPipeline) {
+			Optional<WorkflowSessionLogRepository> logRepository,
+			Optional<WorkflowTelemetryService> telemetryService,
+			Optional<com.tuluat.guardrails.GuardrailPipeline> guardrailPipeline) {
 		this.agentExecutionService = agentExecutionService;
 		this.logRepository = logRepository;
 		this.telemetryService = telemetryService;
@@ -53,9 +57,7 @@ public class GraphStateMachineEngine {
 			log.error(errorMsg);
 			recordSessionLog(session.getSessionId(), session.getCurrentNodeId(), "ERROR", errorMsg);
 			session.setStatus("FAILED");
-			if (telemetryService != null) {
-				telemetryService.recordSessionCompleted(session.getWorkflowName(), "FAILED");
-			}
+			telemetryService.ifPresent(ts -> ts.recordSessionCompleted(session.getWorkflowName(), "FAILED"));
 			return session;
 		}
 
@@ -66,7 +68,9 @@ public class GraphStateMachineEngine {
 		}
 
 		final String targetId = currentNodeId;
-		NodeDefinition currentNode = workflowSpec.nodes().stream().filter(n -> n.id().equals(targetId)).findFirst()
+		NodeDefinition currentNode = workflowSpec.nodes().stream()
+				.filter(n -> n.id().equals(targetId))
+				.findFirst()
 				.orElseThrow(() -> new IllegalArgumentException("Node not found: " + session.getCurrentNodeId()));
 
 		Map<String, Object> contextData = parseContext(session.getContextData());
@@ -76,9 +80,8 @@ public class GraphStateMachineEngine {
 		log.info(infoMsg);
 		recordSessionLog(session.getSessionId(), currentNode.id(), "INFO", infoMsg);
 
-		if (telemetryService != null) {
-			telemetryService.recordNodeExecuted(session.getWorkflowName(), currentNode.type(), currentNode.id());
-		}
+		telemetryService.ifPresent(ts -> ts.recordNodeExecuted(session.getWorkflowName(), currentNode.type(),
+				currentNode.id()));
 
 		if ("AGENT".equalsIgnoreCase(currentNode.type())) {
 			String prompt = resolvePromptTemplate(currentNode.inputTemplate(), contextData);
@@ -89,24 +92,21 @@ public class GraphStateMachineEngine {
 			contextData.put(currentNode.outputKey(), response.answer());
 			session.setContextData(writeContext(contextData));
 
-			recordSessionLog(session.getSessionId(), currentNode.id(), "INFO", "Agent '" + currentNode.agentRef()
-					+ "' output saved to key '" + currentNode.outputKey() + "': " + response.answer());
+			recordSessionLog(session.getSessionId(), currentNode.id(), "INFO",
+					"Agent '" + currentNode.agentRef() + "' output saved to key '" + currentNode.outputKey()
+							+ "': " + response.answer());
 
-			// Post-execution JSON Schema validation (ADR 004 / 007): node-level output
-			// contract
-			if (guardrailPipeline != null && currentNode.outputSchema() != null
+			if (guardrailPipeline.isPresent() && currentNode.outputSchema() != null
 					&& !currentNode.outputSchema().isBlank()) {
-				com.tuluat.guardrails.ValidationResult vr = guardrailPipeline.validateOutput(response.answer(), null,
-						currentNode.outputSchema());
+				com.tuluat.guardrails.ValidationResult vr = guardrailPipeline.get()
+						.validateOutput(response.answer(), null, currentNode.outputSchema());
 				if (!vr.valid()) {
 					String errMsg = String.format("Node '%s' output failed schema validation (confidence=%.2f): %s",
 							currentNode.id(), vr.confidence(), vr.errors());
 					log.error(errMsg);
 					recordSessionLog(session.getSessionId(), currentNode.id(), "ERROR", errMsg);
 					session.setStatus("FAILED");
-					if (telemetryService != null) {
-						telemetryService.recordSessionCompleted(session.getWorkflowName(), "FAILED");
-					}
+					telemetryService.ifPresent(ts -> ts.recordSessionCompleted(session.getWorkflowName(), "FAILED"));
 					return session;
 				}
 				recordSessionLog(session.getSessionId(), currentNode.id(), "INFO",
@@ -116,11 +116,10 @@ public class GraphStateMachineEngine {
 			String nextNodeId = resolveNextNodeId(workflowSpec, currentNode.id(), true);
 			if (nextNodeId == null) {
 				log.info("No next node found for session {}. Marking COMPLETED.", session.getSessionId());
-				recordSessionLog(session.getSessionId(), currentNode.id(), "INFO", "Workflow execution completed.");
+				recordSessionLog(session.getSessionId(), currentNode.id(), "INFO",
+						"Workflow execution completed.");
 				session.setStatus("COMPLETED");
-				if (telemetryService != null) {
-					telemetryService.recordSessionCompleted(session.getWorkflowName(), "COMPLETED");
-				}
+				telemetryService.ifPresent(ts -> ts.recordSessionCompleted(session.getWorkflowName(), "COMPLETED"));
 			} else {
 				session.setCurrentNodeId(nextNodeId);
 			}
@@ -137,9 +136,7 @@ public class GraphStateMachineEngine {
 				recordSessionLog(session.getSessionId(), currentNode.id(), "INFO",
 						"Workflow execution completed after condition.");
 				session.setStatus("COMPLETED");
-				if (telemetryService != null) {
-					telemetryService.recordSessionCompleted(session.getWorkflowName(), "COMPLETED");
-				}
+				telemetryService.ifPresent(ts -> ts.recordSessionCompleted(session.getWorkflowName(), "COMPLETED"));
 			} else {
 				session.setCurrentNodeId(nextNodeId);
 			}
@@ -170,31 +167,34 @@ public class GraphStateMachineEngine {
 		if (expression == null || expression.isBlank())
 			return true;
 		StandardEvaluationContext evalContext = new StandardEvaluationContext();
-		evalContext.setVariable("data", contextData);
-		Boolean result = parser.parseExpression(expression).getValue(evalContext, Boolean.class);
-		return Boolean.TRUE.equals(result);
+		contextData.forEach(evalContext::setVariable);
+		return Boolean.TRUE.equals(parser.parseExpression(expression).getValue(evalContext, Boolean.class));
 	}
 
 	public String resolveNextNodeId(AiWorkflowSpec spec, String fromNodeId, boolean conditionResult) {
-		return spec.edges().stream().filter(e -> e.from().equals(fromNodeId))
+		return spec.edges().stream()
+				.filter(e -> e.from().equals(fromNodeId))
 				.filter(e -> e.condition() == null || e.condition().isEmpty()
 						|| Boolean.parseBoolean(e.condition()) == conditionResult)
-				.map(EdgeDefinition::to).findFirst().orElse(null);
+				.map(EdgeDefinition::to)
+				.findFirst().orElse(null);
 	}
 
 	private void recordSessionLog(UUID sessionId, String nodeId, String level, String message) {
-		if (logRepository != null && sessionId != null) {
-			try {
-				WorkflowSessionLogEntity entity = new WorkflowSessionLogEntity();
-				entity.setSessionId(sessionId);
-				entity.setNodeId(nodeId);
-				entity.setLogLevel(level);
-				entity.setMessage(message);
-				logRepository.save(entity);
-			} catch (Exception e) {
-				log.warn("Failed to record session log to database: {}", e.getMessage());
+		logRepository.ifPresent(repo -> {
+			if (sessionId != null) {
+				try {
+					WorkflowSessionLogEntity entity = new WorkflowSessionLogEntity();
+					entity.setSessionId(sessionId);
+					entity.setNodeId(nodeId);
+					entity.setLogLevel(level);
+					entity.setMessage(message);
+					repo.save(entity);
+				} catch (Exception e) {
+					log.warn("Failed to record session log to database: {}", e.getMessage());
+				}
 			}
-		}
+		});
 	}
 
 	private String resolvePromptTemplate(String template, Map<String, Object> contextData) {
@@ -210,9 +210,10 @@ public class GraphStateMachineEngine {
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> parseContext(String json) {
 		try {
-			return json == null || json.isEmpty() ? new HashMap<>() : mapper.readValue(json, Map.class);
-		} catch (Exception e) {
-			return new HashMap<>();
+			return json != null ? mapper.readValue(json, Map.class) : new java.util.HashMap<>();
+		} catch (JsonProcessingException e) {
+			log.error("Failed to parse context data", e);
+			return new java.util.HashMap<>();
 		}
 	}
 
@@ -220,6 +221,7 @@ public class GraphStateMachineEngine {
 		try {
 			return mapper.writeValueAsString(data);
 		} catch (JsonProcessingException e) {
+			log.error("Failed to serialize context data", e);
 			return "{}";
 		}
 	}

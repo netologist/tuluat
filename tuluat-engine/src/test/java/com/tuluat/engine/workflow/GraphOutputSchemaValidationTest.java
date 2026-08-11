@@ -11,6 +11,7 @@ import com.tuluat.guardrails.OutputValidationFilter;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,8 +29,8 @@ class GraphOutputSchemaValidationTest {
 	private AgentExecutionService service;
 
 	private GraphStateMachineEngine engine() {
-		return new GraphStateMachineEngine(service, null, null,
-				new GuardrailPipeline(List.of(), List.of(new OutputValidationFilter())));
+		return new GraphStateMachineEngine(service, Optional.empty(), Optional.empty(),
+				Optional.of(new GuardrailPipeline(List.of(), List.of(new OutputValidationFilter()))));
 	}
 
 	private WorkflowSessionEntity session() {
