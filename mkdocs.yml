@@ -2,6 +2,9 @@ site_name: Kubernetes AI Operator & Workflow Runtime
 site_description: Documentation portal for Kubernetes AI Operator, Graph State Machines, Embabel, MCP, and Telemetry.
 site_author: Tuluat AI Team
 site_url: https://netologist.github.io/tuluat/
+repo_name: netologist/tuluat
+repo_url: https://github.com/netologist/tuluat
+edit_uri: edit/main/docs/
 
 theme:
   name: material
