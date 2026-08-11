@@ -50,6 +50,13 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Features:
+      - LLM Providers: features/llm-providers.md
+      - Agents & Skills: features/agents-and-skills.md
+      - Workflows & Sessions: features/workflows-and-sessions.md
+      - Safety Guardrails: features/guardrails.md
+      - MCP & A2A Protocols: features/mcp-and-a2a.md
+      - RAG & Memory: features/rag-and-memory.md
   - Architecture:
       - Overview: architecture/overview.md
       - Low-Level Design: architecture/low-level-design.md
