@@ -32,9 +32,12 @@
         <maven.compiler.release>25</maven.compiler.release>
         <spring-ai.version>2.0.0-SNAPSHOT</spring-ai.version>
         <josdk.version>5.1.0</josdk.version>
-        <fabric8.version>7.3.1</fabric8.version>
+        <fabric8.version>7.8.0</fabric8.version>
         <temporal.version>1.27.0</temporal.version>
-        <archunit.version>1.4.0</archunit.version>
+        <archunit.version>1.4.2</archunit.version>
+        <minio.version>8.6.0</minio.version>
+        <minio-okhttp3.version>4.12.0</minio-okhttp3.version>
+        <lombok.version>1.18.38</lombok.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -125,8 +128,19 @@
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
-                <version>1.18.38</version>
+                <version>${lombok.version}</version>
                 <scope>provided</scope>
+            </dependency>
+            <!-- Object Storage (MinIO / S3-compatible) for RAG documents -->
+            <dependency>
+                <groupId>io.minio</groupId>
+                <artifactId>minio</artifactId>
+                <version>${minio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>okhttp</artifactId>
+                <version>${minio-okhttp3.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -186,7 +200,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.38</version>
+                            <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
                     <compilerArgs>
