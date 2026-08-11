@@ -33,4 +33,4 @@ Dockerfile.local
 
 .idea/
 dist/
-*.tgz
+*.tgz!.idea/inspectionProfiles/
