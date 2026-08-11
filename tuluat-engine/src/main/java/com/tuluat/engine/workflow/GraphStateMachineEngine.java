@@ -157,6 +157,7 @@ public class GraphStateMachineEngine {
 		if (expression == null || expression.isBlank())
 			return true;
 		StandardEvaluationContext evalContext = new StandardEvaluationContext();
+		evalContext.setVariable("data", contextData);
 		contextData.forEach(evalContext::setVariable);
 		return Boolean.TRUE.equals(parser.parseExpression(expression).getValue(evalContext, Boolean.class));
 	}

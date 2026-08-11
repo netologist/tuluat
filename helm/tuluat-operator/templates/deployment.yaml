@@ -35,6 +35,10 @@ spec:
               value: "{{ .Values.rag.retriever }}"
             - name: TULUAT_RAG_EMBEDDING_DIMENSION
               value: "{{ .Values.rag.embeddingDimension }}"
+            {{- if .Values.wiremock.enabled }}
+            - name: SPRING_AI_OPENAI_BASE_URL
+              value: "http://wiremock-service.{{ .Values.namespace.name }}.svc.cluster.local:8080"
+            {{- end }}
           readinessProbe:
             httpGet:
               path: /actuator/health

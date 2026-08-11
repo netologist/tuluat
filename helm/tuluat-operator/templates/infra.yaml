@@ -234,7 +234,7 @@ data:
           "model": "wiremock-gpt-4o",
           "choices": [{
             "index": 0,
-            "message": { "role": "assistant", "content": "WireMock Stub LLM Response: Agent execution completed successfully." },
+            "message": { "role": "assistant", "content": "{\"summary\": \"WireMock stub LLM response: agent execution completed successfully.\"}" },
             "finish_reason": "stop"
           }],
           "usage": { "prompt_tokens": 20, "completion_tokens": 15, "total_tokens": 35 }

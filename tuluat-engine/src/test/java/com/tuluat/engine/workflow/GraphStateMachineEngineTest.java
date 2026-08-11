@@ -37,6 +37,29 @@ class GraphStateMachineEngineTest {
 	}
 
 	@Test
+	@DisplayName("Should evaluate #data map access used by workflow CRD samples")
+	void shouldEvaluateDataVariableCondition() {
+		NodeDefinition condNode = new NodeDefinition("check-result", "CONDITION", null, null, null,
+				"#data['status'] == 'OK'", null);
+
+		Map<String, Object> context = new HashMap<>();
+		context.put("status", "OK");
+
+		boolean result = engine.evaluateCondition(condNode.expression(), context);
+		assertTrue(result);
+	}
+
+	@Test
+	@DisplayName("Should evaluate #data null check from multi-agent-researcher sample")
+	void shouldEvaluateDataNullCheckCondition() {
+		Map<String, Object> context = new HashMap<>();
+		context.put("research_data", "some findings");
+
+		assertTrue(engine.evaluateCondition("#data['research_data'] != null", context));
+		assertFalse(engine.evaluateCondition("#data['missing_key'] != null", context));
+	}
+
+	@Test
 	@DisplayName("Should find next node ID based on edge conditions")
 	void shouldFindNextNode() {
 		EdgeDefinition edge1 = new EdgeDefinition("check-result", "success-node", "true");

@@ -75,6 +75,7 @@ public class GraphNodeActivitiesImpl implements GraphNodeActivities {
 			return true;
 		}
 		StandardEvaluationContext evalContext = new StandardEvaluationContext();
+		evalContext.setVariable("data", contextData);
 		contextData.forEach(evalContext::setVariable);
 		Boolean result = parser.parseExpression(node.expression()).getValue(evalContext, Boolean.class);
 		boolean finalResult = Boolean.TRUE.equals(result);

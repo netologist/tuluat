@@ -254,4 +254,43 @@ class AgentExecutionServiceTest {
 		AgentResponse r = service.executeAgent(null, "test", null);
 		assertEquals("default-agent", r.agentName());
 	}
+
+	@Test
+	@DisplayName("executeAgent invokes ChatModel when agent is resolved")
+	void executeAgentUsesChatModelWhenAgentResolved() {
+		var cm = mock(ChatModel.class);
+		var cr = mock(ChatResponse.class);
+		var gen = mock(Generation.class);
+		when(cm.call(any(Prompt.class))).thenReturn(cr);
+		when(cr.getResult()).thenReturn(gen);
+		when(gen.getOutput()).thenReturn(new AssistantMessage("wiremock-answer"));
+
+		AgentResolver resolver = (name, ns) -> Optional.of(agent(name));
+		var svc = new AgentExecutionService(skillRegistry, Optional.of(cm), guardrailPipeline, Optional.empty(),
+				Optional.empty(), Optional.ofNullable(resolver), Optional.empty());
+
+		AgentResponse r = svc.executeAgent("agent-1", "hello", "ns");
+		assertFalse(r.isBlocked());
+		assertEquals("wiremock-answer", r.answer());
+		assertEquals("gpt-4o", r.model());
+	}
+
+	@Test
+	@DisplayName("executeAgent resolves provider and uses ModelGateway when available")
+	void executeAgentUsesModelGatewayWithResolvedProvider() {
+		var cm = mock(ChatModel.class);
+		var gw = mock(ModelGateway.class);
+		var result = new ModelGateway.GatewayCallResult("gw-workflow-answer", "gpt-3.5", 20, 10, 0.01, false);
+		when(gw.invoke(any(), any(), anyString(), any(), any(), anyString())).thenReturn(result);
+
+		AgentResolver agentResolver = (name, ns) -> Optional.of(agent(name));
+		com.tuluat.engine.gateway.ProviderResolver providerResolver = (name, ns) -> Optional.of(provider());
+		var svc = new AgentExecutionService(skillRegistry, Optional.of(cm), guardrailPipeline, Optional.of(gw),
+				Optional.ofNullable(providerResolver), Optional.ofNullable(agentResolver), Optional.empty());
+
+		AgentResponse r = svc.executeAgent("agent-1", "hello", "ns");
+		assertFalse(r.isBlocked());
+		assertEquals("gw-workflow-answer", r.answer());
+		assertEquals(20, r.usage().inputTokens());
+	}
 }

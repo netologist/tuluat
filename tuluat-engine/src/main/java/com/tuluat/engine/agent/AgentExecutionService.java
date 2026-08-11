@@ -111,7 +111,8 @@ public class AgentExecutionService {
 		var namespace = (context != null && !context.isBlank()) ? context : null;
 		var name = agentRef != null ? agentRef : "default-agent";
 
-		var guardrails = resolveAgentGuardrails(agentRef, namespace);
+		var agent = agentResolver.flatMap(r -> r.resolve(agentRef, namespace));
+		var guardrails = agent.map(a -> a.getSpec() != null ? a.getSpec().guardrails() : null).orElse(null);
 
 		String safePrompt;
 		try {
@@ -121,11 +122,45 @@ public class AgentExecutionService {
 			return AgentResponse.blocked(name, e.getFilterName(), e.getMessage());
 		}
 
+		if (agent.isPresent() && agent.get().getSpec() != null) {
+			return invokeResolvedAgent(name, agent.get().getSpec(), safePrompt, guardrails);
+		}
+
 		var response = AgentResponse.create(name, DEFAULT_MODEL, "Workflow Agent System Prompt",
 				"Execution completed for: " + safePrompt, List.of(), UsageStats.calculate(10, 10, DEFAULT_MODEL, 50));
 
 		validateOutput(name, response.answer(), guardrails);
 		return response;
+	}
+
+	/**
+	 * Workflow-node invocation for a resolved agent CR: applies the spec's model
+	 * and provider, invokes the LLM via ModelGateway → ChatModel → simulated
+	 * fallback, then validates the output against the agent's guardrails.
+	 */
+	private AgentResponse invokeResolvedAgent(String name, AiAgentSpec spec, String safePrompt,
+			com.tuluat.crd.agent.GuardrailsConfig guardrails) {
+		var provider = resolveProvider(spec);
+		var model = resolveModel(spec, provider);
+		var systemPrompt = spec.systemPrompt() != null ? spec.systemPrompt() : DEFAULT_SYSTEM_PROMPT;
+		var prompt = new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(safePrompt)));
+
+		var llmResult = invokeLlm(name, model, provider, prompt, systemPrompt, safePrompt, List.of());
+		if (llmResult.blocked()) {
+			return AgentResponse.blocked(name, llmResult.blockReason(), llmResult.errorMessage());
+		}
+
+		validateOutput(name, llmResult.answer(), guardrails);
+		var usage = buildUsage(llmResult, model, 0);
+		return AgentResponse.create(name, model, systemPrompt, llmResult.answer(), List.of(), usage);
+	}
+
+	private LlmProvider resolveProvider(AiAgentSpec spec) {
+		var ref = spec.providerRef();
+		if (ref == null) {
+			return null;
+		}
+		return providerResolver.flatMap(r -> r.resolve(ref.name(), ref.namespace())).orElse(null);
 	}
 
 	// ── Pipeline steps ─────────────────────────────────────────────────────
@@ -260,13 +295,6 @@ public class AgentExecutionService {
 			log.warn("Agent '{}' output rejected: confidence={}, errors={}", agentName, result.confidence(),
 					result.errors());
 		}
-	}
-
-	// ── executeAgent helpers ───────────────────────────────────────────────
-
-	private com.tuluat.crd.agent.GuardrailsConfig resolveAgentGuardrails(String agentRef, String namespace) {
-		return agentResolver.flatMap(r -> r.resolve(agentRef, namespace))
-				.map(a -> a.getSpec() != null ? a.getSpec().guardrails() : null).orElse(null);
 	}
 
 	// ── Utility ────────────────────────────────────────────────────────────
