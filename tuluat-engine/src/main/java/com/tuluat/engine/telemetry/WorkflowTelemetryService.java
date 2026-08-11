@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 @Service
 public class WorkflowTelemetryService {
 
