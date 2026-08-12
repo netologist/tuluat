@@ -96,8 +96,7 @@ public class ApprovalController {
 		if (opt.isPresent() && kubernetesClient != null) {
 			WorkflowSessionEntity session = opt.get();
 			try {
-				AiWorkflow wf = kubernetesClient
-						.resources(AiWorkflow.class).inNamespace("tuluat-system")
+				AiWorkflow wf = kubernetesClient.resources(AiWorkflow.class).inNamespace("tuluat-system")
 						.withName(session.getWorkflowName()).get();
 				if (wf == null) {
 					wf = kubernetesClient.resources(AiWorkflow.class).inNamespace("default")

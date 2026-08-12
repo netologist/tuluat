@@ -84,16 +84,16 @@ public class WorkflowSessionReconciler implements Reconciler<WorkflowSession> {
 				.map(e -> new NodeExecution(e.getNodeId(), e.getAgentName(), e.getProvider(), e.getModel(),
 						e.getInputPrompt(), e.getOutputText(),
 						e.getStartTime() != null ? e.getStartTime().toString() : null,
-						e.getEndTime() != null ? e.getEndTime().toString() : null, e.getDurationMs(), e.getTotalTokens(),
-						e.getInputTokens(), e.getOutputTokens(), e.getCostUsd(), e.getStatus()))
+						e.getEndTime() != null ? e.getEndTime().toString() : null, e.getDurationMs(),
+						e.getTotalTokens(), e.getInputTokens(), e.getOutputTokens(), e.getCostUsd(), e.getStatus()))
 				.toList();
 
 		// Aggregate totals
 		long totalTokens = executions.stream().mapToLong(NodeExecutionEntity::getTotalTokens).sum();
 		long inputTokens = executions.stream().mapToLong(NodeExecutionEntity::getInputTokens).sum();
 		long outputTokens = executions.stream().mapToLong(NodeExecutionEntity::getOutputTokens).sum();
-		BigDecimal costUsd = executions.stream().map(NodeExecutionEntity::getCostUsd)
-				.filter(c -> c != null).reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal costUsd = executions.stream().map(NodeExecutionEntity::getCostUsd).filter(c -> c != null)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
 
 		// Duration from first start to last end
 		long durationSecs = 0;
@@ -107,9 +107,7 @@ public class WorkflowSessionReconciler implements Reconciler<WorkflowSession> {
 
 		// Read the session entity to get the latest phase
 		UUID sessionId = UUID.fromString(current.sessionId());
-		String phase = sessionRepository
-				.flatMap(repo -> repo.findById(sessionId))
-				.map(e -> e.getStatus().name())
+		String phase = sessionRepository.flatMap(repo -> repo.findById(sessionId)).map(e -> e.getStatus().name())
 				.orElse(current.phase());
 
 		return new WorkflowSessionStatus(current.sessionId(), phase, current.currentNode(), current.output(),

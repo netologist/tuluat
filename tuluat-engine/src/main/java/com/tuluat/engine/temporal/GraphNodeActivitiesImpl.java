@@ -92,6 +92,7 @@ public class GraphNodeActivitiesImpl implements GraphNodeActivities {
 
 		String expression = node.expression() != null ? node.expression() : "true";
 		StandardEvaluationContext evalCtx = new StandardEvaluationContext();
+		evalCtx.setVariable("data", contextData);
 		contextData.forEach(evalCtx::setVariable);
 
 		Boolean result = parser.parseExpression(expression).getValue(evalCtx, Boolean.class);
@@ -147,8 +148,8 @@ public class GraphNodeActivitiesImpl implements GraphNodeActivities {
 
 			execution.setStatus(response.isBlocked() ? "BLOCKED" : "COMPLETED");
 			repo.save(execution);
-			log.debug("Persisted node execution for session={} node={} tokens={} cost={}",
-					sessionId, nodeId, execution.getTotalTokens(), execution.getCostUsd());
+			log.debug("Persisted node execution for session={} node={} tokens={} cost={}", sessionId, nodeId,
+					execution.getTotalTokens(), execution.getCostUsd());
 		});
 	}
 
@@ -156,14 +157,12 @@ public class GraphNodeActivitiesImpl implements GraphNodeActivities {
 		if (agentRef == null || agentRef.isBlank()) {
 			return "default";
 		}
-		return agentResolver.flatMap(r -> r.resolve(agentRef, null))
-				.map(agent -> {
-					var spec = agent.getSpec();
-					if (spec != null && spec.providerRef() != null && spec.providerRef().name() != null) {
-						return spec.providerRef().name();
-					}
-					return agentRef;
-				})
-				.orElse(agentRef);
+		return agentResolver.flatMap(r -> r.resolve(agentRef, null)).map(agent -> {
+			var spec = agent.getSpec();
+			if (spec != null && spec.providerRef() != null && spec.providerRef().name() != null) {
+				return spec.providerRef().name();
+			}
+			return agentRef;
+		}).orElse(agentRef);
 	}
 }

@@ -88,7 +88,8 @@ class WorkflowSessionReconcilerTest {
 	void testReconcileCompletedSession() {
 		var session = new WorkflowSession();
 		session.setMetadata(new ObjectMetaBuilder().withName("session-1").withNamespace("default").build());
-		WorkflowSessionStatus status = new WorkflowSessionStatus(null, "COMPLETED", null, null, null, null, 0L, 0L, 0L, java.math.BigDecimal.ZERO, 0L, java.util.List.of());
+		WorkflowSessionStatus status = new WorkflowSessionStatus(null, "COMPLETED", null, null, null, null, 0L, 0L, 0L,
+				java.math.BigDecimal.ZERO, 0L, java.util.List.of());
 		session.setStatus(status);
 
 		UpdateControl<WorkflowSession> control = reconciler.reconcile(session, null);

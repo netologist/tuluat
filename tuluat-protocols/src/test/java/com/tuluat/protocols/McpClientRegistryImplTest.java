@@ -84,8 +84,7 @@ class McpClientRegistryImplTest {
 	void registerFromMcpServerCr() {
 		var server = new McpServer();
 		server.getMetadata().setName("github-mcp");
-		server.setSpec(new McpServerSpec("http://github-mcp:8080/sse", "SSE", "NONE", null, 30,
-				"GitHub tools"));
+		server.setSpec(new McpServerSpec("http://github-mcp:8080/sse", "SSE", "NONE", null, 30, "GitHub tools"));
 
 		registry.registerFromCr(server);
 

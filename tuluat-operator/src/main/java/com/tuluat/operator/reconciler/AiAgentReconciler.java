@@ -92,8 +92,7 @@ public class AiAgentReconciler implements Reconciler<AiAgent> {
 			List<String> activeTools = spec.tools().stream().filter(t -> Boolean.TRUE.equals(t.enabled()))
 					.map(t -> t.name()).toList();
 			List<String> activeMcpServers = (spec.mcpServers() != null)
-					? spec.mcpServers().stream().map(McpServerRef::name)
-							.filter(n -> n != null && !n.isBlank()).toList()
+					? spec.mcpServers().stream().map(McpServerRef::name).filter(n -> n != null && !n.isBlank()).toList()
 					: List.of();
 
 			String effectiveModel = (spec.model() != null && !spec.model().isBlank())

@@ -238,8 +238,8 @@ public class WorkflowSessionController {
 
 		if (kubernetesClient != null) {
 			try {
-				AiAgent agent = kubernetesClient.resources(AiAgent.class)
-						.inNamespace("tuluat-system").withName(effectiveRef).get();
+				AiAgent agent = kubernetesClient.resources(AiAgent.class).inNamespace("tuluat-system")
+						.withName(effectiveRef).get();
 				if (agent != null && agent.getSpec() != null) {
 					var spec = agent.getSpec();
 					Map<String, Object> detail = new HashMap<>();

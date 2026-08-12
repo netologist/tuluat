@@ -20,7 +20,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "workflow_session_node_executions", indexes = {
 		@Index(name = "idx_node_sessions_session_id", columnList = "session_id"),
-		@Index(name = "idx_node_sessions_node_id", columnList = "node_id") })
+		@Index(name = "idx_node_sessions_node_id", columnList = "node_id")})
 public class NodeExecutionEntity {
 
 	@Id

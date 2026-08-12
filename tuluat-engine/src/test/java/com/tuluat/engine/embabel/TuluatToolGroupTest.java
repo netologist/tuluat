@@ -1,6 +1,5 @@
 package com.tuluat.engine.embabel;
 
-import com.embabel.agent.api.tool.Tool;
 import com.tuluat.engine.tool.Tool;
 import com.embabel.agent.core.ToolGroup;
 import com.tuluat.engine.tool.ToolRegistry;

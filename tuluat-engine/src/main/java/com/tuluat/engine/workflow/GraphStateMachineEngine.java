@@ -94,8 +94,8 @@ public class GraphStateMachineEngine {
 
 			if (guardrailPipeline.isPresent() && currentNode.outputSchema() != null
 					&& !currentNode.outputSchema().isBlank()) {
-				ValidationResult vr = guardrailPipeline.get().validateOutput(response.answer(),
-						null, currentNode.outputSchema());
+				ValidationResult vr = guardrailPipeline.get().validateOutput(response.answer(), null,
+						currentNode.outputSchema());
 				if (!vr.valid()) {
 					String errMsg = String.format("Node '%s' output failed schema validation (confidence=%.2f): %s",
 							currentNode.id(), vr.confidence(), vr.errors());
