@@ -61,8 +61,8 @@ public class AiWorkflowReconciler implements Reconciler<AiWorkflow> {
 		}
 
 		List<String> agentNames = spec != null && spec.nodes() != null
-				? spec.nodes().stream().map(NodeDefinition::agentRef).filter(Objects::nonNull)
-						.filter(n -> !n.isBlank()).distinct().toList()
+				? spec.nodes().stream().map(NodeDefinition::agentRef).filter(Objects::nonNull).filter(n -> !n.isBlank())
+						.distinct().toList()
 				: List.of();
 
 		resource.setStatus(new AiWorkflowStatus("Ready", nodeCount, costSpent, budget, sessionCount, totalTokens,

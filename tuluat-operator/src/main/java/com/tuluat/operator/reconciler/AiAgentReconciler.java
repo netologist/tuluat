@@ -125,17 +125,17 @@ public class AiAgentReconciler implements Reconciler<AiAgent> {
 				.withOwnerReferences(ownerRef).endMetadata().withNewSpec().withReplicas(replicas).withNewSelector()
 				.withMatchLabels(labels).endSelector().withNewTemplate().withNewMetadata().withLabels(labels)
 				.endMetadata().withNewSpec().addNewContainer().withName("agent-runtime")
-				.withImage("tuluat-operator:latest").withImagePullPolicy("IfNotPresent").addNewEnv().withName("AGENT_NAME")
-				.withValue(agent.getMetadata().getName()).endEnv().endContainer().endSpec().endTemplate().endSpec()
-				.build();
+				.withImage("tuluat-operator:latest").withImagePullPolicy("IfNotPresent").addNewEnv()
+				.withName("AGENT_NAME").withValue(agent.getMetadata().getName()).endEnv().endContainer().endSpec()
+				.endTemplate().endSpec().build();
 		Deployment existing = client.apps().deployments().inNamespace(ns).withName(deployName).get();
 		if (existing == null) {
 			client.apps().deployments().inNamespace(ns).resource(deployment).create();
 		} else if (!labels.equals(existing.getSpec().getSelector().getMatchLabels())) {
 			log.warn("Deployment {} selector drifted (immutable); deleting for recreation", deployName);
 			client.apps().deployments().inNamespace(ns).withName(deployName).delete();
-			client.apps().deployments().inNamespace(ns).withName(deployName)
-					.waitUntilCondition(Objects::isNull, 30, TimeUnit.SECONDS);
+			client.apps().deployments().inNamespace(ns).withName(deployName).waitUntilCondition(Objects::isNull, 30,
+					TimeUnit.SECONDS);
 			client.apps().deployments().inNamespace(ns).resource(deployment).create();
 		} else {
 			deployment.getMetadata().setResourceVersion(existing.getMetadata().getResourceVersion());
