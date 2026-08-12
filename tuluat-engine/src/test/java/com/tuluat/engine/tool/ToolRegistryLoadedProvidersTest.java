@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("ToolRegistry loadedProviders")
 class ToolRegistryLoadedProvidersTest {
+	private static final String TEST_AGENT = "test-agent";
 
 	private ToolRegistry registry;
 
@@ -76,21 +77,21 @@ class ToolRegistryLoadedProvidersTest {
 		@Test
 		@DisplayName("handles null source list")
 		void handlesNullSources() {
-			registry.loadToolSources(null);
+			registry.loadToolSources(TEST_AGENT, null);
 			assertThat(registry.getAvailableToolNames()).hasSize(3); // builtins intact
 		}
 
 		@Test
 		@DisplayName("handles empty source list")
 		void handlesEmptySources() {
-			registry.loadToolSources(List.of());
+			registry.loadToolSources(TEST_AGENT, List.of());
 			assertThat(registry.getAvailableToolNames()).hasSize(3);
 		}
 
 		@Test
 		@DisplayName("skips sources with null or blank path")
 		void skipsNullPathSources(@TempDir Path tempDir) {
-			registry.loadToolSources(List.of(new ToolSource("FOLDER", null, false),
+			registry.loadToolSources(TEST_AGENT, List.of(new ToolSource("FOLDER", null, false),
 					new ToolSource("FOLDER", "  ", false), new ToolSource("FOLDER", tempDir.toString(), false)));
 
 			assertThat(registry.getAvailableToolNames()).hasSize(3); // no new tools loaded
@@ -99,7 +100,7 @@ class ToolRegistryLoadedProvidersTest {
 		@Test
 		@DisplayName("handles non-existent folder paths gracefully")
 		void handlesNonExistentFolder() {
-			registry.loadToolSources(List.of(new ToolSource("FOLDER", "/nonexistent/path/12345", false)));
+			registry.loadToolSources(TEST_AGENT, List.of(new ToolSource("FOLDER", "/nonexistent/path/12345", false)));
 
 			assertThat(registry.getAvailableToolNames()).hasSize(3); // builtins intact
 		}
@@ -107,7 +108,7 @@ class ToolRegistryLoadedProvidersTest {
 		@Test
 		@DisplayName("unknown source type is silently ignored")
 		void ignoresUnknownSourceType() {
-			registry.loadToolSources(List.of(new ToolSource("UNKNOWN_TYPE", "/some/path", false)));
+			registry.loadToolSources(TEST_AGENT, List.of(new ToolSource("UNKNOWN_TYPE", "/some/path", false)));
 
 			assertThat(registry.getAvailableToolNames()).hasSize(3);
 		}
@@ -115,7 +116,7 @@ class ToolRegistryLoadedProvidersTest {
 		@Test
 		@DisplayName("supports CONFIGMAP type same as FOLDER")
 		void supportsConfigMapType(@TempDir Path tempDir) {
-			registry.loadToolSources(List.of(new ToolSource("CONFIGMAP", tempDir.toString(), false)));
+			registry.loadToolSources(TEST_AGENT, List.of(new ToolSource("CONFIGMAP", tempDir.toString(), false)));
 
 			// empty folder → no providers found, but no error
 			assertThat(registry.getAvailableToolNames()).hasSize(3);

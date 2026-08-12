@@ -143,7 +143,7 @@ public class AgentExecutionService {
 
 		// Load Agent Skills (SKILL.md) and Tools
 		skillRegistry.loadSkillSources(spec.skillSources());
-		toolRegistry.loadToolSources(spec.toolSources());
+		toolRegistry.loadToolSources(agentName, spec.toolSources());
 
 		var toolResults = executeTools(agentName, spec.tools(), safeQuery);
 
@@ -212,7 +212,7 @@ public class AgentExecutionService {
 		var systemPrompt = spec.systemPrompt() != null ? spec.systemPrompt() : DEFAULT_SYSTEM_PROMPT;
 
 		skillRegistry.loadSkillSources(spec.skillSources());
-		toolRegistry.loadToolSources(spec.toolSources());
+		toolRegistry.loadToolSources(name, spec.toolSources());
 
 		// RAG context (Embabel goal path): retrieve relevant chunks for the
 		// prompt and inject them alongside skills so agents are grounded in
@@ -264,7 +264,7 @@ public class AgentExecutionService {
 
 	private List<ToolResult> executeTools(String agentName, List<ToolDefinition> toolDefs, String query) {
 		log.info("Executing tools for Agent '{}' on Virtual Thread", agentName);
-		return new ArrayList<>(toolRegistry.executeActiveTools(toolDefs, query).values());
+		return new ArrayList<>(toolRegistry.executeActiveTools(agentName, toolDefs, query).values());
 	}
 
 	// ── MCP Tool Execution ─────────────────────────────────────────────────

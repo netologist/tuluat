@@ -36,7 +36,7 @@ class ToolRegistryTest {
 				new ToolDefinition("web-search", "Search web", false, Map.of()) // Disabled
 		);
 
-		Map<String, ToolResult> results = toolRegistry.executeActiveTools(toolDefs, "25 * 4 in Istanbul");
+		Map<String, ToolResult> results = toolRegistry.executeActiveTools("test-agent", toolDefs, "25 * 4 in Istanbul");
 
 		assertEquals(2, results.size());
 		assertTrue(results.containsKey("calculator"));
