@@ -12,6 +12,9 @@ resources:
   # (manifests/testing/wiremock-stub.yaml) — not referenced here because kustomize
   # 5+ blocks paths that escape the kustomization root (../../ is forbidden).
 
+  # PostgreSQL + pgvector (operator DataSource: postgres-service:5432)
+  - samples/00_postgres_pgvector.yaml
+
   # WireMock-backed LlmProvider (no real API key needed)
   - samples/03_llmprovider_wiremock.yaml
 
