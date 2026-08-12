@@ -37,7 +37,7 @@ else
 fi
 
 echo "5. Running Flyway database migrations (Job)..."
-kubectl wait --for=condition=available deployment/postgres-pgvector -n "$NAMESPACE" --timeout=180s
+./scripts/wait-for-postgres.sh "${NAMESPACE}" 180
 kubectl create configmap flyway-migrations \
   --from-file=tuluat-engine/src/main/resources/db/migration/ \
   -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -

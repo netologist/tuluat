@@ -17,6 +17,13 @@ spec:
         - name: postgres
           image: pgvector/pgvector:pg16
           args: ["postgres", "-c", "max_connections=200"]
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "ai_operator_db"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
           env:
             - name: POSTGRES_DB
               value: ai_operator_db
