@@ -11,7 +11,6 @@ import com.tuluat.engine.telemetry.WorkflowTelemetryService;
 import io.temporal.client.WorkflowClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.Optional;
@@ -38,7 +37,6 @@ public class WorkflowExecutionService {
 		this.workflowClient = workflowClient;
 	}
 
-	@Transactional
 	public WorkflowSessionEntity startSession(String workflowName, AiWorkflowSpec spec, String input, int maxLoops) {
 		WorkflowSessionEntity session = new WorkflowSessionEntity();
 		session.setWorkflowName(workflowName);
@@ -58,7 +56,6 @@ public class WorkflowExecutionService {
 		return session;
 	}
 
-	@Transactional
 	public WorkflowSessionEntity processApprovalSignal(UUID sessionId, AiWorkflowSpec spec, boolean approved,
 			String feedback, int maxLoops) {
 		WorkflowSessionEntity session = sessionRepository.findById(sessionId)
