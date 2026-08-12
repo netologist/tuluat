@@ -45,8 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class CrdEmbabelConfiguration {
 
-	private static final Map<String, String> BEAN_NAME_BY_TYPE = Map.of("OPENAI", "openAiChatModel", "ANTHROPIC",
-			"anthropicChatModel", "OLLAMA", "ollamaChatModel");
+	private static final Map<String, String> BEAN_NAME_BY_TYPE = com.tuluat.engine.gateway.ProviderBeanNames.CHAT_MODEL_BEANS;
 
 	static final String TULUAT_SYSTEM = "tuluat-system";
 

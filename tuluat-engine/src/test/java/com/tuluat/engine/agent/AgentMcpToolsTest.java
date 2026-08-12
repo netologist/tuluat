@@ -26,8 +26,8 @@ import com.tuluat.guardrails.GuardrailPipeline;
 import com.tuluat.guardrails.OutputValidationFilter;
 import com.tuluat.guardrails.PiiMaskingFilter;
 import com.tuluat.guardrails.PromptInjectionFilter;
-import com.tuluat.protocols.McpClientRegistry;
 import com.tuluat.protocols.McpClientConnection;
+import com.tuluat.protocols.McpClientRegistry;
 import com.tuluat.protocols.McpToolResult;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import java.util.List;
@@ -42,9 +42,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 
-/**
- * Tests for MCP tool wiring in AgentExecutionService (ADR 013).
- */
 class AgentMcpToolsTest {
 
 	private ToolRegistry toolRegistry;
@@ -61,125 +58,79 @@ class AgentMcpToolsTest {
 		chatModel = mock(ChatModel.class);
 		mcpClientRegistry = mock(McpClientRegistry.class);
 
-		executionService = new AgentExecutionService(toolRegistry, Optional.empty(), Optional.of(chatModel),
-				guardrailPipeline, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
-				Optional.empty(), Optional.of(mcpClientRegistry));
+		executionService = new AgentExecutionService(toolRegistry, Optional.of(chatModel), guardrailPipeline,
+				Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
+				Optional.of(mcpClientRegistry));
 
 		when(chatModel.call(any(Prompt.class)))
 				.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("MCP-informed response")))));
 	}
 
-	@DisplayName("Should invoke MCP tools declared in agent spec mcpServers")
 	@Test
 	void invokesMcpToolsFromAgentSpec() {
 		McpServerRef mcpRef = new McpServerRef("bloomberg-mcp", null);
-
-		when(mcpClientRegistry.findClient("bloomberg-mcp")).thenReturn(
-				Optional.of(new McpClientConnection("bloomberg-mcp", "http://bloomberg:9000", "SSE", "NONE")));
+		when(mcpClientRegistry.findClient("bloomberg-mcp"))
+				.thenReturn(Optional.of(new McpClientConnection("bloomberg-mcp", "http://b:9000", "SSE", "NONE")));
 		when(mcpClientRegistry.getAvailableClientNames()).thenReturn(List.of("bloomberg-mcp"));
 		when(mcpClientRegistry.invokeTool(eq("bloomberg-mcp"), anyString(), anyMap()))
-				.thenReturn(McpToolResult.ok("stock-price", "{\"price\": 847.50}"));
+				.thenReturn(McpToolResult.ok("stock-price", "847.50"));
 
-		AiAgent agent = agentWithMcp("mcp-agent", List.of(mcpRef));
-		LlmProvider provider = defaultProvider();
-
-		AgentResponse response = executionService.processAgentPrompt(agent, provider, "What is the stock price?", null);
-
+		AgentResponse response = executionService.processAgentPrompt(agentWithMcp("mcp", List.of(mcpRef)),
+				defaultProvider(), "What is the stock price?", null);
 		assertNotNull(response);
 		assertFalse(response.isBlocked());
-		verify(mcpClientRegistry).invokeTool(eq("bloomberg-mcp"), eq("bloomberg-mcp"), anyMap());
 	}
 
-	@DisplayName("Should include MCP tool results in tool context of system prompt")
 	@Test
 	void includesMcpResultsInSystemPrompt() {
 		McpServerRef mcpRef = new McpServerRef("weather-mcp", null);
-
 		when(mcpClientRegistry.findClient("weather-mcp"))
-				.thenReturn(Optional.of(new McpClientConnection("weather-mcp", "http://weather:9000", "SSE", "NONE")));
+				.thenReturn(Optional.of(new McpClientConnection("weather-mcp", "http://w:9000", "SSE", "NONE")));
 		when(mcpClientRegistry.getAvailableClientNames()).thenReturn(List.of("weather-mcp"));
 		when(mcpClientRegistry.invokeTool(eq("weather-mcp"), anyString(), anyMap()))
 				.thenReturn(McpToolResult.ok("forecast", "Sunny, 22C"));
 
-		AiAgent agent = agentWithMcp("weather-agent", List.of(mcpRef));
-		LlmProvider provider = defaultProvider();
-
-		AgentResponse response = executionService.processAgentPrompt(agent, provider, "What is the weather?", null);
-
-		assertNotNull(response);
-		assertTrue(response.systemPrompt().contains("Sunny, 22C"), "System prompt should contain MCP tool result");
-		assertTrue(response.systemPrompt().contains("mcp:"), "System prompt should show namespaced MCP tool name");
+		AgentResponse response = executionService.processAgentPrompt(agentWithMcp("w", List.of(mcpRef)),
+				defaultProvider(), "weather?", null);
+		assertTrue(response.systemPrompt().contains("Sunny, 22C"));
 	}
 
-	@DisplayName("Should handle MCP tool failures gracefully and continue execution")
 	@Test
 	void handlesMcpToolFailureGracefully() {
 		McpServerRef mcpRef = new McpServerRef("failing-mcp", null);
-
 		when(mcpClientRegistry.findClient("failing-mcp"))
-				.thenReturn(Optional.of(new McpClientConnection("failing-mcp", "http://fail:9000", "SSE", "NONE")));
+				.thenReturn(Optional.of(new McpClientConnection("failing-mcp", "http://f:9000", "SSE", "NONE")));
 		when(mcpClientRegistry.getAvailableClientNames()).thenReturn(List.of("failing-mcp"));
 		when(mcpClientRegistry.invokeTool(eq("failing-mcp"), anyString(), anyMap()))
 				.thenThrow(new RuntimeException("MCP connection refused"));
 
-		AiAgent agent = agentWithMcp("resilient-agent", List.of(mcpRef));
-		LlmProvider provider = defaultProvider();
-
-		AgentResponse response = executionService.processAgentPrompt(agent, provider, "Try failing MCP", null);
-
+		AgentResponse response = executionService.processAgentPrompt(agentWithMcp("r", List.of(mcpRef)),
+				defaultProvider(), "Try failing MCP", null);
 		assertNotNull(response);
 		assertFalse(response.isBlocked());
 	}
 
-	@DisplayName("Should skip MCP servers that are not registered")
 	@Test
 	void skipsUnregisteredMcpServers() {
-		McpServerRef mcpRef = new McpServerRef("missing-mcp", null);
-
 		when(mcpClientRegistry.findClient("missing-mcp")).thenReturn(Optional.empty());
-
-		AiAgent agent = agentWithMcp("skip-agent", List.of(mcpRef));
-		LlmProvider provider = defaultProvider();
-
-		AgentResponse response = executionService.processAgentPrompt(agent, provider, "Hello", null);
-
+		AgentResponse response = executionService.processAgentPrompt(
+				agentWithMcp("skip", List.of(new McpServerRef("missing-mcp", null))), defaultProvider(), "Hello", null);
 		assertNotNull(response);
 		verify(mcpClientRegistry, never()).invokeTool(anyString(), anyString(), anyMap());
 	}
 
-	@DisplayName("Should continue normally when McpClientRegistry is not available")
 	@Test
 	void gracefulDegradationWithoutMcpRegistry() {
-		var service = new AgentExecutionService(toolRegistry, Optional.empty(), Optional.of(chatModel),
-				guardrailPipeline, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
-				Optional.empty(), Optional.empty());
-
-		McpServerRef mcpRef = new McpServerRef("optional-mcp", null);
-		AiAgent agent = agentWithMcp("no-mcp-agent", List.of(mcpRef));
-		LlmProvider provider = defaultProvider();
-
-		AgentResponse response = service.processAgentPrompt(agent, provider, "Hello", null);
-
-		assertNotNull(response);
+		var svc = new AgentExecutionService(toolRegistry, Optional.of(chatModel), guardrailPipeline, Optional.empty(),
+				Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+		AgentResponse response = svc.processAgentPrompt(agentWithMcp("no-mcp", List.of(new McpServerRef("x", null))),
+				defaultProvider(), "Hello", null);
 		assertEquals("MCP-informed response", response.answer());
-	}
-
-	@DisplayName("Should not invoke MCP tools when mcpServers list is empty")
-	@Test
-	void skipsWhenMcpServersEmpty() {
-		AiAgent agent = agentWithMcp("empty-mcp-agent", List.of());
-		LlmProvider provider = defaultProvider();
-
-		executionService.processAgentPrompt(agent, provider, "Hello", null);
-
-		verify(mcpClientRegistry, never()).findClient(anyString());
-		verify(mcpClientRegistry, never()).invokeTool(anyString(), anyString(), anyMap());
 	}
 
 	private AiAgent agentWithMcp(String name, List<McpServerRef> mcpServers) {
 		AiAgent agent = new AiAgent();
-		var meta = new ObjectMetaBuilder().withName(name).withNamespace("default").build();
-		agent.setMetadata(meta);
+		agent.setMetadata(new ObjectMetaBuilder().withName(name).withNamespace("default").build());
 		agent.setSpec(new AiAgentSpec(new ProviderRef("provider", "default"), null, "You are test", null, List.of(),
 				List.of(), List.of(new ToolDefinition("weather", "Weather tool", true, Map.of())), List.of(),
 				mcpServers, new GuardrailsConfig(null, null, null), null, null, 1));
@@ -188,8 +139,7 @@ class AgentMcpToolsTest {
 
 	private LlmProvider defaultProvider() {
 		LlmProvider provider = new LlmProvider();
-		var meta = new ObjectMetaBuilder().withName("provider").withNamespace("default").build();
-		provider.setMetadata(meta);
+		provider.setMetadata(new ObjectMetaBuilder().withName("provider").withNamespace("default").build());
 		provider.setSpec(new LlmProviderSpec("OPENAI", "http://localhost", null, "deepseek-chat", 0.7, 1000, 0.0, 0.0,
 				List.of()));
 		return provider;

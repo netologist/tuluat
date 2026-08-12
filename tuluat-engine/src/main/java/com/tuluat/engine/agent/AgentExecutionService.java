@@ -67,7 +67,7 @@ public class AgentExecutionService {
 	private static final int DEFAULT_MEMORY_WINDOW = 10;
 
 	private final ToolRegistry toolRegistry;
-	private final Optional<SkillRegistry> skillRegistry;
+	private final SkillRegistry skillRegistry;
 	private final Optional<ChatModel> chatModel;
 	private final GuardrailPipeline guardrailPipeline;
 	private final Optional<ModelGateway> modelGateway;
@@ -78,7 +78,7 @@ public class AgentExecutionService {
 	private final Optional<McpClientRegistry> mcpClientRegistry;
 
 	@org.springframework.beans.factory.annotation.Autowired
-	public AgentExecutionService(ToolRegistry toolRegistry, Optional<SkillRegistry> skillRegistry,
+	public AgentExecutionService(ToolRegistry toolRegistry, SkillRegistry skillRegistry,
 			@Qualifier("openAiChatModel") Optional<ChatModel> chatModel, GuardrailPipeline guardrailPipeline,
 			Optional<ModelGateway> modelGateway, Optional<ProviderResolver> providerResolver,
 			Optional<AgentResolver> agentResolver, Optional<RagService> ragService,
@@ -95,15 +95,31 @@ public class AgentExecutionService {
 		this.mcpClientRegistry = mcpClientRegistry;
 	}
 
+	/**
+	 * Convenience constructor for tests and direct instantiation. Creates a default
+	 * {@link SkillRegistry} internally — SkillRegistry is always available as a
+	 * Spring {@code @Service} bean.
+	 */
 	public AgentExecutionService(ToolRegistry toolRegistry, @Qualifier("openAiChatModel") Optional<ChatModel> chatModel,
 			GuardrailPipeline guardrailPipeline, Optional<ModelGateway> modelGateway,
 			Optional<ProviderResolver> providerResolver, Optional<AgentResolver> agentResolver,
 			Optional<RagService> ragService) {
-		this(toolRegistry, Optional.empty(), chatModel, guardrailPipeline, modelGateway, providerResolver,
+		this(toolRegistry, new SkillRegistry(), chatModel, guardrailPipeline, modelGateway, providerResolver,
 				agentResolver, ragService, Optional.empty(), Optional.empty());
 	}
 
-	// ── Public API ──────────────────────────────────────────────────────────
+	/**
+	 * Convenience constructor that also accepts optional
+	 * {@link SessionMemoryManager} and {@link McpClientRegistry}.
+	 */
+	public AgentExecutionService(ToolRegistry toolRegistry, @Qualifier("openAiChatModel") Optional<ChatModel> chatModel,
+			GuardrailPipeline guardrailPipeline, Optional<ModelGateway> modelGateway,
+			Optional<ProviderResolver> providerResolver, Optional<AgentResolver> agentResolver,
+			Optional<RagService> ragService, Optional<SessionMemoryManager> sessionMemoryManager,
+			Optional<McpClientRegistry> mcpClientRegistry) {
+		this(toolRegistry, new SkillRegistry(), chatModel, guardrailPipeline, modelGateway, providerResolver,
+				agentResolver, ragService, sessionMemoryManager, mcpClientRegistry);
+	}
 
 	public AgentResponse processAgentPrompt(AiAgent agent, LlmProvider provider, String customInput) {
 		return processAgentPrompt(agent, provider, customInput, null);
@@ -126,7 +142,7 @@ public class AgentExecutionService {
 		}
 
 		// Load Agent Skills (SKILL.md) and Tools
-		skillRegistry.ifPresent(sr -> sr.loadSkillSources(spec.skillSources()));
+		skillRegistry.loadSkillSources(spec.skillSources());
 		toolRegistry.loadToolSources(spec.toolSources());
 
 		var toolResults = executeTools(agentName, spec.tools(), safeQuery);
@@ -195,7 +211,7 @@ public class AgentExecutionService {
 		var model = resolveModel(spec, provider);
 		var systemPrompt = spec.systemPrompt() != null ? spec.systemPrompt() : DEFAULT_SYSTEM_PROMPT;
 
-		skillRegistry.ifPresent(sr -> sr.loadSkillSources(spec.skillSources()));
+		skillRegistry.loadSkillSources(spec.skillSources());
 		toolRegistry.loadToolSources(spec.toolSources());
 
 		// RAG context (Embabel goal path): retrieve relevant chunks for the
@@ -371,10 +387,10 @@ public class AgentExecutionService {
 	}
 
 	private String buildAgentSkillContext() {
-		if (skillRegistry.isEmpty() || skillRegistry.get().getRegisteredSkills().isEmpty()) {
+		if (skillRegistry.getRegisteredSkills().isEmpty()) {
 			return "";
 		}
-		String skillsText = skillRegistry.get().getRegisteredSkills().values().stream()
+		String skillsText = skillRegistry.getRegisteredSkills().values().stream()
 				.map(s -> "### Skill: %s\n%s\n\n%s".formatted(s.name(), s.description(), s.instructions()))
 				.collect(Collectors.joining("\n---\n"));
 		return "\n\nAgent Skills & Guidelines (SKILL.md):\n" + skillsText;
