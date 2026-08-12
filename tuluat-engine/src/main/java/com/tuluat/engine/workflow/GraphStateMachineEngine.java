@@ -8,6 +8,11 @@ import com.tuluat.crd.workflow.NodeDefinition;
 import com.tuluat.guardrails.GuardrailPipeline;
 import com.tuluat.guardrails.ValidationResult;
 import com.tuluat.engine.agent.AgentExecutionService;
+import com.tuluat.engine.agent.UsageStats;
+import com.tuluat.engine.entity.NodeExecutionEntity;
+import com.tuluat.engine.repository.NodeExecutionRepository;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import com.tuluat.engine.agent.AgentResponse;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
 import com.tuluat.engine.entity.WorkflowSessionLogEntity;
@@ -34,17 +39,20 @@ public class GraphStateMachineEngine {
 	private final Optional<WorkflowSessionLogRepository> logRepository;
 	private final Optional<WorkflowTelemetryService> telemetryService;
 	private final Optional<GuardrailPipeline> guardrailPipeline;
+	private final Optional<NodeExecutionRepository> nodeExecutionRepository;
 	private final ExpressionParser parser = new SpelExpressionParser();
 	private final ObjectMapper objectMapper;
 
 	@Autowired
 	public GraphStateMachineEngine(AgentExecutionService agentExecutionService,
 			Optional<WorkflowSessionLogRepository> logRepository, Optional<WorkflowTelemetryService> telemetryService,
-			Optional<GuardrailPipeline> guardrailPipeline, ObjectMapper objectMapper) {
+			Optional<GuardrailPipeline> guardrailPipeline, Optional<NodeExecutionRepository> nodeExecutionRepository,
+			ObjectMapper objectMapper) {
 		this.agentExecutionService = agentExecutionService;
 		this.logRepository = logRepository;
 		this.telemetryService = telemetryService;
 		this.guardrailPipeline = guardrailPipeline;
+		this.nodeExecutionRepository = nodeExecutionRepository;
 		this.objectMapper = objectMapper;
 	}
 
@@ -83,9 +91,14 @@ public class GraphStateMachineEngine {
 			String prompt = resolvePromptTemplate(currentNode.inputTemplate(), contextData);
 			recordSessionLog(session.getSessionId(), currentNode.id(), "INFO",
 					"Executing Agent '" + currentNode.agentRef() + "' with prompt: " + prompt);
-
+			OffsetDateTime startTime = OffsetDateTime.now();
 			AgentResponse response = agentExecutionService.executeAgent(currentNode.agentRef(), prompt, null,
 					session.getSessionId());
+			OffsetDateTime endTime = OffsetDateTime.now();
+
+			persistNodeExecution(session.getSessionId(), currentNode.id(), prompt, "default", response, startTime,
+					endTime);
+
 			contextData.put(currentNode.outputKey(), response.answer());
 			session.setContextData(writeContext(contextData));
 
@@ -218,5 +231,35 @@ public class GraphStateMachineEngine {
 			log.error("Failed to serialize context data", e);
 			return "{}";
 		}
+	}
+
+	private void persistNodeExecution(UUID sessionId, String nodeId, String input, String provider,
+			AgentResponse response, OffsetDateTime startTime, OffsetDateTime endTime) {
+		nodeExecutionRepository.ifPresent(repo -> {
+			var execution = new NodeExecutionEntity();
+			execution.setSessionId(sessionId);
+			execution.setNodeId(nodeId);
+			execution.setAgentName(response.agentName());
+			execution.setProvider(provider);
+			execution.setModel(response.model());
+			execution.setInputPrompt(input);
+			execution.setOutputText(response.answer());
+			execution.setStartTime(startTime);
+			execution.setEndTime(endTime);
+			execution.setDurationMs(java.time.Duration.between(startTime, endTime).toMillis());
+
+			UsageStats usage = response.usage();
+			if (usage != null) {
+				execution.setTotalTokens(usage.totalTokens());
+				execution.setInputTokens(usage.inputTokens());
+				execution.setOutputTokens(usage.outputTokens());
+				execution.setCostUsd(BigDecimal.valueOf(usage.estimatedCostUsd()));
+			}
+
+			execution.setStatus(response.isBlocked() ? "BLOCKED" : "COMPLETED");
+			repo.save(execution);
+			log.debug("Persisted node execution for session={} node={} tokens={} cost={}", sessionId, nodeId,
+					execution.getTotalTokens(), execution.getCostUsd());
+		});
 	}
 }

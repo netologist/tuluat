@@ -30,3 +30,4 @@ spec:
     shortMemorySize: 20
     enableLongMemory: true
     vectorTableName: "session_long_memory"
+  budgetLimitUsd: 1.0

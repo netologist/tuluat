@@ -22,7 +22,7 @@ class GraphStateMachineEngineTest {
 	@BeforeEach
 	void setUp() {
 		engine = new GraphStateMachineEngine(null, Optional.empty(), Optional.empty(), Optional.empty(),
-				new ObjectMapper());
+				Optional.empty(), new ObjectMapper());
 	}
 
 	@Test
