@@ -90,7 +90,11 @@ nav:
       - "ADR 011: Optional<T> Constructor Injection": adrs/011-optional-constructor-injection.md
   - Tech Debts:
       - "RAG Data Isolation": tech-debt/rag-global-vector-store.md
-
+      - tech-debt/model-gateway-in-memory-budget.md
+      - tech-debt/snapshot-dependency-risk.md
+      - tech-debt/tool-registry-shared-mutable-state.md
+      - tech-debt/dual-constructor-qualifier-coupling.md
+      - tech-debt/graph-engine-entity-coupling.md
 validation:
   nav:
     omitted_files: warn
