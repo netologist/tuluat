@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: flyway-migration
+  namespace: tuluat-system
+  labels:
+    app: flyway-migration
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: flyway-migration
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: flyway
+          image: flyway/flyway:11-alpine
+          args:
+            - "-url=jdbc:postgresql://postgres-service:5432/ai_operator_db"
+            - "-user=postgres"
+            - "-password=postgres"
+            - "-schemas=public"
+            - "migrate"
+          volumeMounts:
+            - name: migrations
+              mountPath: /flyway/sql
+      volumes:
+        - name: migrations
+          configMap:
+            name: flyway-migrations

@@ -36,7 +36,16 @@ else
   kubectl apply -k config/
 fi
 
-echo "5. Checking status of CRDs and Custom Resources..."
+echo "5. Running Flyway database migrations (Job)..."
+kubectl wait --for=condition=available deployment/postgres-pgvector -n "$NAMESPACE" --timeout=180s
+kubectl create configmap flyway-migrations \
+  --from-file=tuluat-engine/src/main/resources/db/migration/ \
+  -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+kubectl delete job flyway-migration -n "$NAMESPACE" --ignore-not-found
+kubectl apply -f manifests/operator/flyway-migration-job.yaml
+kubectl wait --for=condition=complete job/flyway-migration -n "$NAMESPACE" --timeout=120s
+
+echo "6. Checking status of CRDs and Custom Resources..."
 kubectl get crds | grep ai.tuluat.com || true
 kubectl get llmproviders -n "$NAMESPACE" || true
 kubectl get aiagents -n "$NAMESPACE" || true
