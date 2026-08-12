@@ -38,8 +38,7 @@ public class ApprovalController {
 
 	@Autowired
 	public ApprovalController(WorkflowSessionRepository sessionRepository, WorkflowExecutionService executionService,
-			KubernetesResourceResolver resolver,
-			@Autowired(required = false) WorkflowEventPublisher eventPublisher) {
+			KubernetesResourceResolver resolver, @Autowired(required = false) WorkflowEventPublisher eventPublisher) {
 		this.sessionRepository = sessionRepository;
 		this.executionService = executionService;
 		this.resolver = resolver;

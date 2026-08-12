@@ -126,7 +126,15 @@ public class AiAgentReconciler implements Reconciler<AiAgent> {
 				.withName("AGENT_NAME").withValue(agent.getMetadata().getName()).endEnv().endContainer().endSpec()
 				.endTemplate().endSpec().build();
 
-		client.apps().deployments().inNamespace(ns).resource(deployment).createOrReplace();
+		Deployment existing = client.apps().deployments().inNamespace(ns).withName(deployName).get();
+		if (existing == null) {
+			client.apps().deployments().inNamespace(ns).resource(deployment).create();
+		} else {
+			// spec.selector is immutable once set; preserve it and only replace mutable fields
+			deployment.getSpec().setSelector(existing.getSpec().getSelector());
+			deployment.getMetadata().setResourceVersion(existing.getMetadata().getResourceVersion());
+			client.apps().deployments().inNamespace(ns).resource(deployment).update();
+		}
 		log.info("Deployment {} reconciled for agent {}", deployName, agent.getMetadata().getName());
 	}
 

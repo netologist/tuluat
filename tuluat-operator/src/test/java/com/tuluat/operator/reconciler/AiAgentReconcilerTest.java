@@ -49,7 +49,9 @@ class AiAgentReconcilerTest {
 		doReturn(deploymentsMock).when(appsMock).deployments();
 		doReturn(deployNsMock).when(deploymentsMock).inNamespace(anyString());
 		doReturn(deployResMock).when(deployNsMock).resource(any());
-
+		RollableScalableResource existingDeployMock = mock(RollableScalableResource.class);
+		doReturn(existingDeployMock).when(deployNsMock).withName(anyString());
+		doReturn(null).when(existingDeployMock).get();
 		// Mock Services API
 		MixedOperation servicesMock = mock(MixedOperation.class);
 		NonNamespaceOperation svcNsMock = mock(NonNamespaceOperation.class);

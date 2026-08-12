@@ -3,30 +3,39 @@ package com.tuluat.operator.reconciler;
 import com.tuluat.crd.workflow.AiWorkflow;
 import com.tuluat.crd.workflow.AiWorkflowSpec;
 import com.tuluat.crd.workflow.NodeDefinition;
+import com.tuluat.engine.repository.NodeExecutionRepository;
+import com.tuluat.engine.repository.WorkflowSessionRepository;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class AiWorkflowReconcilerTest {
 
-	private final AiWorkflowReconciler reconciler = new AiWorkflowReconciler();
+	private final WorkflowSessionRepository sessionRepository = mock(WorkflowSessionRepository.class);
+	private final NodeExecutionRepository nodeExecutionRepository = mock(NodeExecutionRepository.class);
+	private final AiWorkflowReconciler reconciler = new AiWorkflowReconciler(sessionRepository,
+			nodeExecutionRepository);
 
 	@Test
-	@DisplayName("Should set status to Ready with correct node count")
+	@DisplayName("Should set status to Ready with correct node count and zero aggregates")
 	void testReconcileSuccess() {
 		var workflow = new AiWorkflow();
 		workflow.setMetadata(new ObjectMetaBuilder().withName("research-wf").withNamespace("default").build());
 
-		NodeDefinition n1 = new NodeDefinition("n1", null, null, null, null, null, null);
-		NodeDefinition n2 = new NodeDefinition("n2", null, null, null, null, null, null);
+		NodeDefinition n1 = new NodeDefinition("n1", "AGENT", "agent-a", null, null, null, null);
+		NodeDefinition n2 = new NodeDefinition("n2", "AGENT", "agent-b", null, null, null, null);
 
-		var spec = new AiWorkflowSpec(null, "n1", List.of(n1, n2), null, null, null);
+		var spec = new AiWorkflowSpec(null, "n1", List.of(n1, n2), null, null, BigDecimal.valueOf(5.0));
 		workflow.setSpec(spec);
+
+		when(sessionRepository.findByWorkflowName("research-wf")).thenReturn(List.of());
 
 		UpdateControl<AiWorkflow> control = reconciler.reconcile(workflow, null);
 
@@ -34,5 +43,8 @@ class AiWorkflowReconcilerTest {
 		assertNotNull(workflow.getStatus());
 		assertEquals("Ready", workflow.getStatus().state());
 		assertEquals(2, workflow.getStatus().nodeCount());
+		assertEquals(0, workflow.getStatus().sessionCount());
+		assertEquals(BigDecimal.valueOf(5.0), workflow.getStatus().budgetLimitUsd());
+		assertEquals(List.of("agent-a", "agent-b"), workflow.getStatus().agentNames());
 	}
 }
