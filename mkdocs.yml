@@ -88,6 +88,8 @@ nav:
       - "ADR 009: Agent Harness — Sandboxed Execution Runtime": adrs/009-agent-harness.md
       - "ADR 010: GraalVM Native Image Transition": adrs/010-graalvm-native-image-tech-debt.md
       - "ADR 011: Optional<T> Constructor Injection": adrs/011-optional-constructor-injection.md
+  - Tech Debts:
+      - "RAG Data Isolation": tech-debt/rag-global-vector-store.md
 
 validation:
   nav:
