@@ -57,7 +57,7 @@ spec:
                   type: integer
                   format: int64
                 costUsd:
-                  type: number
+                  type: string
                 durationSeconds:
                   type: integer
                 nodeExecutions:
@@ -94,7 +94,7 @@ spec:
                         type: integer
                         format: int64
                       costUsd:
-                        type: number
+                        type: string
                       status:
                         type: string
       additionalPrinterColumns:

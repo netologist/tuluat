@@ -79,9 +79,9 @@ spec:
                 nodeCount:
                   type: integer
                 costSpentUsd:
-                  type: number
+                  type: string
                 budgetLimitUsd:
-                  type: number
+                  type: string
                 sessionCount:
                   type: integer
                 totalTokens:
