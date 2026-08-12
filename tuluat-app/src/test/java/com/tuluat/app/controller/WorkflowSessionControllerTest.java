@@ -1,13 +1,15 @@
 package com.tuluat.app.controller;
 
+import com.tuluat.app.config.KubernetesResourceResolver;
 import com.tuluat.crd.workflow.AiWorkflow;
 import com.tuluat.crd.workflow.AiWorkflowSpec;
-import com.tuluat.engine.workflow.WorkflowExecutionService;
+import com.tuluat.engine.entity.SessionStatus;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
 import com.tuluat.engine.entity.WorkflowSessionLogEntity;
+import com.tuluat.engine.repository.NodeExecutionRepository;
 import com.tuluat.engine.repository.WorkflowSessionLogRepository;
 import com.tuluat.engine.repository.WorkflowSessionRepository;
-import com.tuluat.engine.entity.SessionStatus;
+import com.tuluat.engine.workflow.WorkflowExecutionService;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
@@ -21,21 +23,23 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class WorkflowSessionControllerTest {
 
 	private WorkflowExecutionService executionService;
 	private WorkflowSessionRepository sessionRepository;
+	private NodeExecutionRepository nodeExecutionRepository;
 	private WorkflowSessionLogRepository logRepository;
 	private KubernetesClient kubernetesClient;
 	private WorkflowSessionController controller;
@@ -49,6 +53,7 @@ class WorkflowSessionControllerTest {
 	void setUp() {
 		executionService = mock(WorkflowExecutionService.class);
 		sessionRepository = mock(WorkflowSessionRepository.class);
+		nodeExecutionRepository = mock(NodeExecutionRepository.class);
 		logRepository = mock(WorkflowSessionLogRepository.class);
 		kubernetesClient = mock(KubernetesClient.class);
 
@@ -60,8 +65,8 @@ class WorkflowSessionControllerTest {
 		when(workflowsMock.inNamespace(anyString())).thenReturn(workflowNsMock);
 		when(workflowNsMock.withName(anyString())).thenReturn(workflowResMock);
 
-		controller = new WorkflowSessionController(executionService, sessionRepository, logRepository,
-				kubernetesClient);
+		controller = new WorkflowSessionController(executionService, sessionRepository, nodeExecutionRepository,
+				new KubernetesResourceResolver(kubernetesClient), logRepository, null);
 	}
 
 	@Test
@@ -69,7 +74,7 @@ class WorkflowSessionControllerTest {
 	void testCreateSessionWorkflowNotFound() {
 		when(workflowResMock.get()).thenReturn(null);
 
-		ResponseEntity<WorkflowSessionEntity> response = controller.createSession("non-existent-wf",
+		ResponseEntity<WorkflowSessionEntity> response = controller.createSession("non-existent-wf", null,
 				Map.of("input", "hello"));
 
 		assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
@@ -92,7 +97,7 @@ class WorkflowSessionControllerTest {
 
 		when(executionService.startSession(eq("my-workflow"), eq(spec), eq("test input"), eq(10))).thenReturn(entity);
 
-		ResponseEntity<WorkflowSessionEntity> response = controller.createSession("my-workflow",
+		ResponseEntity<WorkflowSessionEntity> response = controller.createSession("my-workflow", null,
 				Map.of("input", "test input", "maxLoops", 10));
 
 		assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -133,6 +138,7 @@ class WorkflowSessionControllerTest {
 		assertEquals(1, response.getBody().size());
 		assertEquals("Executing node-1", response.getBody().get(0).getMessage());
 	}
+
 	@Test
 	@DisplayName("Should list sessions ordered by created date")
 	void testGetSessions() {
@@ -142,6 +148,7 @@ class WorkflowSessionControllerTest {
 		entity.setStatus(SessionStatus.COMPLETED);
 
 		when(sessionRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of(entity));
+		when(nodeExecutionRepository.findAll()).thenReturn(List.of());
 
 		ResponseEntity<List<Map<String, Object>>> response = controller.getSessions(null);
 
@@ -161,6 +168,7 @@ class WorkflowSessionControllerTest {
 		session.setContextData("{\"riskResult\":\"HIGH Risk Detected\"}");
 
 		when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+		when(nodeExecutionRepository.findBySessionIdOrderByStartTimeAsc(sessionId)).thenReturn(List.of());
 
 		WorkflowSessionLogEntity log1 = new WorkflowSessionLogEntity();
 		log1.setSessionId(sessionId);

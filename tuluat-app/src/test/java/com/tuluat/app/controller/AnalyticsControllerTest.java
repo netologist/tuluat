@@ -1,11 +1,10 @@
 package com.tuluat.app.controller;
 
+import com.tuluat.app.config.KubernetesResourceResolver;
 import com.tuluat.crd.provider.LlmProvider;
 import com.tuluat.crd.provider.LlmProviderSpec;
-import com.tuluat.engine.entity.WorkflowSessionEntity;
-import com.tuluat.engine.repository.WorkflowSessionLogRepository;
+import com.tuluat.engine.repository.NodeExecutionRepository;
 import com.tuluat.engine.repository.WorkflowSessionRepository;
-import com.tuluat.engine.entity.SessionStatus;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
@@ -17,17 +16,18 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 class AnalyticsControllerTest {
 
 	private KubernetesClient kubernetesClient;
+	private KubernetesResourceResolver resolver;
 	private WorkflowSessionRepository sessionRepository;
-	private WorkflowSessionLogRepository logRepository;
+	private NodeExecutionRepository nodeExecutionRepository;
 	private AnalyticsController controller;
 
 	private MixedOperation providersMock;
@@ -38,7 +38,8 @@ class AnalyticsControllerTest {
 	void setUp() {
 		kubernetesClient = mock(KubernetesClient.class);
 		sessionRepository = mock(WorkflowSessionRepository.class);
-		logRepository = mock(WorkflowSessionLogRepository.class);
+		nodeExecutionRepository = mock(NodeExecutionRepository.class);
+		resolver = new KubernetesResourceResolver(kubernetesClient);
 
 		providersMock = mock(MixedOperation.class);
 		providerNsMock = mock(NonNamespaceOperation.class);
@@ -46,7 +47,7 @@ class AnalyticsControllerTest {
 		when(kubernetesClient.resources(LlmProvider.class)).thenReturn(providersMock);
 		when(providersMock.inNamespace(anyString())).thenReturn(providerNsMock);
 
-		controller = new AnalyticsController(kubernetesClient, sessionRepository, logRepository);
+		controller = new AnalyticsController(resolver, sessionRepository, nodeExecutionRepository);
 	}
 
 	@Test
@@ -73,11 +74,9 @@ class AnalyticsControllerTest {
 	@Test
 	@DisplayName("Should return analytics overview metrics")
 	void testGetAnalyticsOverview() {
-		WorkflowSessionEntity s1 = new WorkflowSessionEntity();
-		s1.setSessionId(UUID.randomUUID());
-		s1.setStatus(SessionStatus.COMPLETED);
-
-		when(sessionRepository.findAll()).thenReturn(List.of(s1));
+		when(sessionRepository.count()).thenReturn(1L);
+		when(sessionRepository.countByStatus(any())).thenReturn(0L);
+		when(nodeExecutionRepository.findAll()).thenReturn(List.of());
 
 		ResponseEntity<Map<String, Object>> response = controller.getAnalyticsOverview();
 

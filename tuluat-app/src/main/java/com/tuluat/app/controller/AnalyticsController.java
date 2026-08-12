@@ -1,17 +1,26 @@
 package com.tuluat.app.controller;
 
+import com.tuluat.app.config.KubernetesResourceResolver;
 import com.tuluat.crd.provider.LlmProvider;
-import com.tuluat.engine.entity.WorkflowSessionEntity;
-import com.tuluat.engine.entity.WorkflowSessionLogEntity;
+import com.tuluat.engine.entity.NodeExecutionEntity;
 import com.tuluat.engine.entity.SessionStatus;
-import com.tuluat.engine.repository.WorkflowSessionLogRepository;
+import com.tuluat.engine.repository.NodeExecutionRepository;
 import com.tuluat.engine.repository.WorkflowSessionRepository;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*")
@@ -19,28 +28,20 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1")
 public class AnalyticsController {
 
-	private final KubernetesClient kubernetesClient;
+	private final KubernetesResourceResolver resolver;
 	private final WorkflowSessionRepository sessionRepository;
-	private final WorkflowSessionLogRepository logRepository;
+	private final NodeExecutionRepository nodeExecutionRepository;
 
-	@Autowired
-	public AnalyticsController(KubernetesClient kubernetesClient, WorkflowSessionRepository sessionRepository,
-			@Autowired(required = false) WorkflowSessionLogRepository logRepository) {
-		this.kubernetesClient = kubernetesClient;
+	public AnalyticsController(KubernetesResourceResolver resolver, WorkflowSessionRepository sessionRepository,
+			NodeExecutionRepository nodeExecutionRepository) {
+		this.resolver = resolver;
 		this.sessionRepository = sessionRepository;
-		this.logRepository = logRepository;
+		this.nodeExecutionRepository = nodeExecutionRepository;
 	}
 
 	@GetMapping("/analytics/providers")
 	public ResponseEntity<List<Map<String, Object>>> listProviders(@RequestParam(required = false) String namespace) {
-		String ns = (namespace != null && !namespace.isBlank()) ? namespace : "tuluat-system";
-		List<LlmProvider> items = kubernetesClient.resources(LlmProvider.class).inNamespace(ns).list().getItems();
-
-		if (items.isEmpty()) {
-			items = kubernetesClient.resources(LlmProvider.class).inNamespace("default").list().getItems();
-		}
-
-		List<Map<String, Object>> response = items.stream().map(provider -> {
+		List<Map<String, Object>> response = resolver.list(LlmProvider.class, namespace).stream().map(provider -> {
 			Map<String, Object> map = new HashMap<>();
 			map.put("name", provider.getMetadata().getName());
 			map.put("namespace", provider.getMetadata().getNamespace());
@@ -62,45 +63,57 @@ public class AnalyticsController {
 
 	@GetMapping("/analytics/overview")
 	public ResponseEntity<Map<String, Object>> getAnalyticsOverview() {
-		List<WorkflowSessionEntity> allSessions = sessionRepository.findAll();
-		long totalSessions = allSessions.size();
-		long completedSessions = allSessions.stream().filter(s -> s.getStatus() == SessionStatus.COMPLETED).count();
-		long waitingApprovals = allSessions.stream().filter(s -> s.getStatus() == SessionStatus.WAITING_APPROVAL)
-				.count();
-		long failedSessions = allSessions.stream().filter(s -> s.getStatus() == SessionStatus.FAILED).count();
+		List<NodeExecutionEntity> executions = nodeExecutionRepository.findAll();
 
-		// Calculate token usage and estimated cost from session data
-		long estimatedInputTokens = 0;
-		long estimatedOutputTokens = 0;
-		double totalCostUsd = 0.0;
+		long totalInputTokens = executions.stream().mapToLong(NodeExecutionEntity::getInputTokens).sum();
+		long totalOutputTokens = executions.stream().mapToLong(NodeExecutionEntity::getOutputTokens).sum();
+		BigDecimal totalCostUsd = executions.stream().map(NodeExecutionEntity::getCostUsd).filter(c -> c != null)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
 
-		for (WorkflowSessionEntity s : allSessions) {
-			int loops = Math.max(1, s.getLoopCount());
-			long inTok = loops * 350L;
-			long outTok = loops * 420L;
-			estimatedInputTokens += inTok;
-			estimatedOutputTokens += outTok;
-			totalCostUsd += (inTok / 1000.0 * 0.0025) + (outTok / 1000.0 * 0.0100);
+		Map<String, ModelAggregate> byModel = new HashMap<>();
+		for (NodeExecutionEntity e : executions) {
+			String model = e.getModel() != null ? e.getModel() : "unknown";
+			byModel.computeIfAbsent(model, k -> new ModelAggregate()).add(e);
 		}
 
-		Map<String, Object> response = new HashMap<>();
-		response.put("totalSessions", totalSessions);
-		response.put("completedSessions", completedSessions);
-		response.put("waitingApprovals", waitingApprovals);
-		response.put("failedSessions", failedSessions);
-		response.put("totalInputTokens", estimatedInputTokens);
-		response.put("totalOutputTokens", estimatedOutputTokens);
-		response.put("totalCostUsd", Math.round(totalCostUsd * 10000.0) / 10000.0);
+		List<Map<String, Object>> modelBreakdown = byModel.entrySet().stream().map(entry -> {
+			ModelAggregate agg = entry.getValue();
+			return Map.<String, Object>of("model", entry.getKey(), "sessions", agg.sessions(), "costUsd",
+					round(agg.costUsd));
+		}).collect(Collectors.toList());
 
-		List<Map<String, Object>> modelBreakdown = List.of(
-				Map.of("model", "gpt-4o", "provider", "OPENAI", "sessions", Math.max(1, totalSessions / 2), "costUsd",
-						Math.round(totalCostUsd * 0.6 * 10000.0) / 10000.0),
-				Map.of("model", "deepseek-chat", "provider", "DEEPSEEK", "sessions", Math.max(0, totalSessions / 4),
-						"costUsd", Math.round(totalCostUsd * 0.25 * 10000.0) / 10000.0),
-				Map.of("model", "llama3.2", "provider", "OLLAMA", "sessions", Math.max(0, totalSessions / 4), "costUsd",
-						0.0));
+		Map<String, Object> response = new HashMap<>();
+		response.put("totalSessions", sessionRepository.count());
+		response.put("completedSessions", sessionRepository.countByStatus(SessionStatus.COMPLETED));
+		response.put("waitingApprovals", sessionRepository.countByStatus(SessionStatus.WAITING_APPROVAL));
+		response.put("failedSessions", sessionRepository.countByStatus(SessionStatus.FAILED));
+		response.put("totalInputTokens", totalInputTokens);
+		response.put("totalOutputTokens", totalOutputTokens);
+		response.put("totalCostUsd", round(totalCostUsd));
 		response.put("modelBreakdown", modelBreakdown);
 
 		return ResponseEntity.ok(response);
+	}
+
+	private static double round(BigDecimal value) {
+		return value.setScale(4, RoundingMode.HALF_UP).doubleValue();
+	}
+
+	private static final class ModelAggregate {
+		private final Set<UUID> sessionIds = new HashSet<>();
+		private BigDecimal costUsd = BigDecimal.ZERO;
+
+		void add(NodeExecutionEntity e) {
+			if (e.getSessionId() != null) {
+				sessionIds.add(e.getSessionId());
+			}
+			if (e.getCostUsd() != null) {
+				costUsd = costUsd.add(e.getCostUsd());
+			}
+		}
+
+		long sessions() {
+			return sessionIds.size();
+		}
 	}
 }

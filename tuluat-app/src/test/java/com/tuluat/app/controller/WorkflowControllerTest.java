@@ -1,5 +1,6 @@
 package com.tuluat.app.controller;
 
+import com.tuluat.app.config.KubernetesResourceResolver;
 import com.tuluat.crd.workflow.AiWorkflow;
 import com.tuluat.crd.workflow.AiWorkflowSpec;
 import com.tuluat.crd.workflow.NodeDefinition;
@@ -41,7 +42,7 @@ class WorkflowControllerTest {
 		when(workflowsMock.inNamespace(anyString())).thenReturn(workflowNsMock);
 		when(workflowNsMock.withName(anyString())).thenReturn(workflowResMock);
 
-		controller = new WorkflowController(kubernetesClient);
+		controller = new WorkflowController(new KubernetesResourceResolver(kubernetesClient));
 	}
 
 	@Test

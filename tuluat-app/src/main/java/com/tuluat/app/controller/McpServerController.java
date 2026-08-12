@@ -1,15 +1,24 @@
 package com.tuluat.app.controller;
 
+import com.tuluat.app.config.KubernetesResourceResolver;
 import com.tuluat.crd.mcp.McpServer;
 import com.tuluat.crd.mcp.McpServerSpec;
 import com.tuluat.crd.provider.SecretKeyRef;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*")
@@ -17,50 +26,26 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/mcp-servers")
 public class McpServerController {
 
-	private final KubernetesClient kubernetesClient;
+	private final KubernetesResourceResolver resolver;
 
-	@Autowired
-	public McpServerController(KubernetesClient kubernetesClient) {
-		this.kubernetesClient = kubernetesClient;
+	public McpServerController(KubernetesResourceResolver resolver) {
+		this.resolver = resolver;
 	}
 
 	@GetMapping
 	public ResponseEntity<List<Map<String, Object>>> listMcpServers(@RequestParam(required = false) String namespace) {
-		String ns = (namespace != null && !namespace.isBlank()) ? namespace : "tuluat-system";
-		List<McpServer> items = kubernetesClient != null
-				? kubernetesClient.resources(McpServer.class).inNamespace(ns).list().getItems()
-				: List.of();
-
-		if (items.isEmpty() && kubernetesClient != null) {
-			items = kubernetesClient.resources(McpServer.class).inNamespace("default").list().getItems();
-		}
-
-		if (items.isEmpty()) {
-			return ResponseEntity.ok(getSampleMcpServers());
-		}
-
-		List<Map<String, Object>> response = items.stream().map(this::mapMcpServerToSecureView)
-				.collect(Collectors.toList());
+		List<Map<String, Object>> response = resolver.list(McpServer.class, namespace).stream()
+				.map(this::mapMcpServerToSecureView).collect(Collectors.toList());
 		return ResponseEntity.ok(response);
 	}
 
 	@GetMapping("/{name}")
 	public ResponseEntity<Map<String, Object>> getMcpServer(@PathVariable String name,
 			@RequestParam(required = false) String namespace) {
-		String ns = (namespace != null && !namespace.isBlank()) ? namespace : "tuluat-system";
-		McpServer server = kubernetesClient != null
-				? kubernetesClient.resources(McpServer.class).inNamespace(ns).withName(name).get()
-				: null;
-
-		if (server == null && kubernetesClient != null) {
-			server = kubernetesClient.resources(McpServer.class).inNamespace("default").withName(name).get();
-		}
-
+		McpServer server = resolver.get(McpServer.class, namespace, name);
 		if (server == null) {
-			return getSampleMcpServers().stream().filter(s -> name.equalsIgnoreCase(String.valueOf(s.get("name"))))
-					.findFirst().map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+			return ResponseEntity.notFound().build();
 		}
-
 		return ResponseEntity.ok(mapMcpServerToSecureView(server));
 	}
 
@@ -76,7 +61,7 @@ public class McpServerController {
 		McpServer server = new McpServer();
 		ObjectMeta meta = new ObjectMeta();
 		meta.setName(name);
-		meta.setNamespace("tuluat-system");
+		meta.setNamespace(KubernetesResourceResolver.DEFAULT_NAMESPACE);
 		server.setMetadata(meta);
 
 		SecretKeyRef secretRef = (newApiKey != null && !newApiKey.isBlank())
@@ -86,14 +71,7 @@ public class McpServerController {
 		McpServerSpec spec = new McpServerSpec(endpoint, transport, authType, secretRef, 30, description);
 		server.setSpec(spec);
 
-		if (kubernetesClient != null) {
-			try {
-				kubernetesClient.resources(McpServer.class).inNamespace("tuluat-system").resource(server)
-						.createOrReplace();
-			} catch (Exception ignored) {
-			}
-		}
-
+		resolver.createOrReplace(McpServer.class, server);
 		return ResponseEntity.ok(mapMcpServerToSecureView(server));
 	}
 
@@ -118,47 +96,7 @@ public class McpServerController {
 			map.put("authStatus",
 					"NONE".equalsIgnoreCase(spec.authType()) ? "Public (No Auth)" : "Configured (Secret)");
 			map.put("apiKeyMasked", "NONE".equalsIgnoreCase(spec.authType()) ? "N/A" : "••••••••••••••••");
-			map.put("exportedTools", getExportedToolsForServer(s.getMetadata().getName()));
 		}
 		return map;
-	}
-
-	private List<String> getExportedToolsForServer(String name) {
-		if (name == null)
-			return List.of("tool_execution");
-		if (name.contains("pgvector") || name.contains("postgres")) {
-			return List.of("pgvector_query_order_history", "semantic_vector_search", "similarity_knn_match");
-		} else if (name.contains("payment") || name.contains("stripe")) {
-			return List.of("stripe_charge_customer_balance", "ledger_verify_account", "refund_transaction");
-		} else if (name.contains("warehouse") || name.contains("inventory")) {
-			return List.of("inventory_reserve_and_dispatch", "shipping_label_generator", "stock_check");
-		} else if (name.contains("github")) {
-			return List.of("create_issue", "pull_request_review", "get_file_contents");
-		}
-		return List.of("generic_mcp_tool_runner", "health_check");
-	}
-
-	private List<Map<String, Object>> getSampleMcpServers() {
-		return List.of(
-				Map.of("name", "postgres-pgvector-mcp", "namespace", "tuluat-system", "endpoint",
-						"http://postgres-pgvector:5432/sse", "transport", "SSE", "authType", "NONE", "timeoutSeconds",
-						30, "description", "PostgreSQL Vector Database Memory MCP Server", "authStatus",
-						"Public (No Auth)", "apiKeyMasked", "N/A", "exportedTools",
-						List.of("pgvector_query_order_history", "semantic_vector_search", "similarity_knn_match")),
-				Map.of("name", "payment-gateway-mcp", "namespace", "tuluat-system", "endpoint",
-						"http://payment-mcp:8080/sse", "transport", "SSE", "authType", "API_KEY", "timeoutSeconds", 30,
-						"description", "Stripe & Ledger Payment Settlement MCP Server", "authStatus",
-						"Configured (Secret)", "apiKeyMasked", "••••••••••••••••", "exportedTools",
-						List.of("stripe_charge_customer_balance", "ledger_verify_account", "refund_transaction")),
-				Map.of("name", "warehouse-mcp", "namespace", "tuluat-system", "endpoint",
-						"http://warehouse-mcp:8080/sse", "transport", "SSE", "authType", "API_KEY", "timeoutSeconds",
-						30, "description", "Warehouse Logistics & Shipping Dispatch MCP Server", "authStatus",
-						"Configured (Secret)", "apiKeyMasked", "••••••••••••••••", "exportedTools",
-						List.of("inventory_reserve_and_dispatch", "shipping_label_generator", "stock_check")),
-				Map.of("name", "github-mcp", "namespace", "tuluat-system", "endpoint", "http://github-mcp:8080/sse",
-						"transport", "SSE", "authType", "API_KEY", "timeoutSeconds", 30, "description",
-						"GitHub Repositories & Issue Tracker MCP Server", "authStatus", "Configured (Secret)",
-						"apiKeyMasked", "••••••••••••••••", "exportedTools",
-						List.of("create_issue", "pull_request_review", "get_file_contents")));
 	}
 }

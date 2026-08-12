@@ -1,16 +1,20 @@
 package com.tuluat.app.controller;
 
+import com.tuluat.app.config.KubernetesResourceResolver;
 import com.tuluat.app.websocket.WorkflowEventPublisher;
+import com.tuluat.engine.entity.SessionStatus;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
 import com.tuluat.engine.repository.WorkflowSessionRepository;
 import com.tuluat.engine.workflow.WorkflowExecutionService;
-import com.tuluat.engine.entity.SessionStatus;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.ResponseEntity;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -20,6 +24,7 @@ class ApprovalControllerTest {
 
 	private WorkflowSessionRepository sessionRepository;
 	private WorkflowExecutionService executionService;
+	private KubernetesResourceResolver resolver;
 	private WorkflowEventPublisher eventPublisher;
 	private ApprovalController controller;
 
@@ -28,13 +33,13 @@ class ApprovalControllerTest {
 		sessionRepository = Mockito.mock(WorkflowSessionRepository.class);
 		executionService = Mockito.mock(WorkflowExecutionService.class);
 		eventPublisher = Mockito.mock(WorkflowEventPublisher.class);
-		controller = new ApprovalController(sessionRepository, executionService, eventPublisher);
+		resolver = new KubernetesResourceResolver(Mockito.mock(KubernetesClient.class));
+		controller = new ApprovalController(sessionRepository, executionService, resolver, eventPublisher);
 	}
 
 	@Test
 	void testGetPendingApprovalsReturnsOnlyWaitingApproval() {
 		UUID s1 = UUID.randomUUID();
-		UUID s2 = UUID.randomUUID();
 
 		WorkflowSessionEntity entity1 = new WorkflowSessionEntity();
 		entity1.setSessionId(s1);
@@ -43,14 +48,7 @@ class ApprovalControllerTest {
 		entity1.setCurrentNodeId("approval-node");
 		entity1.setContextData("{\"input\":\"test\"}");
 
-		WorkflowSessionEntity entity2 = new WorkflowSessionEntity();
-		entity2.setSessionId(s2);
-		entity2.setWorkflowName("test-wf");
-		entity2.setStatus(SessionStatus.RUNNING);
-		entity2.setCurrentNodeId("agent-node");
-		entity2.setContextData("{\"input\":\"test\"}");
-
-		Mockito.when(sessionRepository.findAll()).thenReturn(List.of(entity1, entity2));
+		Mockito.when(sessionRepository.findByStatus(SessionStatus.WAITING_APPROVAL)).thenReturn(List.of(entity1));
 
 		ResponseEntity<List<Map<String, Object>>> response = controller.getPendingApprovals();
 		assertEquals(200, response.getStatusCode().value());

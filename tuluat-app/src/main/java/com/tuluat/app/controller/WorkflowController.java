@@ -1,12 +1,18 @@
 package com.tuluat.app.controller;
 
+import com.tuluat.app.config.KubernetesResourceResolver;
 import com.tuluat.crd.workflow.AiWorkflow;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*")
@@ -14,23 +20,15 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/workflows")
 public class WorkflowController {
 
-	private final KubernetesClient kubernetesClient;
+	private final KubernetesResourceResolver resolver;
 
-	@Autowired
-	public WorkflowController(KubernetesClient kubernetesClient) {
-		this.kubernetesClient = kubernetesClient;
+	public WorkflowController(KubernetesResourceResolver resolver) {
+		this.resolver = resolver;
 	}
 
 	@GetMapping
 	public ResponseEntity<List<Map<String, Object>>> listWorkflows(@RequestParam(required = false) String namespace) {
-		String ns = (namespace != null && !namespace.isBlank()) ? namespace : "tuluat-system";
-		List<AiWorkflow> items = kubernetesClient.resources(AiWorkflow.class).inNamespace(ns).list().getItems();
-
-		if (items.isEmpty()) {
-			items = kubernetesClient.resources(AiWorkflow.class).inNamespace("default").list().getItems();
-		}
-
-		List<Map<String, Object>> response = items.stream().map(wf -> {
+		List<Map<String, Object>> response = resolver.list(AiWorkflow.class, namespace).stream().map(wf -> {
 			Map<String, Object> map = new HashMap<>();
 			map.put("name", wf.getMetadata().getName());
 			map.put("namespace", wf.getMetadata().getNamespace());
@@ -50,13 +48,7 @@ public class WorkflowController {
 	@GetMapping("/{name}")
 	public ResponseEntity<Map<String, Object>> getWorkflow(@PathVariable String name,
 			@RequestParam(required = false) String namespace) {
-		String ns = (namespace != null && !namespace.isBlank()) ? namespace : "tuluat-system";
-		AiWorkflow wf = kubernetesClient.resources(AiWorkflow.class).inNamespace(ns).withName(name).get();
-
-		if (wf == null) {
-			wf = kubernetesClient.resources(AiWorkflow.class).inNamespace("default").withName(name).get();
-		}
-
+		AiWorkflow wf = resolver.get(AiWorkflow.class, namespace, name);
 		if (wf == null) {
 			return ResponseEntity.notFound().build();
 		}

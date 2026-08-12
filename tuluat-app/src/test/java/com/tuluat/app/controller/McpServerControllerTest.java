@@ -1,5 +1,6 @@
 package com.tuluat.app.controller;
 
+import com.tuluat.app.config.KubernetesResourceResolver;
 import com.tuluat.crd.mcp.McpServer;
 import com.tuluat.crd.mcp.McpServerSpec;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
@@ -40,7 +41,7 @@ class McpServerControllerTest {
 		when(mcpMock.inNamespace(anyString())).thenReturn(mcpNsMock);
 		when(mcpNsMock.withName(anyString())).thenReturn(mcpResMock);
 
-		controller = new McpServerController(kubernetesClient);
+		controller = new McpServerController(new KubernetesResourceResolver(kubernetesClient));
 	}
 
 	@Test

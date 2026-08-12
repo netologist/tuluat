@@ -1,14 +1,21 @@
 package com.tuluat.app.controller;
 
+import com.tuluat.app.config.KubernetesResourceResolver;
 import com.tuluat.crd.agent.AiAgent;
 import com.tuluat.engine.entity.WorkflowSessionLogEntity;
 import com.tuluat.engine.repository.WorkflowSessionLogRepository;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*")
@@ -16,26 +23,19 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/agent-specs")
 public class AiAgentController {
 
-	private final KubernetesClient kubernetesClient;
+	private final KubernetesResourceResolver resolver;
 	private final WorkflowSessionLogRepository logRepository;
 
 	@Autowired
-	public AiAgentController(KubernetesClient kubernetesClient,
+	public AiAgentController(KubernetesResourceResolver resolver,
 			@Autowired(required = false) WorkflowSessionLogRepository logRepository) {
-		this.kubernetesClient = kubernetesClient;
+		this.resolver = resolver;
 		this.logRepository = logRepository;
 	}
 
 	@GetMapping
 	public ResponseEntity<List<Map<String, Object>>> listAgents(@RequestParam(required = false) String namespace) {
-		String ns = (namespace != null && !namespace.isBlank()) ? namespace : "tuluat-system";
-		List<AiAgent> items = kubernetesClient.resources(AiAgent.class).inNamespace(ns).list().getItems();
-
-		if (items.isEmpty()) {
-			items = kubernetesClient.resources(AiAgent.class).inNamespace("default").list().getItems();
-		}
-
-		List<Map<String, Object>> response = items.stream().map(agent -> {
+		List<Map<String, Object>> response = resolver.list(AiAgent.class, namespace).stream().map(agent -> {
 			Map<String, Object> map = new HashMap<>();
 			map.put("name", agent.getMetadata().getName());
 			map.put("namespace", agent.getMetadata().getNamespace());
@@ -54,13 +54,7 @@ public class AiAgentController {
 	@GetMapping("/{name}")
 	public ResponseEntity<Map<String, Object>> getAgent(@PathVariable String name,
 			@RequestParam(required = false) String namespace) {
-		String ns = (namespace != null && !namespace.isBlank()) ? namespace : "tuluat-system";
-		AiAgent agent = kubernetesClient.resources(AiAgent.class).inNamespace(ns).withName(name).get();
-
-		if (agent == null) {
-			agent = kubernetesClient.resources(AiAgent.class).inNamespace("default").withName(name).get();
-		}
-
+		AiAgent agent = resolver.get(AiAgent.class, namespace, name);
 		if (agent == null) {
 			return ResponseEntity.notFound().build();
 		}
@@ -79,8 +73,7 @@ public class AiAgentController {
 			return ResponseEntity.ok(List.of());
 		}
 
-		List<WorkflowSessionLogEntity> allLogs = logRepository.findAll();
-		List<Map<String, Object>> agentLogs = allLogs.stream()
+		List<Map<String, Object>> agentLogs = logRepository.findAll().stream()
 				.filter(l -> l.getMessage() != null && l.getMessage().contains(name)).map(l -> {
 					Map<String, Object> m = new HashMap<>();
 					m.put("id", l.getId());
@@ -90,7 +83,6 @@ public class AiAgentController {
 					m.put("message", l.getMessage());
 					m.put("createdAt", l.getCreatedAt());
 
-					// Structured request/response extraction if present in log message
 					String msg = l.getMessage();
 					if (msg.contains("Executing Agent")) {
 						m.put("type", "REQUEST");

@@ -1,5 +1,6 @@
 package com.tuluat.app.controller;
 
+import com.tuluat.app.config.KubernetesResourceResolver;
 import com.tuluat.crd.agent.AiAgent;
 import com.tuluat.crd.agent.AiAgentSpec;
 import com.tuluat.crd.agent.ProviderRef;
@@ -48,7 +49,7 @@ class AiAgentControllerTest {
 		when(agentsMock.inNamespace(anyString())).thenReturn(agentNsMock);
 		when(agentNsMock.withName(anyString())).thenReturn(agentResMock);
 
-		controller = new AiAgentController(kubernetesClient, logRepository);
+		controller = new AiAgentController(new KubernetesResourceResolver(kubernetesClient), logRepository);
 	}
 
 	@Test

@@ -1,5 +1,6 @@
 package com.tuluat.app.controller;
 
+import com.tuluat.app.config.KubernetesResourceResolver;
 import com.tuluat.crd.provider.LlmProvider;
 import com.tuluat.crd.provider.LlmProviderSpec;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
@@ -40,7 +41,7 @@ class LlmProviderControllerTest {
 		when(providersMock.inNamespace(anyString())).thenReturn(providerNsMock);
 		when(providerNsMock.withName(anyString())).thenReturn(providerResMock);
 
-		controller = new LlmProviderController(kubernetesClient);
+		controller = new LlmProviderController(new KubernetesResourceResolver(kubernetesClient));
 	}
 
 	@Test
