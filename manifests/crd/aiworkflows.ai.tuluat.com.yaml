@@ -103,11 +103,11 @@ spec:
           description: Workflow state
           jsonPath: .status.state
         - name: costSpent
-          type: number
+          type: string
           description: Total cost spent in USD
           jsonPath: .status.costSpentUsd
         - name: budget
-          type: number
+          type: string
           description: Budget limit in USD
           jsonPath: .status.budgetLimitUsd
         - name: sessions

@@ -46,7 +46,7 @@ class AiWorkflowReconcilerTest {
 		assertEquals("Ready", workflow.getStatus().state());
 		assertEquals(2, workflow.getStatus().nodeCount());
 		assertEquals(0, workflow.getStatus().sessionCount());
-		assertEquals(BigDecimal.valueOf(5.0), workflow.getStatus().budgetLimitUsd());
+		assertEquals("5.0", workflow.getStatus().budgetLimitUsd());
 		assertEquals(List.of("agent-a", "agent-b"), workflow.getStatus().agentNames());
 	}
 }

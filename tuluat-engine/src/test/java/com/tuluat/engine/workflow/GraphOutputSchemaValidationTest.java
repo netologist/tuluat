@@ -33,8 +33,8 @@ class GraphOutputSchemaValidationTest {
 
 	private GraphStateMachineEngine engine() {
 		return new GraphStateMachineEngine(service, Optional.empty(), Optional.empty(),
-				Optional.of(new GuardrailPipeline(List.of(), List.of(new OutputValidationFilter()))),
-				Optional.empty(), new ObjectMapper());
+				Optional.of(new GuardrailPipeline(List.of(), List.of(new OutputValidationFilter()))), Optional.empty(),
+				new ObjectMapper());
 	}
 
 	private WorkflowSessionEntity session() {

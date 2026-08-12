@@ -63,7 +63,6 @@ public class WorkflowSessionReconciler implements Reconciler<WorkflowSession> {
 						"Referenced workflow '" + workflowName + "' not found; session stays pending");
 				return UpdateControl.noUpdate();
 			}
-
 			eventRecorder.record(resource, KubernetesEventRecorder.TYPE_NORMAL, "WorkflowSessionStarted",
 					"Starting execution of workflow '" + workflowName + "'");
 			int maxLoops = resolveMaxLoops(resource.getSpec().parameters());
@@ -71,7 +70,7 @@ public class WorkflowSessionReconciler implements Reconciler<WorkflowSession> {
 					resource.getSpec().input(), maxLoops);
 
 			status = new WorkflowSessionStatus(entity.getSessionId().toString(), entity.getStatus().name(),
-					entity.getCurrentNodeId(), null, null, null, 0L, 0L, 0L, BigDecimal.ZERO, 0L, List.of());
+					entity.getCurrentNodeId(), null, null, null, 0L, 0L, 0L, "0", 0L, List.of());
 			status = populateFromDatabase(status);
 			resource.setStatus(status);
 			recordCompletionEvent(resource, entity);
@@ -141,9 +140,9 @@ public class WorkflowSessionReconciler implements Reconciler<WorkflowSession> {
 						e.getInputPrompt(), e.getOutputText(),
 						e.getStartTime() != null ? e.getStartTime().toString() : null,
 						e.getEndTime() != null ? e.getEndTime().toString() : null, e.getDurationMs(),
-						e.getTotalTokens(), e.getInputTokens(), e.getOutputTokens(), e.getCostUsd(), e.getStatus()))
+						e.getTotalTokens(), e.getInputTokens(), e.getOutputTokens(),
+						e.getCostUsd() != null ? e.getCostUsd().toPlainString() : "0", e.getStatus()))
 				.toList();
-
 		// Aggregate totals
 		long totalTokens = executions.stream().mapToLong(NodeExecutionEntity::getTotalTokens).sum();
 		long inputTokens = executions.stream().mapToLong(NodeExecutionEntity::getInputTokens).sum();
@@ -153,9 +152,17 @@ public class WorkflowSessionReconciler implements Reconciler<WorkflowSession> {
 
 		// Duration from first start to last end
 		long durationSecs = 0;
+		String startTimeStr = current.startTime();
+		String endTimeStr = current.endTime();
 		if (!executions.isEmpty()) {
 			var first = executions.get(0).getStartTime();
 			var last = executions.get(executions.size() - 1).getEndTime();
+			if (first != null) {
+				startTimeStr = first.toString();
+			}
+			if (last != null) {
+				endTimeStr = last.toString();
+			}
 			if (first != null && last != null) {
 				durationSecs = Duration.between(first, last).getSeconds();
 			}
@@ -165,9 +172,8 @@ public class WorkflowSessionReconciler implements Reconciler<WorkflowSession> {
 		UUID sessionId = UUID.fromString(current.sessionId());
 		String phase = sessionRepository.flatMap(repo -> repo.findById(sessionId)).map(e -> e.getStatus().name())
 				.orElse(current.phase());
-
 		return new WorkflowSessionStatus(current.sessionId(), phase, current.currentNode(), current.output(),
-				current.startTime(), current.endTime(), totalTokens, inputTokens, outputTokens, costUsd, durationSecs,
-				nodeExecs);
+				startTimeStr, endTimeStr, totalTokens, inputTokens, outputTokens,
+				costUsd.toPlainString(), durationSecs, nodeExecs);
 	}
 }

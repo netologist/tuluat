@@ -127,6 +127,10 @@ spec:
           description: Output tokens
           jsonPath: .status.outputTokens
         - name: cost
-          type: number
+          type: string
           description: Cost in USD
           jsonPath: .status.costUsd
+        - name: duration
+          type: integer
+          description: Duration in seconds
+          jsonPath: .status.durationSeconds

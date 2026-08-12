@@ -70,8 +70,8 @@ public class AiWorkflowReconciler implements Reconciler<AiWorkflow> {
 						.distinct().toList()
 				: List.of();
 
-		AiWorkflowStatus newStatus = new AiWorkflowStatus("Ready", nodeCount, costSpent, budget, sessionCount,
-				totalTokens, inputTokens, outputTokens, agentNames);
+		AiWorkflowStatus newStatus = new AiWorkflowStatus("Ready", nodeCount, costSpent.toPlainString(),
+				budget.toPlainString(), sessionCount, totalTokens, inputTokens, outputTokens, agentNames);
 		if (newStatus.equals(resource.getStatus())) {
 			return UpdateControl.noUpdate();
 		}

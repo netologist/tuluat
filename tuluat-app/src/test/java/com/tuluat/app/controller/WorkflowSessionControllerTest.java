@@ -85,7 +85,7 @@ class WorkflowSessionControllerTest {
 
 		WorkflowSession completedCr = new WorkflowSession();
 		completedCr.setStatus(new WorkflowSessionStatus(entity.getSessionId().toString(), "COMPLETED", null, null, null,
-				null, 0L, 0L, 0L, BigDecimal.ZERO, 0L, List.of()));
+				null, 0L, 0L, 0L, "0", 0L, List.of()));
 		when(resolver.get(eq(WorkflowSession.class), eq("tuluat-system"), anyString())).thenReturn(completedCr);
 		when(sessionRepository.findById(entity.getSessionId())).thenReturn(Optional.of(entity));
 

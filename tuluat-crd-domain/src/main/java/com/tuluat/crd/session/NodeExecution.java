@@ -8,5 +8,5 @@ import java.math.BigDecimal;
  */
 public record NodeExecution(String nodeId, String agentName, String provider, String model, String input, String output,
 		String startTime, String endTime, long durationMs, long totalTokens, long inputTokens, long outputTokens,
-		BigDecimal costUsd, String status) {
+		String costUsd, String status) {
 }
