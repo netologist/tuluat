@@ -7,6 +7,7 @@ import com.tuluat.engine.entity.WorkflowSessionEntity;
 import com.tuluat.engine.entity.WorkflowSessionLogEntity;
 import com.tuluat.engine.repository.WorkflowSessionLogRepository;
 import com.tuluat.engine.repository.WorkflowSessionRepository;
+import com.tuluat.engine.entity.SessionStatus;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
@@ -87,7 +88,7 @@ class WorkflowSessionControllerTest {
 		WorkflowSessionEntity entity = new WorkflowSessionEntity();
 		entity.setSessionId(UUID.randomUUID());
 		entity.setWorkflowName("my-workflow");
-		entity.setStatus("COMPLETED");
+		entity.setStatus(SessionStatus.COMPLETED);
 
 		when(executionService.startSession(eq("my-workflow"), eq(spec), eq("test input"), eq(10))).thenReturn(entity);
 
@@ -96,7 +97,7 @@ class WorkflowSessionControllerTest {
 
 		assertEquals(HttpStatus.OK, response.getStatusCode());
 		assertNotNull(response.getBody());
-		assertEquals("COMPLETED", response.getBody().getStatus());
+		assertEquals(SessionStatus.COMPLETED, response.getBody().getStatus());
 	}
 
 	@Test
@@ -105,14 +106,14 @@ class WorkflowSessionControllerTest {
 		UUID sessionId = UUID.randomUUID();
 		WorkflowSessionEntity entity = new WorkflowSessionEntity();
 		entity.setSessionId(sessionId);
-		entity.setStatus("RUNNING");
+		entity.setStatus(SessionStatus.RUNNING);
 
 		when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(entity));
 
 		ResponseEntity<WorkflowSessionEntity> response = controller.getSession(sessionId);
 
 		assertEquals(HttpStatus.OK, response.getStatusCode());
-		assertEquals("RUNNING", response.getBody().getStatus());
+		assertEquals(SessionStatus.RUNNING, response.getBody().getStatus());
 	}
 
 	@Test
@@ -138,7 +139,7 @@ class WorkflowSessionControllerTest {
 		WorkflowSessionEntity entity = new WorkflowSessionEntity();
 		entity.setSessionId(UUID.randomUUID());
 		entity.setWorkflowName("order-processing-workflow");
-		entity.setStatus("COMPLETED");
+		entity.setStatus(SessionStatus.COMPLETED);
 
 		when(sessionRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of(entity));
 

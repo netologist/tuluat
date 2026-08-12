@@ -81,7 +81,7 @@ public class WorkflowSessionController {
 		WorkflowSessionEntity session = executionService.startSession(workflowName, workflow.getSpec(), input,
 				maxLoops);
 		if (eventPublisher != null) {
-			eventPublisher.publishSessionState(session.getSessionId(), workflowName, session.getStatus(),
+			eventPublisher.publishSessionState(session.getSessionId(), workflowName, session.getStatus().name(),
 					session.getCurrentNodeId(), session.getContextData());
 		}
 		return ResponseEntity.ok(session);
@@ -100,7 +100,7 @@ public class WorkflowSessionController {
 			Map<String, Object> map = new HashMap<>();
 			map.put("sessionId", s.getSessionId());
 			map.put("workflowName", s.getWorkflowName());
-			map.put("status", s.getStatus());
+			map.put("status", s.getStatus().name());
 			map.put("currentNodeId", s.getCurrentNodeId());
 			map.put("loopCount", s.getLoopCount());
 			map.put("contextData", s.getContextData());

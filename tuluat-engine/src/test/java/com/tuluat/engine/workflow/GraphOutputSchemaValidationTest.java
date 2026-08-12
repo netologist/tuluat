@@ -7,6 +7,8 @@ import com.tuluat.engine.agent.AgentExecutionService;
 import com.tuluat.engine.agent.AgentResponse;
 import com.tuluat.engine.agent.UsageStats;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tuluat.engine.entity.SessionStatus;
 import com.tuluat.guardrails.GuardrailPipeline;
 import com.tuluat.guardrails.OutputValidationFilter;
 import org.junit.jupiter.api.Test;
@@ -31,14 +33,15 @@ class GraphOutputSchemaValidationTest {
 
 	private GraphStateMachineEngine engine() {
 		return new GraphStateMachineEngine(service, Optional.empty(), Optional.empty(),
-				Optional.of(new GuardrailPipeline(List.of(), List.of(new OutputValidationFilter()))));
+				Optional.of(new GuardrailPipeline(List.of(), List.of(new OutputValidationFilter()))),
+				new ObjectMapper());
 	}
 
 	private WorkflowSessionEntity session() {
 		var s = new WorkflowSessionEntity();
 		s.setSessionId(UUID.randomUUID());
 		s.setWorkflowName("schema-workflow");
-		s.setStatus("RUNNING");
+		s.setStatus(SessionStatus.RUNNING);
 		s.setCurrentNodeId("writer-node");
 		s.setLoopCount(0);
 		return s;
@@ -87,7 +90,7 @@ class GraphOutputSchemaValidationTest {
 
 		WorkflowSessionEntity result = engine().executeNextStep(specWithSchema(), session(), 10);
 
-		assertEquals("FAILED", result.getStatus());
+		assertEquals(SessionStatus.FAILED, result.getStatus());
 	}
 
 	@Test

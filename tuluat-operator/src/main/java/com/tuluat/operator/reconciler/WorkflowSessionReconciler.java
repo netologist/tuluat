@@ -41,7 +41,7 @@ public class WorkflowSessionReconciler implements Reconciler<WorkflowSession> {
 				WorkflowSessionEntity entity = executionService.startSession(workflowName, workflow.getSpec(),
 						resource.getSpec().input(), 10);
 
-				status = new WorkflowSessionStatus(entity.getSessionId().toString(), entity.getStatus(),
+				status = new WorkflowSessionStatus(entity.getSessionId().toString(), entity.getStatus().name(),
 						entity.getCurrentNodeId(), null, null, null);
 				resource.setStatus(status);
 				return UpdateControl.patchStatus(resource);

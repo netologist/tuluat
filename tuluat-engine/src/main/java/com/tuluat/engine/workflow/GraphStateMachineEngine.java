@@ -9,6 +9,7 @@ import com.tuluat.engine.agent.AgentExecutionService;
 import com.tuluat.engine.agent.AgentResponse;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
 import com.tuluat.engine.entity.WorkflowSessionLogEntity;
+import com.tuluat.engine.entity.SessionStatus;
 import com.tuluat.engine.repository.WorkflowSessionLogRepository;
 import com.tuluat.engine.telemetry.WorkflowTelemetryService;
 import lombok.extern.slf4j.Slf4j;
@@ -32,16 +33,17 @@ public class GraphStateMachineEngine {
 	private final Optional<WorkflowTelemetryService> telemetryService;
 	private final Optional<com.tuluat.guardrails.GuardrailPipeline> guardrailPipeline;
 	private final ExpressionParser parser = new SpelExpressionParser();
-	private final ObjectMapper mapper = new ObjectMapper();
+	private final ObjectMapper objectMapper;
 
 	@Autowired
 	public GraphStateMachineEngine(AgentExecutionService agentExecutionService,
 			Optional<WorkflowSessionLogRepository> logRepository, Optional<WorkflowTelemetryService> telemetryService,
-			Optional<com.tuluat.guardrails.GuardrailPipeline> guardrailPipeline) {
+			Optional<com.tuluat.guardrails.GuardrailPipeline> guardrailPipeline, ObjectMapper objectMapper) {
 		this.agentExecutionService = agentExecutionService;
 		this.logRepository = logRepository;
 		this.telemetryService = telemetryService;
 		this.guardrailPipeline = guardrailPipeline;
+		this.objectMapper = objectMapper;
 	}
 
 	public WorkflowSessionEntity executeNextStep(AiWorkflowSpec workflowSpec, WorkflowSessionEntity session,
@@ -50,7 +52,7 @@ public class GraphStateMachineEngine {
 			String errorMsg = String.format("Session %s exceeded max loops (%d)", session.getSessionId(), maxLoops);
 			log.error(errorMsg);
 			recordSessionLog(session.getSessionId(), session.getCurrentNodeId(), "ERROR", errorMsg);
-			session.setStatus("FAILED");
+			session.setStatus(SessionStatus.FAILED);
 			telemetryService.ifPresent(ts -> ts.recordSessionCompleted(session.getWorkflowName(), "FAILED"));
 			return session;
 		}
@@ -97,7 +99,7 @@ public class GraphStateMachineEngine {
 							currentNode.id(), vr.confidence(), vr.errors());
 					log.error(errMsg);
 					recordSessionLog(session.getSessionId(), currentNode.id(), "ERROR", errMsg);
-					session.setStatus("FAILED");
+					session.setStatus(SessionStatus.FAILED);
 					telemetryService.ifPresent(ts -> ts.recordSessionCompleted(session.getWorkflowName(), "FAILED"));
 					return session;
 				}
@@ -109,7 +111,7 @@ public class GraphStateMachineEngine {
 			if (nextNodeId == null) {
 				log.info("No next node found for session {}. Marking COMPLETED.", session.getSessionId());
 				recordSessionLog(session.getSessionId(), currentNode.id(), "INFO", "Workflow execution completed.");
-				session.setStatus("COMPLETED");
+				session.setStatus(SessionStatus.COMPLETED);
 				telemetryService.ifPresent(ts -> ts.recordSessionCompleted(session.getWorkflowName(), "COMPLETED"));
 			} else {
 				session.setCurrentNodeId(nextNodeId);
@@ -126,7 +128,7 @@ public class GraphStateMachineEngine {
 						session.getSessionId());
 				recordSessionLog(session.getSessionId(), currentNode.id(), "INFO",
 						"Workflow execution completed after condition.");
-				session.setStatus("COMPLETED");
+				session.setStatus(SessionStatus.COMPLETED);
 				telemetryService.ifPresent(ts -> ts.recordSessionCompleted(session.getWorkflowName(), "COMPLETED"));
 			} else {
 				session.setCurrentNodeId(nextNodeId);
@@ -139,14 +141,14 @@ public class GraphStateMachineEngine {
 						"Processing approval decision: " + approvalStatus + ". Advancing graph.");
 				String nextNodeId = resolveNextNodeId(workflowSpec, currentNode.id(), approved);
 				if (nextNodeId == null) {
-					session.setStatus("COMPLETED");
+					session.setStatus(SessionStatus.COMPLETED);
 				} else {
 					session.setCurrentNodeId(nextNodeId);
 				}
 			} else {
 				recordSessionLog(session.getSessionId(), currentNode.id(), "INFO",
 						"Workflow paused at node '" + currentNode.id() + "' awaiting human approval.");
-				session.setStatus("WAITING_APPROVAL");
+				session.setStatus(SessionStatus.WAITING_APPROVAL);
 				return session;
 			}
 		}
@@ -200,7 +202,7 @@ public class GraphStateMachineEngine {
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> parseContext(String json) {
 		try {
-			return json != null ? mapper.readValue(json, Map.class) : new java.util.HashMap<>();
+			return json != null ? objectMapper.readValue(json, Map.class) : new java.util.HashMap<>();
 		} catch (JsonProcessingException e) {
 			log.error("Failed to parse context data", e);
 			return new java.util.HashMap<>();
@@ -209,7 +211,7 @@ public class GraphStateMachineEngine {
 
 	private String writeContext(Map<String, Object> data) {
 		try {
-			return mapper.writeValueAsString(data);
+			return objectMapper.writeValueAsString(data);
 		} catch (JsonProcessingException e) {
 			log.error("Failed to serialize context data", e);
 			return "{}";

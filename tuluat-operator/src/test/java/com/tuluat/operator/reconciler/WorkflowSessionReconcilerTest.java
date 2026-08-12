@@ -6,6 +6,7 @@ import com.tuluat.crd.session.WorkflowSessionStatus;
 import com.tuluat.crd.workflow.AiWorkflow;
 import com.tuluat.crd.workflow.AiWorkflowSpec;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
+import com.tuluat.engine.entity.SessionStatus;
 import com.tuluat.engine.workflow.WorkflowExecutionService;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -63,7 +64,7 @@ class WorkflowSessionReconcilerTest {
 		UUID sessionId = UUID.randomUUID();
 		WorkflowSessionEntity entity = new WorkflowSessionEntity();
 		entity.setSessionId(sessionId);
-		entity.setStatus("RUNNING");
+		entity.setStatus(SessionStatus.RUNNING);
 		entity.setCurrentNodeId("start-node");
 
 		when(executionService.startSession(eq("research-wf"), any(), eq("input data"), eq(10))).thenReturn(entity);

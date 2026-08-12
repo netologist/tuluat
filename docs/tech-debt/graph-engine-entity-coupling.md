@@ -1,7 +1,21 @@
 # Tech Debt: `GraphStateMachineEngine` — Direct Session Entity Mutation (No Domain Boundary)
 
-- **Status:** Accepted (PoC trade-off)
-- **Date:** 2026-08-12
+- **Status:** Resolved (ObjectMapper injection + SessionStatus enum only)
+- **Resolved:** 2026-08-12
+
+## Resolution Summary
+
+Two changes applied; remaining issues deferred per PoC trade-off acceptance:
+
+| Change | Detail |
+|---|---|
+| **Inject Spring `ObjectMapper`** | `GraphStateMachineEngine` now accepts `ObjectMapper` via constructor injection instead of `new ObjectMapper()`. Same Spring-managed instance as `WorkflowExecutionService`. |
+| **`SessionStatus` enum** | Created `com.tuluat.engine.entity.SessionStatus` with `RUNNING, WAITING_APPROVAL, COMPLETED, FAILED, REJECTED`. `WorkflowSessionEntity.status` uses `@Enumerated(EnumType.STRING)`. All raw `session.setStatus("…")` strings replaced across engine, service, reconciler, controllers, and tests. |
+
+### Deferred
+
+- `WorkflowExecutionState` value object (record) — accepted PoC trade-off
+- `contextData` JSON blob → typed map — accepted PoC trade-off
 - **Severity:** Medium
 - **Module:** `tuluat-engine` → `GraphStateMachineEngine`, `WorkflowExecutionService`
 

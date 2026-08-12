@@ -3,6 +3,7 @@ package com.tuluat.engine.workflow;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tuluat.crd.workflow.AiWorkflowSpec;
+import com.tuluat.engine.entity.SessionStatus;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
 import com.tuluat.engine.repository.WorkflowSessionRepository;
 import com.tuluat.engine.telemetry.WorkflowTelemetryService;
@@ -40,7 +41,7 @@ public class WorkflowExecutionService {
 	public WorkflowSessionEntity startSession(String workflowName, AiWorkflowSpec spec, String input, int maxLoops) {
 		WorkflowSessionEntity session = new WorkflowSessionEntity();
 		session.setWorkflowName(workflowName);
-		session.setStatus("RUNNING");
+		session.setStatus(SessionStatus.RUNNING);
 		session.setCurrentNodeId(spec.initialNode());
 		session.setContextData(toJson(Map.of("input", input)));
 
@@ -48,7 +49,7 @@ public class WorkflowExecutionService {
 
 		telemetryService.ifPresent(ts -> ts.recordSessionCreated(workflowName));
 
-		while ("RUNNING".equalsIgnoreCase(session.getStatus())) {
+		while (session.getStatus() == SessionStatus.RUNNING) {
 			session = engine.executeNextStep(spec, session, maxLoops);
 			session = sessionRepository.save(session);
 		}
@@ -69,10 +70,10 @@ public class WorkflowExecutionService {
 		context.put("approvalStatus", statusVal);
 		context.put("approvalFeedback", escapedFeedback);
 		session.setContextData(toJson(context));
-		session.setStatus("RUNNING");
+		session.setStatus(SessionStatus.RUNNING);
 		session = sessionRepository.save(session);
 
-		while ("RUNNING".equalsIgnoreCase(session.getStatus())) {
+		while (session.getStatus() == SessionStatus.RUNNING) {
 			session = engine.executeNextStep(spec, session, maxLoops);
 			session = sessionRepository.save(session);
 		}
@@ -89,7 +90,7 @@ public class WorkflowExecutionService {
 				ctx.put("approvalStatus", statusVal);
 				ctx.put("approvalFeedback", signal.feedback() != null ? signal.feedback() : "");
 				s.setContextData(toJson(ctx));
-				s.setStatus(signal.approved() ? "RUNNING" : "REJECTED");
+				s.setStatus(signal.approved() ? SessionStatus.RUNNING : SessionStatus.REJECTED);
 				sessionRepository.save(s);
 			});
 		} catch (Exception e) {

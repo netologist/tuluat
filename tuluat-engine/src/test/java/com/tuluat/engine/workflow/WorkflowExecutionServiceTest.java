@@ -3,6 +3,7 @@ package com.tuluat.engine.workflow;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tuluat.crd.workflow.AiWorkflowSpec;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
+import com.tuluat.engine.entity.SessionStatus;
 import com.tuluat.engine.repository.WorkflowSessionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,7 +40,7 @@ class WorkflowExecutionServiceTest {
 
 		when(engine.executeNextStep(eq(spec), any(WorkflowSessionEntity.class), eq(5))).thenAnswer(invocation -> {
 			WorkflowSessionEntity session = invocation.getArgument(1);
-			session.setStatus("COMPLETED");
+			session.setStatus(SessionStatus.COMPLETED);
 			session.setCurrentNodeId("node-2");
 			return session;
 		});
@@ -48,7 +49,7 @@ class WorkflowExecutionServiceTest {
 
 		assertNotNull(result);
 		assertEquals("test-workflow", result.getWorkflowName());
-		assertEquals("COMPLETED", result.getStatus());
+		assertEquals(SessionStatus.COMPLETED, result.getStatus());
 		assertEquals("node-2", result.getCurrentNodeId());
 
 		verify(sessionRepository, atLeastOnce()).save(any(WorkflowSessionEntity.class));

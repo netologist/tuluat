@@ -3,6 +3,7 @@ package com.tuluat.app.controller;
 import com.tuluat.app.websocket.WorkflowEventPublisher;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
 import com.tuluat.engine.repository.WorkflowSessionRepository;
+import com.tuluat.engine.entity.SessionStatus;
 import com.tuluat.engine.temporal.ApprovalSignal;
 import com.tuluat.engine.workflow.WorkflowExecutionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +44,7 @@ public class ApprovalController {
 	@GetMapping
 	public ResponseEntity<List<Map<String, Object>>> getPendingApprovals() {
 		List<WorkflowSessionEntity> pendingSessions = sessionRepository.findAll().stream()
-				.filter(s -> "WAITING_APPROVAL".equalsIgnoreCase(s.getStatus())).collect(Collectors.toList());
+				.filter(s -> s.getStatus() == SessionStatus.WAITING_APPROVAL).collect(Collectors.toList());
 
 		List<Map<String, Object>> response = pendingSessions.stream().map(session -> {
 			Map<String, Object> map = new HashMap<>();
@@ -51,7 +52,7 @@ public class ApprovalController {
 			map.put("workflowName", session.getWorkflowName());
 			map.put("currentNode", session.getCurrentNodeId());
 			map.put("contextData", session.getContextData());
-			map.put("phase", session.getStatus());
+			map.put("phase", session.getStatus().name());
 			map.put("startTime", session.getCreatedAt() != null ? session.getCreatedAt().toString() : "");
 			return map;
 		}).collect(Collectors.toList());
@@ -61,14 +62,14 @@ public class ApprovalController {
 
 	@GetMapping("/{sessionId}")
 	public ResponseEntity<Map<String, Object>> getApprovalDetail(@PathVariable UUID sessionId) {
-		return sessionRepository.findById(sessionId).filter(s -> "WAITING_APPROVAL".equalsIgnoreCase(s.getStatus()))
+		return sessionRepository.findById(sessionId).filter(s -> s.getStatus() == SessionStatus.WAITING_APPROVAL)
 				.map(session -> {
 					Map<String, Object> map = new HashMap<>();
 					map.put("sessionId", session.getSessionId());
 					map.put("workflowName", session.getWorkflowName());
 					map.put("currentNode", session.getCurrentNodeId());
 					map.put("contextData", session.getContextData());
-					map.put("phase", session.getStatus());
+					map.put("phase", session.getStatus().name());
 					map.put("startTime", session.getCreatedAt() != null ? session.getCreatedAt().toString() : "");
 					return ResponseEntity.ok(map);
 				}).orElse(ResponseEntity.notFound().build());

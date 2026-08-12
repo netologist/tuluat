@@ -3,6 +3,7 @@ package com.tuluat.app.controller;
 import com.tuluat.crd.provider.LlmProvider;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
 import com.tuluat.engine.entity.WorkflowSessionLogEntity;
+import com.tuluat.engine.entity.SessionStatus;
 import com.tuluat.engine.repository.WorkflowSessionLogRepository;
 import com.tuluat.engine.repository.WorkflowSessionRepository;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -63,10 +64,10 @@ public class AnalyticsController {
 	public ResponseEntity<Map<String, Object>> getAnalyticsOverview() {
 		List<WorkflowSessionEntity> allSessions = sessionRepository.findAll();
 		long totalSessions = allSessions.size();
-		long completedSessions = allSessions.stream().filter(s -> "COMPLETED".equalsIgnoreCase(s.getStatus())).count();
-		long waitingApprovals = allSessions.stream().filter(s -> "WAITING_APPROVAL".equalsIgnoreCase(s.getStatus()))
+		long completedSessions = allSessions.stream().filter(s -> s.getStatus() == SessionStatus.COMPLETED).count();
+		long waitingApprovals = allSessions.stream().filter(s -> s.getStatus() == SessionStatus.WAITING_APPROVAL)
 				.count();
-		long failedSessions = allSessions.stream().filter(s -> "FAILED".equalsIgnoreCase(s.getStatus())).count();
+		long failedSessions = allSessions.stream().filter(s -> s.getStatus() == SessionStatus.FAILED).count();
 
 		// Calculate token usage and estimated cost from session data
 		long estimatedInputTokens = 0;

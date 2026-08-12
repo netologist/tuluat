@@ -1,5 +1,6 @@
 package com.tuluat.engine.workflow;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tuluat.crd.workflow.AiWorkflowSpec;
 import com.tuluat.crd.workflow.EdgeDefinition;
 import com.tuluat.crd.workflow.NodeDefinition;
@@ -20,7 +21,8 @@ class GraphStateMachineEngineTest {
 
 	@BeforeEach
 	void setUp() {
-		engine = new GraphStateMachineEngine(null, Optional.empty(), Optional.empty(), Optional.empty());
+		engine = new GraphStateMachineEngine(null, Optional.empty(), Optional.empty(), Optional.empty(),
+				new ObjectMapper());
 	}
 
 	@Test

@@ -5,6 +5,7 @@ import com.tuluat.crd.provider.LlmProviderSpec;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
 import com.tuluat.engine.repository.WorkflowSessionLogRepository;
 import com.tuluat.engine.repository.WorkflowSessionRepository;
+import com.tuluat.engine.entity.SessionStatus;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
@@ -74,7 +75,7 @@ class AnalyticsControllerTest {
 	void testGetAnalyticsOverview() {
 		WorkflowSessionEntity s1 = new WorkflowSessionEntity();
 		s1.setSessionId(UUID.randomUUID());
-		s1.setStatus("COMPLETED");
+		s1.setStatus(SessionStatus.COMPLETED);
 
 		when(sessionRepository.findAll()).thenReturn(List.of(s1));
 

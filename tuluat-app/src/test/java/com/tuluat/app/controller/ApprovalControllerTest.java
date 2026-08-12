@@ -4,6 +4,7 @@ import com.tuluat.app.websocket.WorkflowEventPublisher;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
 import com.tuluat.engine.repository.WorkflowSessionRepository;
 import com.tuluat.engine.workflow.WorkflowExecutionService;
+import com.tuluat.engine.entity.SessionStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -38,14 +39,14 @@ class ApprovalControllerTest {
 		WorkflowSessionEntity entity1 = new WorkflowSessionEntity();
 		entity1.setSessionId(s1);
 		entity1.setWorkflowName("test-wf");
-		entity1.setStatus("WAITING_APPROVAL");
+		entity1.setStatus(SessionStatus.WAITING_APPROVAL);
 		entity1.setCurrentNodeId("approval-node");
 		entity1.setContextData("{\"input\":\"test\"}");
 
 		WorkflowSessionEntity entity2 = new WorkflowSessionEntity();
 		entity2.setSessionId(s2);
 		entity2.setWorkflowName("test-wf");
-		entity2.setStatus("RUNNING");
+		entity2.setStatus(SessionStatus.RUNNING);
 		entity2.setCurrentNodeId("agent-node");
 		entity2.setContextData("{\"input\":\"test\"}");
 
