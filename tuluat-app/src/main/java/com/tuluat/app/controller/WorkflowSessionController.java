@@ -1,5 +1,6 @@
 package com.tuluat.app.controller;
 
+import com.tuluat.crd.agent.AiAgent;
 import com.tuluat.app.websocket.WorkflowEventPublisher;
 import com.tuluat.crd.workflow.AiWorkflow;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
@@ -31,7 +32,7 @@ public class WorkflowSessionController {
 	private final WorkflowSessionRepository sessionRepository;
 	private final WorkflowSessionLogRepository logRepository;
 	private final KubernetesClient kubernetesClient;
-	private final com.tuluat.app.websocket.WorkflowEventPublisher eventPublisher;
+	private final WorkflowEventPublisher eventPublisher;
 
 	public WorkflowSessionController(WorkflowExecutionService executionService,
 			WorkflowSessionRepository sessionRepository, KubernetesClient kubernetesClient) {
@@ -237,7 +238,7 @@ public class WorkflowSessionController {
 
 		if (kubernetesClient != null) {
 			try {
-				com.tuluat.crd.agent.AiAgent agent = kubernetesClient.resources(com.tuluat.crd.agent.AiAgent.class)
+				AiAgent agent = kubernetesClient.resources(AiAgent.class)
 						.inNamespace("tuluat-system").withName(effectiveRef).get();
 				if (agent != null && agent.getSpec() != null) {
 					var spec = agent.getSpec();

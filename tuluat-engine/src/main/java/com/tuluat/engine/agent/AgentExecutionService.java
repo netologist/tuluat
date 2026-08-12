@@ -2,6 +2,7 @@ package com.tuluat.engine.agent;
 
 import com.tuluat.crd.agent.AiAgent;
 import com.tuluat.crd.agent.AiAgentSpec;
+import com.tuluat.crd.agent.GuardrailsConfig;
 import com.tuluat.crd.agent.McpServerRef;
 import com.tuluat.crd.agent.ToolDefinition;
 import com.tuluat.crd.provider.LlmProvider;
@@ -206,7 +207,7 @@ public class AgentExecutionService {
 	}
 
 	private AgentResponse invokeResolvedAgent(String name, AiAgentSpec spec, String safePrompt,
-			com.tuluat.crd.agent.GuardrailsConfig guardrails, UUID sessionId) {
+			GuardrailsConfig guardrails, UUID sessionId) {
 		var provider = resolveProvider(spec);
 		var model = resolveModel(spec, provider);
 		var systemPrompt = spec.systemPrompt() != null ? spec.systemPrompt() : DEFAULT_SYSTEM_PROMPT;
@@ -480,7 +481,7 @@ public class AgentExecutionService {
 
 	// ── Output validation ──────────────────────────────────────────────────
 
-	private void validateOutput(String agentName, String answer, com.tuluat.crd.agent.GuardrailsConfig guardrails) {
+	private void validateOutput(String agentName, String answer, GuardrailsConfig guardrails) {
 		if (guardrails == null || guardrails.outputValidation() == null || !guardrails.outputValidation().isEnabled()) {
 			return;
 		}

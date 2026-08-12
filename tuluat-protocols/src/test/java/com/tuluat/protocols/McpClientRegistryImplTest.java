@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import com.tuluat.crd.mcp.McpServer;
+import com.tuluat.crd.mcp.McpServerSpec;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -80,9 +82,9 @@ class McpClientRegistryImplTest {
 
 	@Test
 	void registerFromMcpServerCr() {
-		var server = new com.tuluat.crd.mcp.McpServer();
+		var server = new McpServer();
 		server.getMetadata().setName("github-mcp");
-		server.setSpec(new com.tuluat.crd.mcp.McpServerSpec("http://github-mcp:8080/sse", "SSE", "NONE", null, 30,
+		server.setSpec(new McpServerSpec("http://github-mcp:8080/sse", "SSE", "NONE", null, 30,
 				"GitHub tools"));
 
 		registry.registerFromCr(server);

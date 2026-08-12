@@ -3,6 +3,8 @@ package com.tuluat.operator.reconciler;
 import com.tuluat.crd.mcp.McpServer;
 import com.tuluat.crd.mcp.McpServerSpec;
 import com.tuluat.protocols.McpClientRegistry;
+import com.tuluat.protocols.McpClientConnection;
+import com.tuluat.protocols.McpClientRegistryImpl;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,11 +81,11 @@ class McpServerReconcilerTest {
 		server.setSpec(new McpServerSpec("http://slack-mcp:8080/sse", "SSE", "API_KEY", null, 45, "Slack tools"));
 
 		// Spy-style: use a real in-memory registry to verify end-to-end registration
-		var realRegistry = new com.tuluat.protocols.McpClientRegistryImpl();
+		var realRegistry = new McpClientRegistryImpl();
 		var realReconciler = new McpServerReconciler(realRegistry);
 
 		realReconciler.reconcile(server, null);
-		Map<String, com.tuluat.protocols.McpClientConnection> clients = realRegistry.getRegisteredClients();
+		Map<String, McpClientConnection> clients = realRegistry.getRegisteredClients();
 
 		assertTrue(clients.containsKey("slack-mcp"));
 		assertEquals("http://slack-mcp:8080/sse", clients.get("slack-mcp").endpoint());

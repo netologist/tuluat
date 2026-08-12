@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tuluat.crd.workflow.AiWorkflowSpec;
 import com.tuluat.crd.workflow.EdgeDefinition;
 import com.tuluat.crd.workflow.NodeDefinition;
+import com.tuluat.guardrails.GuardrailPipeline;
+import com.tuluat.guardrails.ValidationResult;
 import com.tuluat.engine.agent.AgentExecutionService;
 import com.tuluat.engine.agent.AgentResponse;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
@@ -31,14 +33,14 @@ public class GraphStateMachineEngine {
 	private final AgentExecutionService agentExecutionService;
 	private final Optional<WorkflowSessionLogRepository> logRepository;
 	private final Optional<WorkflowTelemetryService> telemetryService;
-	private final Optional<com.tuluat.guardrails.GuardrailPipeline> guardrailPipeline;
+	private final Optional<GuardrailPipeline> guardrailPipeline;
 	private final ExpressionParser parser = new SpelExpressionParser();
 	private final ObjectMapper objectMapper;
 
 	@Autowired
 	public GraphStateMachineEngine(AgentExecutionService agentExecutionService,
 			Optional<WorkflowSessionLogRepository> logRepository, Optional<WorkflowTelemetryService> telemetryService,
-			Optional<com.tuluat.guardrails.GuardrailPipeline> guardrailPipeline, ObjectMapper objectMapper) {
+			Optional<GuardrailPipeline> guardrailPipeline, ObjectMapper objectMapper) {
 		this.agentExecutionService = agentExecutionService;
 		this.logRepository = logRepository;
 		this.telemetryService = telemetryService;
@@ -92,7 +94,7 @@ public class GraphStateMachineEngine {
 
 			if (guardrailPipeline.isPresent() && currentNode.outputSchema() != null
 					&& !currentNode.outputSchema().isBlank()) {
-				com.tuluat.guardrails.ValidationResult vr = guardrailPipeline.get().validateOutput(response.answer(),
+				ValidationResult vr = guardrailPipeline.get().validateOutput(response.answer(),
 						null, currentNode.outputSchema());
 				if (!vr.valid()) {
 					String errMsg = String.format("Node '%s' output failed schema validation (confidence=%.2f): %s",

@@ -6,6 +6,7 @@ import com.tuluat.crd.workflow.AiWorkflowSpec;
 import com.tuluat.engine.entity.SessionStatus;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
 import com.tuluat.engine.repository.WorkflowSessionRepository;
+import com.tuluat.engine.temporal.ApprovalSignal;
 import com.tuluat.engine.telemetry.WorkflowTelemetryService;
 import io.temporal.client.WorkflowClient;
 import lombok.extern.slf4j.Slf4j;
@@ -81,7 +82,7 @@ public class WorkflowExecutionService {
 		return session;
 	}
 
-	public void sendApprovalSignal(String sessionId, com.tuluat.engine.temporal.ApprovalSignal signal) {
+	public void sendApprovalSignal(String sessionId, ApprovalSignal signal) {
 		try {
 			UUID id = UUID.fromString(sessionId);
 			sessionRepository.findById(id).ifPresent(s -> {

@@ -1,6 +1,7 @@
 package com.tuluat.engine.embabel;
 
 import com.embabel.agent.api.tool.Tool;
+import com.tuluat.engine.tool.Tool;
 import com.embabel.agent.core.ToolGroup;
 import com.tuluat.engine.tool.ToolRegistry;
 import com.tuluat.engine.tool.ToolResult;
@@ -59,7 +60,7 @@ class TuluatToolGroupTest {
 		@Test
 		@DisplayName("each tool has name and description")
 		void eachToolHasNameAndDescription() {
-			for (Tool tool : toolGroup.getTools()) {
+			for (com.embabel.agent.api.tool.Tool tool : toolGroup.getTools()) {
 				assertThat(tool.getDefinition().getName()).isNotBlank();
 				assertThat(tool.getDefinition().getDescription()).isNotBlank();
 			}
@@ -81,7 +82,7 @@ class TuluatToolGroupTest {
 		@DisplayName("newly registered tools appear in Embabel ToolGroup")
 		void newlyRegisteredToolAppearsInToolGroup() {
 			var registry = new ToolRegistry();
-			registry.register(new com.tuluat.engine.tool.Tool() {
+			registry.register(new Tool() {
 				@Override
 				public String name() {
 					return "echo";
@@ -106,7 +107,7 @@ class TuluatToolGroupTest {
 		@DisplayName("tool description matches Tuluat tool description")
 		void toolDescriptionMatchesTuluatTool() {
 			var registry = new ToolRegistry();
-			registry.register(new com.tuluat.engine.tool.Tool() {
+			registry.register(new Tool() {
 				@Override
 				public String name() {
 					return "describe-me";

@@ -248,9 +248,30 @@
                 <version>3.6.0</version>
                 <configuration>
                     <configLocation>google_checks.xml</configLocation>
-                    <failOnViolation>false</failOnViolation>
+                    <failOnViolation>true</failOnViolation>
                     <consoleOutput>true</consoleOutput>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>check-fqcn</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <exec executable="bash" failonerror="true">
+                                    <arg value="${maven.multiModuleProjectDirectory}/scripts/check-fqcn.sh"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

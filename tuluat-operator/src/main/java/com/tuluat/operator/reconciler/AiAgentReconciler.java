@@ -3,6 +3,7 @@ package com.tuluat.operator.reconciler;
 import com.tuluat.crd.agent.AiAgent;
 import com.tuluat.crd.agent.AiAgentStatus;
 import com.tuluat.crd.provider.LlmProvider;
+import com.tuluat.crd.agent.McpServerRef;
 import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
@@ -91,7 +92,7 @@ public class AiAgentReconciler implements Reconciler<AiAgent> {
 			List<String> activeTools = spec.tools().stream().filter(t -> Boolean.TRUE.equals(t.enabled()))
 					.map(t -> t.name()).toList();
 			List<String> activeMcpServers = (spec.mcpServers() != null)
-					? spec.mcpServers().stream().map(com.tuluat.crd.agent.McpServerRef::name)
+					? spec.mcpServers().stream().map(McpServerRef::name)
 							.filter(n -> n != null && !n.isBlank()).toList()
 					: List.of();
 

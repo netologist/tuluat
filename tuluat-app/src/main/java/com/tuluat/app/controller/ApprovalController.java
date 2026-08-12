@@ -6,6 +6,7 @@ import com.tuluat.engine.repository.WorkflowSessionRepository;
 import com.tuluat.engine.entity.SessionStatus;
 import com.tuluat.engine.temporal.ApprovalSignal;
 import com.tuluat.engine.workflow.WorkflowExecutionService;
+import com.tuluat.crd.workflow.AiWorkflow;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -95,11 +96,11 @@ public class ApprovalController {
 		if (opt.isPresent() && kubernetesClient != null) {
 			WorkflowSessionEntity session = opt.get();
 			try {
-				com.tuluat.crd.workflow.AiWorkflow wf = kubernetesClient
-						.resources(com.tuluat.crd.workflow.AiWorkflow.class).inNamespace("tuluat-system")
+				AiWorkflow wf = kubernetesClient
+						.resources(AiWorkflow.class).inNamespace("tuluat-system")
 						.withName(session.getWorkflowName()).get();
 				if (wf == null) {
-					wf = kubernetesClient.resources(com.tuluat.crd.workflow.AiWorkflow.class).inNamespace("default")
+					wf = kubernetesClient.resources(AiWorkflow.class).inNamespace("default")
 							.withName(session.getWorkflowName()).get();
 				}
 				if (wf != null && wf.getSpec() != null) {

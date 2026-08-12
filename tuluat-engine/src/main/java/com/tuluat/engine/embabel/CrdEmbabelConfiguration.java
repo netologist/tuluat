@@ -5,6 +5,8 @@ import com.embabel.common.ai.autoconfig.RegisteredModel;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.tuluat.crd.provider.LlmProvider;
+import com.tuluat.crd.provider.LlmProviderSpec;
+import static com.tuluat.engine.gateway.ProviderBeanNames.CHAT_MODEL_BEANS;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
@@ -45,7 +47,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class CrdEmbabelConfiguration {
 
-	private static final Map<String, String> BEAN_NAME_BY_TYPE = com.tuluat.engine.gateway.ProviderBeanNames.CHAT_MODEL_BEANS;
+	private static final Map<String, String> BEAN_NAME_BY_TYPE = CHAT_MODEL_BEANS;
 
 	static final String TULUAT_SYSTEM = "tuluat-system";
 
@@ -148,7 +150,7 @@ public class CrdEmbabelConfiguration {
 		}
 	}
 
-	private String resolveApiKey(com.tuluat.crd.provider.LlmProviderSpec spec, String namespace) {
+	private String resolveApiKey(LlmProviderSpec spec, String namespace) {
 		var secretRef = spec.apiKeySecretRef();
 		if (secretRef == null) {
 			throw new IllegalStateException("LlmProvider has no apiKeySecretRef");
