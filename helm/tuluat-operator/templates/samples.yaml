@@ -171,4 +171,56 @@ spec:
     shortMemorySize: 20
     enableLongMemory: true
     vectorTableName: "session_long_memory"
+---
+apiVersion: ai.tuluat.com/v1alpha1
+kind: AiAgent
+metadata:
+  name: financial-analyst-agent
+  namespace: {{ .Values.namespace.name }}
+spec:
+  providerRef:
+    name: "wiremock-provider"
+    namespace: {{ .Values.namespace.name | quote }}
+  model: "wiremock-gpt-4o"
+  systemPrompt: |
+    You are a senior Financial Analyst AI Agent specializing in corporate earnings analysis,
+    balance sheet review, and market performance evaluation.
+
+    When responding to queries:
+    1. Always cite the specific financial data from the provided document context.
+    2. Include the source document reference for every data point.
+    3. Compare multi-period data where available (YoY, QoQ).
+    4. Highlight notable trends, anomalies, or risk factors.
+    5. Structure answers as: Summary → Key Metrics (with sources) → Analysis → Risk Factors.
+  userPrompt: "Analyze the provided financial documents and answer the user's query."
+  skills:
+    - name: "financial-analysis-guide"
+      description: "Financial analysis methodology and reporting standards"
+      enabled: true
+  skillSources:
+    - type: "FOLDER"
+      path: "/opt/tuluat/skills"
+      watch: true
+  tools:
+    - name: "calculator"
+      description: "Perform financial calculations and ratio analysis"
+      enabled: true
+  toolSources:
+    - type: "FOLDER"
+      path: "/opt/tuluat/tools"
+      watch: true
+  guardrails:
+    piiMasking:
+      enabled: true
+      modes: ["SSN", "CREDIT_CARD", "PHONE"]
+      replacementToken: "[REDACTED]"
+    promptInjection:
+      enabled: true
+      strategy: "BLOCK"
+    outputValidation:
+      enabled: true
+      minConfidence: 0.7
+  a2a:
+    enabled: false
+  replicas: 1
 {{- end }}
