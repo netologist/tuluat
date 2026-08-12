@@ -85,11 +85,15 @@ public class AiAgentReconciler implements Reconciler<AiAgent> {
 			// Step 3: Reconcile Ingress (Public Exposure)
 			String ingressUrl = reconcileIngress(agent, ownerRef, ns);
 
-			// Calculate active skills & tools using Java Streams
+			// Calculate active skills, tools, and MCP servers using Java Streams
 			List<String> activeSkills = spec.skills().stream().filter(s -> Boolean.TRUE.equals(s.enabled()))
 					.map(s -> s.name()).toList();
 			List<String> activeTools = spec.tools().stream().filter(t -> Boolean.TRUE.equals(t.enabled()))
 					.map(t -> t.name()).toList();
+			List<String> activeMcpServers = (spec.mcpServers() != null)
+					? spec.mcpServers().stream().map(com.tuluat.crd.agent.McpServerRef::name)
+							.filter(n -> n != null && !n.isBlank()).toList()
+					: List.of();
 
 			String effectiveModel = (spec.model() != null && !spec.model().isBlank())
 					? spec.model()
@@ -97,8 +101,8 @@ public class AiAgentReconciler implements Reconciler<AiAgent> {
 
 			String readyMessage = String.format("AiAgent '%s' successfully reconciled and listening at %s", name,
 					ingressUrl);
-			agent.setStatus(AiAgentStatus.ready(ingressUrl, activeSkills, activeTools, effectiveModel, readyMessage,
-					agent.getMetadata().getGeneration()));
+			agent.setStatus(AiAgentStatus.ready(ingressUrl, activeSkills, activeTools, activeMcpServers, effectiveModel,
+					readyMessage, agent.getMetadata().getGeneration()));
 
 			log.info("Successfully reconciled AiAgent {}/{} -> Status: {}", ns, name, agent.getStatus().phase());
 			return UpdateControl.patchStatus(agent);

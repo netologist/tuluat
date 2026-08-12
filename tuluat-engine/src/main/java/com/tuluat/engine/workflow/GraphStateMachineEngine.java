@@ -80,7 +80,8 @@ public class GraphStateMachineEngine {
 			recordSessionLog(session.getSessionId(), currentNode.id(), "INFO",
 					"Executing Agent '" + currentNode.agentRef() + "' with prompt: " + prompt);
 
-			AgentResponse response = agentExecutionService.executeAgent(currentNode.agentRef(), prompt, null);
+			AgentResponse response = agentExecutionService.executeAgent(currentNode.agentRef(), prompt, null,
+					session.getSessionId());
 			contextData.put(currentNode.outputKey(), response.answer());
 			session.setContextData(writeContext(contextData));
 

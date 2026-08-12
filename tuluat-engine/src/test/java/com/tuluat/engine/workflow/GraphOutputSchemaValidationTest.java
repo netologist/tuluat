@@ -5,6 +5,7 @@ import com.tuluat.crd.workflow.EdgeDefinition;
 import com.tuluat.crd.workflow.NodeDefinition;
 import com.tuluat.engine.agent.AgentExecutionService;
 import com.tuluat.engine.agent.AgentResponse;
+import com.tuluat.engine.agent.UsageStats;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
 import com.tuluat.guardrails.GuardrailPipeline;
 import com.tuluat.guardrails.OutputValidationFilter;
@@ -63,9 +64,10 @@ class GraphOutputSchemaValidationTest {
 	void validJsonOutputAdvancesSession() {
 		service = mock(AgentExecutionService.class);
 		when(service.executeAgent(org.mockito.ArgumentMatchers.eq("writer-agent"),
-				org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.isNull()))
+				org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.isNull(),
+				org.mockito.ArgumentMatchers.any(UUID.class)))
 				.thenReturn(AgentResponse.create("writer-agent", "m", "sys", "{\"summary\":\"ok\"}", List.of(),
-						com.tuluat.engine.agent.UsageStats.calculate(5, 5, "m", 10)));
+						UsageStats.calculate(5, 5, "m", 10)));
 
 		WorkflowSessionEntity result = engine().executeNextStep(specWithSchema(), session(), 10);
 
@@ -78,9 +80,10 @@ class GraphOutputSchemaValidationTest {
 	void invalidJsonOutputFailsSession() {
 		service = mock(AgentExecutionService.class);
 		when(service.executeAgent(org.mockito.ArgumentMatchers.eq("writer-agent"),
-				org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.isNull()))
+				org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.isNull(),
+				org.mockito.ArgumentMatchers.any(UUID.class)))
 				.thenReturn(AgentResponse.create("writer-agent", "m", "sys", "plain text, not json", List.of(),
-						com.tuluat.engine.agent.UsageStats.calculate(5, 5, "m", 10)));
+						UsageStats.calculate(5, 5, "m", 10)));
 
 		WorkflowSessionEntity result = engine().executeNextStep(specWithSchema(), session(), 10);
 
@@ -91,9 +94,10 @@ class GraphOutputSchemaValidationTest {
 	void noSchemaSkipsValidation() {
 		service = mock(AgentExecutionService.class);
 		when(service.executeAgent(org.mockito.ArgumentMatchers.eq("writer-agent"),
-				org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.isNull()))
+				org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.isNull(),
+				org.mockito.ArgumentMatchers.any(UUID.class)))
 				.thenReturn(AgentResponse.create("writer-agent", "m", "sys", "any output", List.of(),
-						com.tuluat.engine.agent.UsageStats.calculate(5, 5, "m", 10)));
+						UsageStats.calculate(5, 5, "m", 10)));
 
 		AiWorkflowSpec spec = specWithSchema();
 		NodeDefinition noSchemaNode = new NodeDefinition("writer-node", "AGENT", "writer-agent", null, "final_report",

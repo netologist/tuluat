@@ -2,16 +2,20 @@ package com.tuluat.engine.agent;
 
 import com.tuluat.crd.agent.AiAgent;
 import com.tuluat.crd.agent.AiAgentSpec;
+import com.tuluat.crd.agent.McpServerRef;
 import com.tuluat.crd.agent.ToolDefinition;
 import com.tuluat.crd.provider.LlmProvider;
 import com.tuluat.engine.gateway.ModelGateway;
 import com.tuluat.engine.gateway.ProviderResolver;
+import com.tuluat.engine.memory.SessionMemoryManager;
 import com.tuluat.engine.rag.RagService;
 import com.tuluat.engine.skill.SkillRegistry;
 import com.tuluat.engine.tool.ToolRegistry;
 import com.tuluat.engine.tool.ToolResult;
 import com.tuluat.guardrails.GuardrailBlockedException;
 import com.tuluat.guardrails.GuardrailPipeline;
+import com.tuluat.protocols.McpClientRegistry;
+import com.tuluat.protocols.McpToolResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -22,23 +26,29 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * Core engine for executing AI Agent prompts with Tools, Agent Skills
- * (SKILL.md), Guardrails, and Model Gateway.
+ * (SKILL.md), Guardrails, Model Gateway, MCP tools, and short-term session
+ * memory.
  *
  * <h3>Execution pipeline:</h3>
  * <ol>
  * <li>Resolve model and query from agent spec</li>
  * <li>Apply pre-execution guardrails (PII masking, injection defense)</li>
- * <li>Execute active tools on virtual threads</li>
- * <li>Build system prompt with tool context, agent skills (SKILL.md), and
- * RAG</li>
+ * <li>Execute active tools + MCP tools on virtual threads</li>
+ * <li>Inject session memory history (short-term conversation memory)</li>
+ * <li>Build system prompt with tool context, agent skills (SKILL.md), MCP
+ * results, and RAG</li>
  * <li>Invoke LLM via ModelGateway → ChatModel → simulated fallback</li>
  * <li>Validate output against guardrail policy</li>
+ * <li>Save agent response to session memory</li>
  * </ol>
  *
  * <h3>Optional dependencies:</h3> All optional collaborators use
@@ -54,6 +64,7 @@ public class AgentExecutionService {
 	private static final String DEFAULT_SYSTEM_PROMPT = "You are a helpful AI assistant.";
 	private static final String DEFAULT_USER_PROMPT = "Hello AI Agent";
 	private static final int RAG_RESULT_COUNT = 3;
+	private static final int DEFAULT_MEMORY_WINDOW = 10;
 
 	private final ToolRegistry toolRegistry;
 	private final Optional<SkillRegistry> skillRegistry;
@@ -63,12 +74,15 @@ public class AgentExecutionService {
 	private final Optional<ProviderResolver> providerResolver;
 	private final Optional<AgentResolver> agentResolver;
 	private final Optional<RagService> ragService;
+	private final Optional<SessionMemoryManager> sessionMemoryManager;
+	private final Optional<McpClientRegistry> mcpClientRegistry;
 
 	@org.springframework.beans.factory.annotation.Autowired
 	public AgentExecutionService(ToolRegistry toolRegistry, Optional<SkillRegistry> skillRegistry,
 			@Qualifier("openAiChatModel") Optional<ChatModel> chatModel, GuardrailPipeline guardrailPipeline,
 			Optional<ModelGateway> modelGateway, Optional<ProviderResolver> providerResolver,
-			Optional<AgentResolver> agentResolver, Optional<RagService> ragService) {
+			Optional<AgentResolver> agentResolver, Optional<RagService> ragService,
+			Optional<SessionMemoryManager> sessionMemoryManager, Optional<McpClientRegistry> mcpClientRegistry) {
 		this.toolRegistry = toolRegistry;
 		this.skillRegistry = skillRegistry;
 		this.chatModel = chatModel;
@@ -77,6 +91,8 @@ public class AgentExecutionService {
 		this.providerResolver = providerResolver;
 		this.agentResolver = agentResolver;
 		this.ragService = ragService;
+		this.sessionMemoryManager = sessionMemoryManager;
+		this.mcpClientRegistry = mcpClientRegistry;
 	}
 
 	public AgentExecutionService(ToolRegistry toolRegistry, @Qualifier("openAiChatModel") Optional<ChatModel> chatModel,
@@ -84,12 +100,16 @@ public class AgentExecutionService {
 			Optional<ProviderResolver> providerResolver, Optional<AgentResolver> agentResolver,
 			Optional<RagService> ragService) {
 		this(toolRegistry, Optional.empty(), chatModel, guardrailPipeline, modelGateway, providerResolver,
-				agentResolver, ragService);
+				agentResolver, ragService, Optional.empty(), Optional.empty());
 	}
 
 	// ── Public API ──────────────────────────────────────────────────────────
 
 	public AgentResponse processAgentPrompt(AiAgent agent, LlmProvider provider, String customInput) {
+		return processAgentPrompt(agent, provider, customInput, null);
+	}
+
+	public AgentResponse processAgentPrompt(AiAgent agent, LlmProvider provider, String customInput, UUID sessionId) {
 		var startTime = System.currentTimeMillis();
 		var spec = agent.getSpec();
 		var agentName = agent.getMetadata().getName();
@@ -110,7 +130,16 @@ public class AgentExecutionService {
 		toolRegistry.loadToolSources(spec.toolSources());
 
 		var toolResults = executeTools(agentName, spec.tools(), safeQuery);
+
+		// Execute MCP tools alongside local tools
+		var mcpResults = executeMcpTools(spec.mcpServers(), safeQuery);
+		toolResults.addAll(mcpResults);
+
 		var systemPrompt = buildSystemPrompt(spec.systemPrompt(), safeQuery, toolResults);
+
+		// Inject session memory history
+		systemPrompt = injectSessionMemory(sessionId, agentName, systemPrompt);
+
 		var prompt = new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage(safeQuery)));
 
 		var llmResult = invokeLlm(agentName, model, provider, prompt, systemPrompt, safeQuery, toolResults);
@@ -120,12 +149,19 @@ public class AgentExecutionService {
 
 		validateOutput(agentName, llmResult.answer(), spec.guardrails());
 
+		// Save agent response to session memory
+		saveSessionMemory(sessionId, agentName, "assistant", llmResult.answer());
+
 		var latency = System.currentTimeMillis() - startTime;
 		var usage = buildUsage(llmResult, model, latency);
 		return AgentResponse.create(agentName, model, systemPrompt, llmResult.answer(), toolResults, usage);
 	}
 
 	public AgentResponse executeAgent(String agentRef, String prompt, String context) {
+		return executeAgent(agentRef, prompt, context, null);
+	}
+
+	public AgentResponse executeAgent(String agentRef, String prompt, String context, UUID sessionId) {
 		log.info("Executing agentRef '{}'", agentRef);
 		var namespace = (context != null && !context.isBlank()) ? context : null;
 		var name = agentRef != null ? agentRef : "default-agent";
@@ -142,18 +178,19 @@ public class AgentExecutionService {
 		}
 
 		if (agent.isPresent() && agent.get().getSpec() != null) {
-			return invokeResolvedAgent(name, agent.get().getSpec(), safePrompt, guardrails);
+			return invokeResolvedAgent(name, agent.get().getSpec(), safePrompt, guardrails, sessionId);
 		}
 
 		var response = AgentResponse.create(name, DEFAULT_MODEL, "Workflow Agent System Prompt",
 				"Execution completed for: " + safePrompt, List.of(), UsageStats.calculate(10, 10, DEFAULT_MODEL, 50));
 
 		validateOutput(name, response.answer(), guardrails);
+		saveSessionMemory(sessionId, name, "assistant", response.answer());
 		return response;
 	}
 
 	private AgentResponse invokeResolvedAgent(String name, AiAgentSpec spec, String safePrompt,
-			com.tuluat.crd.agent.GuardrailsConfig guardrails) {
+			com.tuluat.crd.agent.GuardrailsConfig guardrails, UUID sessionId) {
 		var provider = resolveProvider(spec);
 		var model = resolveModel(spec, provider);
 		var systemPrompt = spec.systemPrompt() != null ? spec.systemPrompt() : DEFAULT_SYSTEM_PROMPT;
@@ -165,6 +202,10 @@ public class AgentExecutionService {
 		// prompt and inject them alongside skills so agents are grounded in
 		// ingested documents (ADR 008).
 		var systemPromptWithRag = systemPrompt + buildAgentSkillContext() + retrieveRagContext(safePrompt);
+
+		// Inject session memory history
+		systemPromptWithRag = injectSessionMemory(sessionId, name, systemPromptWithRag);
+
 		var prompt = new Prompt(List.of(new SystemMessage(systemPromptWithRag), new UserMessage(safePrompt)));
 
 		var llmResult = invokeLlm(name, model, provider, prompt, systemPromptWithRag, safePrompt, List.of());
@@ -173,6 +214,7 @@ public class AgentExecutionService {
 		}
 
 		validateOutput(name, llmResult.answer(), guardrails);
+		saveSessionMemory(sessionId, name, "assistant", llmResult.answer());
 		var usage = buildUsage(llmResult, model, 0);
 		return AgentResponse.create(name, model, systemPromptWithRag, llmResult.answer(), List.of(), usage);
 	}
@@ -206,8 +248,114 @@ public class AgentExecutionService {
 
 	private List<ToolResult> executeTools(String agentName, List<ToolDefinition> toolDefs, String query) {
 		log.info("Executing tools for Agent '{}' on Virtual Thread", agentName);
-		return toolRegistry.executeActiveTools(toolDefs, query).values().stream().toList();
+		return new ArrayList<>(toolRegistry.executeActiveTools(toolDefs, query).values());
 	}
+
+	// ── MCP Tool Execution ─────────────────────────────────────────────────
+
+	/**
+	 * Invokes tools exported by MCP servers referenced in the agent spec. Each MCP
+	 * result is converted to a {@link ToolResult} and validated through guardrails
+	 * before inclusion.
+	 */
+	private List<ToolResult> executeMcpTools(List<McpServerRef> mcpServers, String query) {
+		if (mcpServers == null || mcpServers.isEmpty() || mcpClientRegistry.isEmpty()) {
+			return List.of();
+		}
+
+		List<ToolResult> results = new ArrayList<>();
+		var registry = mcpClientRegistry.get();
+
+		for (McpServerRef ref : mcpServers) {
+			if (ref == null || ref.name() == null) {
+				continue;
+			}
+			var client = registry.findClient(ref.name());
+			if (client.isEmpty()) {
+				log.warn("MCP server '{}' not registered — skipping", ref.name());
+				continue;
+			}
+
+			// List available tools for this server and invoke them
+			List<String> toolNames = registry.getAvailableClientNames().stream().filter(n -> n.startsWith(ref.name()))
+					.toList();
+			for (String toolName : toolNames) {
+				try {
+					McpToolResult mcpResult = registry.invokeTool(ref.name(), toolName, Map.of("query", query));
+					ToolResult result = mcpToToolResult(mcpResult);
+
+					// Guardrail validation for MCP outputs
+					if (!mcpResult.success() && !mcpResult.content().isBlank()) {
+						results.add(ToolResult.failure("mcp:" + ref.name() + "/" + toolName,
+								mcpResult.error() != null ? mcpResult.error() : "MCP tool returned failure"));
+					} else {
+						results.add(result);
+					}
+				} catch (Exception e) {
+					log.warn("MCP tool invocation failed for '{}/{}': {}", ref.name(), toolName, e.getMessage());
+					results.add(ToolResult.failure("mcp:" + ref.name() + "/" + toolName, e.getMessage()));
+				}
+			}
+		}
+
+		return results;
+	}
+
+	/**
+	 * Converts an {@link McpToolResult} (from protocols) into an engine
+	 * {@link ToolResult}, applying a namespaced tool name prefix.
+	 */
+	private ToolResult mcpToToolResult(McpToolResult mcp) {
+		return new ToolResult("mcp:" + mcp.toolName(), mcp.success(), mcp.content() != null ? mcp.content() : "",
+				Map.of("source", "mcp", "timestamp", System.currentTimeMillis()));
+	}
+
+	// ── Session Memory ─────────────────────────────────────────────────────
+
+	/**
+	 * Prepends recent conversation history from session memory to the system
+	 * prompt, respecting a window size to avoid context overflow.
+	 */
+	private String injectSessionMemory(UUID sessionId, String agentName, String systemPrompt) {
+		if (sessionId == null || sessionMemoryManager.isEmpty()) {
+			return systemPrompt;
+		}
+
+		var memory = sessionMemoryManager.get().getShortMemory(sessionId);
+		if (memory.isEmpty()) {
+			return systemPrompt;
+		}
+
+		// Truncate to window size to avoid context overflow
+		int windowSize = DEFAULT_MEMORY_WINDOW;
+		if (memory.size() > windowSize) {
+			memory = memory.subList(memory.size() - windowSize, memory.size());
+		}
+
+		StringBuilder history = new StringBuilder("\n\nConversation History (last " + windowSize + " turns):\n");
+		for (var entry : memory) {
+			history.append(entry.getRole()).append(": ").append(entry.getContent()).append("\n");
+		}
+
+		return systemPrompt + history;
+	}
+
+	/**
+	 * Persists an interaction (user query or assistant response) to the session
+	 * memory store for future context injection.
+	 */
+	private void saveSessionMemory(UUID sessionId, String agentName, String role, String content) {
+		if (sessionId == null || sessionMemoryManager.isEmpty() || content == null || content.isBlank()) {
+			return;
+		}
+		try {
+			sessionMemoryManager.get().saveShortMemory(sessionId, agentName, role, content);
+		} catch (Exception e) {
+			log.warn("Failed to save session memory for '{}': {}", sessionId, e.getMessage());
+		}
+	}
+
+	// ── System prompt builders ─────────────────────────────────────────────
 
 	private String buildSystemPrompt(String basePrompt, String query, List<ToolResult> tools) {
 		var prompt = basePrompt != null ? basePrompt : DEFAULT_SYSTEM_PROMPT;
@@ -215,7 +363,7 @@ public class AgentExecutionService {
 	}
 
 	private String buildToolContext(List<ToolResult> tools) {
-		if (tools.isEmpty()) {
+		if (tools == null || tools.isEmpty()) {
 			return "";
 		}
 		return "\n\nAvailable Context from Tools:\n" + tools.stream()

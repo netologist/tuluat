@@ -23,6 +23,10 @@
             <groupId>com.tuluat</groupId>
             <artifactId>tuluat-guardrails</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.tuluat</groupId>
+            <artifactId>tuluat-protocols</artifactId>
+        </dependency>
 
         <!-- Spring Boot Starters -->
         <dependency>

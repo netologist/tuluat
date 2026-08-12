@@ -19,10 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Spring Web Controller serving HTTP endpoints exposed via Kubernetes Ingress.
+ * Supports multi-turn conversation memory via optional {@code sessionId}
+ * parameter (ADR 013).
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -40,15 +43,24 @@ public class AgentChatController {
 	/**
 	 * Public chat endpoint invoked via Ingress: POST
 	 * /api/v1/agents/{agentName}/chat
+	 *
+	 * <p>
+	 * Include {@code sessionId} in the request body or as a query parameter to
+	 * enable multi-turn conversation memory. Prior turns stored via
+	 * {@code SessionMemoryManager} are injected into the system prompt.
 	 */
 	@PostMapping("/agents/{agentName}/chat")
 	public ResponseEntity<AgentResponse> chatWithAgent(@PathVariable("agentName") String agentName,
+			@RequestParam(value = "sessionId", required = false) String sessionIdParam,
 			@RequestBody(required = false) ChatRequest request) {
 
 		String ns = (request != null && request.namespace() != null) ? request.namespace() : "default";
 		String prompt = (request != null) ? request.prompt() : null;
 
-		log.info("Received HTTP chat request for agent '{}/{}'", ns, agentName);
+		// Resolve sessionId from query param or request body
+		UUID sessionId = resolveSessionId(sessionIdParam, request);
+
+		log.info("Received HTTP chat request for agent '{}/{}' session={}", ns, agentName, sessionId);
 
 		// Fetch AiAgent Custom Resource from Kubernetes
 		AiAgent agent = client.resources(AiAgent.class).inNamespace(ns).withName(agentName).get();
@@ -71,7 +83,8 @@ public class AgentChatController {
 		}
 
 		// Process prompt via Spring AI & Skill execution engine on Virtual Threads
-		AgentResponse response = agentExecutionService.processAgentPrompt(agent, provider, prompt);
+		// Pass sessionId for multi-turn conversation memory
+		AgentResponse response = agentExecutionService.processAgentPrompt(agent, provider, prompt, sessionId);
 		return ResponseEntity.ok(response);
 	}
 
@@ -87,5 +100,23 @@ public class AgentChatController {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "AiAgent not found"));
 		}
 		return ResponseEntity.ok(agent);
+	}
+
+	private UUID resolveSessionId(String sessionIdParam, ChatRequest request) {
+		if (sessionIdParam != null && !sessionIdParam.isBlank()) {
+			try {
+				return UUID.fromString(sessionIdParam);
+			} catch (IllegalArgumentException e) {
+				log.warn("Invalid sessionId query param: {}", sessionIdParam);
+			}
+		}
+		if (request != null && request.sessionId() != null && !request.sessionId().isBlank()) {
+			try {
+				return UUID.fromString(request.sessionId());
+			} catch (IllegalArgumentException e) {
+				log.warn("Invalid sessionId in request body: {}", request.sessionId());
+			}
+		}
+		return null;
 	}
 }

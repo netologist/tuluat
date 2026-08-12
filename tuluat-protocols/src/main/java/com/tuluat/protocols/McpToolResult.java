@@ -1,7 +1,5 @@
 package com.tuluat.protocols;
 
-import java.util.Map;
-
 /**
  * Result of invoking a tool on an MCP server.
  *

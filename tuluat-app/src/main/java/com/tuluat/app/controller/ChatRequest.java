@@ -5,7 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Record representing an incoming HTTP chat request.
  */
-public record ChatRequest(@JsonProperty("prompt") String prompt, @JsonProperty("namespace") String namespace) {
+public record ChatRequest(@JsonProperty("prompt") String prompt, @JsonProperty("namespace") String namespace,
+		@JsonProperty("sessionId") String sessionId) {
 	public ChatRequest {
 		if (namespace == null || namespace.isBlank()) {
 			namespace = "default";

@@ -169,6 +169,60 @@ else
   assert_fail "Source attribution format incorrect or missing"
 fi
 
+# 8. Multi-Turn Session Memory E2E Test
+echo "8. Multi-Turn Conversation Memory via Session ID..."
+MEM_SESSION_ID=$(uuidgen 2>/dev/null || echo "e2e-mem-$(date +%s)")
+
+# Turn 1: ask about Q4 revenue
+TURN1_RESP=$(curl -s --max-time 30 -X POST "${HOST}/api/v1/agents/financial-analyst-agent/chat?sessionId=${MEM_SESSION_ID}" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "'"${NAMESPACE}"'", "prompt": "What was Acme Corp Q4 2025 revenue?"}' || true)
+
+TURN1_ANSWER=$(echo "${TURN1_RESP}" | jq -r '.answer // empty' 2>/dev/null || true)
+if [ -n "${TURN1_ANSWER}" ]; then
+  assert_ok "Turn 1 response received"
+else
+  assert_fail "Turn 1 response empty: ${TURN1_RESP}"
+fi
+
+# Turn 2: follow-up that requires memory of turn 1
+TURN2_RESP=$(curl -s --max-time 30 -X POST "${HOST}/api/v1/agents/financial-analyst-agent/chat?sessionId=${MEM_SESSION_ID}" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "'"${NAMESPACE}"'", "prompt": "What was the operating margin you just mentioned?"}' || true)
+
+TURN2_SYS_PROMPT=$(echo "${TURN2_RESP}" | jq -r '.systemPrompt // empty' 2>/dev/null || true)
+TURN2_ANSWER=$(echo "${TURN2_RESP}" | jq -r '.answer // empty' 2>/dev/null || true)
+
+if [ -n "${TURN2_ANSWER}" ]; then
+  assert_ok "Turn 2 response received in multi-turn session"
+else
+  assert_fail "Turn 2 response empty: ${TURN2_RESP}"
+fi
+
+# Assert session memory injected into system prompt
+if echo "${TURN2_SYS_PROMPT}" | grep -q "Conversation History"; then
+  assert_ok "Conversation history header found in system prompt"
+else
+  assert_fail "Conversation history not found in turn 2 system prompt"
+fi
+
+# 9. MCP Tool Wiring Smoke Test (optional: skip if no MCP server registered)
+echo "9. MCP Tool Wiring Verification..."
+MCP_CLIENTS=$(curl -s "${HOST}/api/v1/mcp-servers" 2>/dev/null | jq -r '. | length // 0' 2>/dev/null || echo "0")
+if [ "${MCP_CLIENTS}" -gt 0 ]; then
+  MCP_CHAT_RESP=$(curl -s --max-time 30 -X POST "${HOST}/api/v1/agents/financial-analyst-agent/chat" \
+    -H "Content-Type: application/json" \
+    -d '{"namespace": "'"${NAMESPACE}"'", "prompt": "Use MCP tools: get latest market data"}' || true)
+  MCP_SYS=$(echo "${MCP_CHAT_RESP}" | jq -r '.systemPrompt // empty' 2>/dev/null || true)
+  if echo "${MCP_SYS}" | grep -q "mcp:"; then
+    assert_ok "MCP tool results present in system prompt"
+  else
+    echo "  [INFO] No mcp: prefix in system prompt — MCP tools may not be called for this query"
+  fi
+else
+  echo "  [INFO] No MCP servers registered — skipping MCP tool wiring test"
+fi
+
 
 echo "=========================================================="
 echo " 🎉 ALL E2E ACCEPTANCE & SMOKE TESTS PASSED!"
