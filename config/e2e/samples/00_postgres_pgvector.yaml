@@ -16,6 +16,7 @@ spec:
       containers:
         - name: postgres
           image: pgvector/pgvector:pg16
+          args: ["postgres", "-c", "max_connections=200"]
           env:
             - name: POSTGRES_DB
               value: ai_operator_db
