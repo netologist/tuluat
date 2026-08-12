@@ -67,7 +67,7 @@ class RagEmbabelIntegrationTest {
 
 		jdbc.execute("CREATE EXTENSION IF NOT EXISTS vector");
 
-		String migration = new ClassPathResource("db/migration/V4__rag_chunks.sql")
+		String migration = new ClassPathResource("db/migration/V3__rag_chunks.sql")
 				.getContentAsString(StandardCharsets.UTF_8);
 		for (String stmt : migration.split(";")) {
 			String trimmed = stmt.trim();

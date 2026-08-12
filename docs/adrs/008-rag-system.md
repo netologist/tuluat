@@ -48,7 +48,7 @@ A **RAG pipeline in `tuluat-engine`** (`com.tuluat.engine.rag`) with four swappa
 * `retrieve(String query, int topK)`: embed query → `Retriever.retrieve` → `RagContext` that agents merge into system prompts.
 * `deleteDocument(String sourceRef)`: remove chunks + object.
 
-### 6. Persistence — `rag_chunks` table (new migration V4)
+### 6. Persistence — `rag_chunks` table (new migration V3)
 ```sql
 CREATE TABLE IF NOT EXISTS rag_chunks (
     id BIGSERIAL PRIMARY KEY,
