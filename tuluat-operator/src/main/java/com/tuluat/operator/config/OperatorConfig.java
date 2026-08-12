@@ -1,8 +1,10 @@
 package com.tuluat.operator.config;
 
 import com.tuluat.operator.reconciler.AiAgentReconciler;
+import com.tuluat.operator.reconciler.AiWorkflowReconciler;
 import com.tuluat.operator.reconciler.LlmProviderReconciler;
 import com.tuluat.operator.reconciler.McpServerReconciler;
+import com.tuluat.operator.reconciler.WorkflowSessionReconciler;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import io.javaoperatorsdk.operator.Operator;
@@ -29,11 +31,14 @@ public class OperatorConfig {
 	@Bean(destroyMethod = "stop")
 	@ConditionalOnExpression("environment.getProperty('AGENT_NAME') == null")
 	public Operator operator(KubernetesClient client, LlmProviderReconciler providerReconciler,
-			AiAgentReconciler agentReconciler, McpServerReconciler mcpServerReconciler) {
+			AiAgentReconciler agentReconciler, McpServerReconciler mcpServerReconciler,
+			AiWorkflowReconciler workflowReconciler, WorkflowSessionReconciler sessionReconciler) {
 		Operator operator = new Operator(overrider -> overrider.withKubernetesClient(client));
 		operator.register(providerReconciler);
 		operator.register(agentReconciler);
 		operator.register(mcpServerReconciler);
+		operator.register(workflowReconciler);
+		operator.register(sessionReconciler);
 		operator.start();
 		return operator;
 	}
