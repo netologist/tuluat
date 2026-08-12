@@ -20,7 +20,7 @@ class TuluatToolGroupTest {
 
 	@BeforeEach
 	void setUp() {
-		toolGroup = new TuluatToolGroup(new ToolRegistry());
+		toolGroup = new TuluatToolGroup(new ToolRegistry(), java.util.Optional.empty());
 	}
 
 	@Nested
@@ -96,7 +96,7 @@ class TuluatToolGroupTest {
 				}
 			});
 
-			var tg = new TuluatToolGroup(registry);
+			var tg = new TuluatToolGroup(registry, java.util.Optional.empty());
 			var toolNames = tg.getTools().stream().map(t -> t.getDefinition().getName()).toList();
 
 			assertThat(toolNames).contains("echo");
@@ -121,7 +121,7 @@ class TuluatToolGroupTest {
 				}
 			});
 
-			var tg = new TuluatToolGroup(registry);
+			var tg = new TuluatToolGroup(registry, java.util.Optional.empty());
 			var tool = tg.getTools().stream().filter(t -> "describe-me".equals(t.getDefinition().getName()))
 					.findFirst();
 

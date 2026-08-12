@@ -49,10 +49,11 @@ public class TuluatGoalAgent {
 	@AchievesGoal(description = "Completes the goal by executing the named AI agent")
 	@Action
 	public GoalResult executeGoal(GoalRequest request) {
-		log.info("Embabel Agent: executing goal '{}' via agent '{}'", request.goalDescription(), request.agentName());
+		log.info("Embabel Agent: executing goal '{}' via agent '{}' session={}", request.goalDescription(),
+				request.agentName(), request.sessionId());
 
 		AgentResponse response = agentExecutionService.executeAgent(request.agentName(), request.goalDescription(),
-				request.context() != null ? request.context().toString() : null);
+				request.context() != null ? request.context().toString() : null, request.sessionId());
 		log.info("Embabel Agent: goal '{}' completed, model={}, tokens={}", request.goalDescription(), response.model(),
 				response.usage().totalTokens());
 
