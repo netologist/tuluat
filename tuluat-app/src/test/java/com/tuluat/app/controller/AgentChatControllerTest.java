@@ -23,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -67,8 +68,8 @@ class AgentChatControllerTest {
 	void testChatWithNonExistentAgent() {
 		when(agentResMock.get()).thenReturn(null);
 
-		ResponseEntity<AgentResponse> response = controller.chatWithAgent("missing-agent",
-				new ChatRequest("Hello", "default"));
+               ResponseEntity<AgentResponse> response = controller.chatWithAgent("missing-agent", null,
+                               new ChatRequest("Hello", "default", null));
 
 		assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 		assertNotNull(response.getBody());
@@ -92,10 +93,10 @@ class AgentChatControllerTest {
 
 		var expectedResponse = AgentResponse.create("support-agent", "gpt-4o", "System prompt", "42 is the answer",
 				List.of(ToolResult.success("calculator", "42")), UsageStats.calculate(10, 10, "gpt-4o", 15L));
-		when(agentExecutionService.processAgentPrompt(any(), any(), anyString())).thenReturn(expectedResponse);
+               when(agentExecutionService.processAgentPrompt(any(), any(), anyString(), isNull())).thenReturn(expectedResponse);
 
-		ResponseEntity<AgentResponse> response = controller.chatWithAgent("support-agent",
-				new ChatRequest("What is 6 * 7?", "tuluat-system"));
+               ResponseEntity<AgentResponse> response = controller.chatWithAgent("support-agent", null,
+                               new ChatRequest("What is 6 * 7?", "tuluat-system", null));
 
 		assertEquals(HttpStatus.OK, response.getStatusCode());
 		assertNotNull(response.getBody());
