@@ -2,6 +2,8 @@ package com.tuluat.app.controller;
 
 import com.tuluat.app.config.KubernetesResourceResolver;
 import com.tuluat.app.websocket.WorkflowEventPublisher;
+import com.tuluat.crd.session.WorkflowSession;
+import com.tuluat.crd.session.WorkflowSessionSpec;
 import com.tuluat.crd.workflow.AiWorkflow;
 import com.tuluat.engine.entity.NodeExecutionEntity;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
@@ -11,7 +13,9 @@ import com.tuluat.engine.repository.WorkflowSessionLogRepository;
 import com.tuluat.engine.repository.WorkflowSessionRepository;
 import com.tuluat.engine.temporal.ApprovalSignal;
 import com.tuluat.engine.workflow.WorkflowExecutionService;
+import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -42,6 +47,9 @@ public class WorkflowSessionController {
 	private final KubernetesResourceResolver resolver;
 	private final WorkflowSessionLogRepository logRepository;
 	private final WorkflowEventPublisher eventPublisher;
+
+	private static final long SESSION_WAIT_TIMEOUT_MS = 120_000L;
+	private static final long SESSION_POLL_INTERVAL_MS = 500L;
 
 	@Autowired
 	public WorkflowSessionController(WorkflowExecutionService executionService,
@@ -68,13 +76,42 @@ public class WorkflowSessionController {
 			return ResponseEntity.notFound().build();
 		}
 
-		WorkflowSessionEntity session = executionService.startSession(workflowName, workflow.getSpec(), input,
-				maxLoops);
+		String crNamespace = workflow.getMetadata().getNamespace();
+		String crName = workflowName + "-" + UUID.randomUUID().toString().substring(0, 8);
+		WorkflowSession sessionCr = new WorkflowSession();
+		sessionCr.setMetadata(new ObjectMetaBuilder().withName(crName).withNamespace(crNamespace).build());
+		sessionCr.setSpec(new WorkflowSessionSpec(workflowName, input, Map.of("maxLoops", maxLoops)));
+		resolver.createOrReplace(WorkflowSession.class, sessionCr);
+
+		WorkflowSessionEntity session = awaitCompletion(crName, crNamespace);
 		if (eventPublisher != null) {
 			eventPublisher.publishSessionState(session.getSessionId(), workflowName, session.getStatus().name(),
 					session.getCurrentNodeId(), session.getContextData());
 		}
 		return ResponseEntity.ok(session);
+	}
+
+	private WorkflowSessionEntity awaitCompletion(String crName, String namespace) {
+		long deadline = System.currentTimeMillis() + SESSION_WAIT_TIMEOUT_MS;
+		while (System.currentTimeMillis() < deadline) {
+			WorkflowSession cr = resolver.get(WorkflowSession.class, namespace, crName);
+			if (cr != null && cr.getStatus() != null && cr.getStatus().sessionId() != null
+					&& !cr.getStatus().sessionId().isBlank()) {
+				UUID sessionId = UUID.fromString(cr.getStatus().sessionId());
+				return sessionRepository.findById(sessionId)
+						.orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+								"Session " + sessionId + " not found after reconciliation"));
+			}
+			try {
+				Thread.sleep(SESSION_POLL_INTERVAL_MS);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+						"Interrupted while waiting for session execution", e);
+			}
+		}
+		throw new ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT,
+				"Timed out waiting for WorkflowSession " + crName + " to complete");
 	}
 
 	@GetMapping("/sessions")

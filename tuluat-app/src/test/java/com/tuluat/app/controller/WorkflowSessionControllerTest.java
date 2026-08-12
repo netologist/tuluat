@@ -1,6 +1,8 @@
 package com.tuluat.app.controller;
 
 import com.tuluat.app.config.KubernetesResourceResolver;
+import com.tuluat.crd.session.WorkflowSession;
+import com.tuluat.crd.session.WorkflowSessionStatus;
 import com.tuluat.crd.workflow.AiWorkflow;
 import com.tuluat.crd.workflow.AiWorkflowSpec;
 import com.tuluat.engine.entity.SessionStatus;
@@ -10,10 +12,7 @@ import com.tuluat.engine.repository.NodeExecutionRepository;
 import com.tuluat.engine.repository.WorkflowSessionLogRepository;
 import com.tuluat.engine.repository.WorkflowSessionRepository;
 import com.tuluat.engine.workflow.WorkflowExecutionService;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.dsl.MixedOperation;
-import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
-import io.fabric8.kubernetes.client.dsl.Resource;
+import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,12 +41,8 @@ class WorkflowSessionControllerTest {
 	private WorkflowSessionRepository sessionRepository;
 	private NodeExecutionRepository nodeExecutionRepository;
 	private WorkflowSessionLogRepository logRepository;
-	private KubernetesClient kubernetesClient;
+	private KubernetesResourceResolver resolver;
 	private WorkflowSessionController controller;
-
-	private MixedOperation workflowsMock;
-	private NonNamespaceOperation workflowNsMock;
-	private Resource workflowResMock;
 
 	@BeforeEach
 	@SuppressWarnings("unchecked")
@@ -55,47 +51,43 @@ class WorkflowSessionControllerTest {
 		sessionRepository = mock(WorkflowSessionRepository.class);
 		nodeExecutionRepository = mock(NodeExecutionRepository.class);
 		logRepository = mock(WorkflowSessionLogRepository.class);
-		kubernetesClient = mock(KubernetesClient.class);
-
-		workflowsMock = mock(MixedOperation.class);
-		workflowNsMock = mock(NonNamespaceOperation.class);
-		workflowResMock = mock(Resource.class);
-
-		when(kubernetesClient.resources(eq(AiWorkflow.class))).thenReturn(workflowsMock);
-		when(workflowsMock.inNamespace(anyString())).thenReturn(workflowNsMock);
-		when(workflowNsMock.withName(anyString())).thenReturn(workflowResMock);
+		resolver = mock(KubernetesResourceResolver.class);
 
 		controller = new WorkflowSessionController(executionService, sessionRepository, nodeExecutionRepository,
-				new KubernetesResourceResolver(kubernetesClient), logRepository, null);
+				resolver, logRepository, null);
 	}
 
 	@Test
 	@DisplayName("Should return 404 when requested AiWorkflow CR is not found in cluster")
 	void testCreateSessionWorkflowNotFound() {
-		when(workflowResMock.get()).thenReturn(null);
+		when(resolver.get(eq(AiWorkflow.class), isNull(), eq("non-existent-wf"))).thenReturn(null);
 
 		ResponseEntity<WorkflowSessionEntity> response = controller.createSession("non-existent-wf", null,
 				Map.of("input", "hello"));
 
 		assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-		verify(executionService, never()).startSession(anyString(), any(), anyString(), anyInt());
+		verify(resolver, never()).createOrReplace(eq(WorkflowSession.class), any(WorkflowSession.class));
 	}
 
 	@Test
-	@DisplayName("Should create session when AiWorkflow CR exists")
+	@DisplayName("Should create WorkflowSession CR and return completed entity when AiWorkflow CR exists")
 	void testCreateSessionSuccess() {
 		AiWorkflow workflow = new AiWorkflow();
-		AiWorkflowSpec spec = new AiWorkflowSpec(null, "node-1", null, null, null, null);
-		workflow.setSpec(spec);
+		workflow.setMetadata(new ObjectMetaBuilder().withName("my-workflow").withNamespace("tuluat-system").build());
+		workflow.setSpec(new AiWorkflowSpec(null, "node-1", null, null, null, null));
 
-		when(workflowResMock.get()).thenReturn(workflow);
+		when(resolver.get(eq(AiWorkflow.class), isNull(), eq("my-workflow"))).thenReturn(workflow);
 
 		WorkflowSessionEntity entity = new WorkflowSessionEntity();
 		entity.setSessionId(UUID.randomUUID());
 		entity.setWorkflowName("my-workflow");
 		entity.setStatus(SessionStatus.COMPLETED);
 
-		when(executionService.startSession(eq("my-workflow"), eq(spec), eq("test input"), eq(10))).thenReturn(entity);
+		WorkflowSession completedCr = new WorkflowSession();
+		completedCr.setStatus(new WorkflowSessionStatus(entity.getSessionId().toString(), "COMPLETED", null, null, null,
+				null, 0L, 0L, 0L, BigDecimal.ZERO, 0L, List.of()));
+		when(resolver.get(eq(WorkflowSession.class), eq("tuluat-system"), anyString())).thenReturn(completedCr);
+		when(sessionRepository.findById(entity.getSessionId())).thenReturn(Optional.of(entity));
 
 		ResponseEntity<WorkflowSessionEntity> response = controller.createSession("my-workflow", null,
 				Map.of("input", "test input", "maxLoops", 10));
@@ -103,6 +95,7 @@ class WorkflowSessionControllerTest {
 		assertEquals(HttpStatus.OK, response.getStatusCode());
 		assertNotNull(response.getBody());
 		assertEquals(SessionStatus.COMPLETED, response.getBody().getStatus());
+		verify(resolver).createOrReplace(eq(WorkflowSession.class), any(WorkflowSession.class));
 	}
 
 	@Test

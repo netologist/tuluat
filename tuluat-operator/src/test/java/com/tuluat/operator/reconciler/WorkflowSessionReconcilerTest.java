@@ -8,6 +8,7 @@ import com.tuluat.crd.workflow.AiWorkflowSpec;
 import com.tuluat.engine.entity.WorkflowSessionEntity;
 import com.tuluat.engine.entity.SessionStatus;
 import com.tuluat.engine.workflow.WorkflowExecutionService;
+import com.tuluat.operator.event.KubernetesEventRecorder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
@@ -42,6 +43,8 @@ class WorkflowSessionReconcilerTest {
 	private MixedOperation workflowsInNsMock;
 	@Mock
 	private Resource<AiWorkflow> workflowResourceMock;
+	@Mock
+	private KubernetesEventRecorder eventRecorder;
 	@InjectMocks
 	private WorkflowSessionReconciler reconciler;
 

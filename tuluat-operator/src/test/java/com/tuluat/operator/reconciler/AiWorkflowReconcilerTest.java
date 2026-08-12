@@ -5,6 +5,7 @@ import com.tuluat.crd.workflow.AiWorkflowSpec;
 import com.tuluat.crd.workflow.NodeDefinition;
 import com.tuluat.engine.repository.NodeExecutionRepository;
 import com.tuluat.engine.repository.WorkflowSessionRepository;
+import com.tuluat.operator.event.KubernetesEventRecorder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import org.junit.jupiter.api.DisplayName;
@@ -20,8 +21,9 @@ class AiWorkflowReconcilerTest {
 
 	private final WorkflowSessionRepository sessionRepository = mock(WorkflowSessionRepository.class);
 	private final NodeExecutionRepository nodeExecutionRepository = mock(NodeExecutionRepository.class);
-	private final AiWorkflowReconciler reconciler = new AiWorkflowReconciler(sessionRepository,
-			nodeExecutionRepository);
+	private final KubernetesEventRecorder eventRecorder = mock(KubernetesEventRecorder.class);
+	private final AiWorkflowReconciler reconciler = new AiWorkflowReconciler(sessionRepository, nodeExecutionRepository,
+			eventRecorder);
 
 	@Test
 	@DisplayName("Should set status to Ready with correct node count and zero aggregates")
