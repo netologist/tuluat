@@ -51,11 +51,12 @@ public class ToolRegistry {
 		log.info("Registered {} builtin tool(s)", builtinTools.size());
 	}
 
-	// ── Global (union) accessors — for tool discovery by Embabel / observability ──
+	// ── Global (union) accessors — for tool discovery by Embabel / observability
+	// ──
 
 	/**
-	 * Returns all tool names visible across builtins and every agent scope.
-	 * Used by {@code TuluatToolGroup} for Embabel tool discovery.
+	 * Returns all tool names visible across builtins and every agent scope. Used by
+	 * {@code TuluatToolGroup} for Embabel tool discovery.
 	 */
 	public List<String> getAvailableToolNames() {
 		var names = new ArrayList<>(builtinTools.keySet());
@@ -64,16 +65,18 @@ public class ToolRegistry {
 	}
 
 	/**
-	 * Finds a tool by name across builtins and all agent scopes.
-	 * Agent-scoped tools take precedence over builtins with the same name.
+	 * Finds a tool by name across builtins and all agent scopes. Agent-scoped tools
+	 * take precedence over builtins with the same name.
 	 */
 	public Optional<Tool> findTool(String name) {
-		if (name == null) return Optional.empty();
+		if (name == null)
+			return Optional.empty();
 		String key = name.toLowerCase();
 		// Check agent scopes first (custom tools override builtins)
 		for (AgentToolScope scope : agentScopes.values()) {
 			Tool tool = scope.tools.get(key);
-			if (tool != null) return Optional.of(tool);
+			if (tool != null)
+				return Optional.of(tool);
 		}
 		return Optional.ofNullable(builtinTools.get(key));
 	}
@@ -86,7 +89,8 @@ public class ToolRegistry {
 	 * opened classloaders are closed to prevent leaks.
 	 */
 	public void loadToolSources(String agentName, List<ToolSource> sources) {
-		if (sources == null || sources.isEmpty()) return;
+		if (sources == null || sources.isEmpty())
+			return;
 		AgentToolScope scope = agentScopes.computeIfAbsent(agentName, k -> {
 			var s = new AgentToolScope();
 			// Seed agent scope with builtin copies so per-agent isolation includes builtins
@@ -95,13 +99,15 @@ public class ToolRegistry {
 		});
 
 		for (ToolSource source : sources) {
-			if (source == null || source.path() == null || source.path().isBlank()) continue;
+			if (source == null || source.path() == null || source.path().isBlank())
+				continue;
 			if ("CONFIGMAP".equalsIgnoreCase(source.type()) || "FOLDER".equalsIgnoreCase(source.type())
 					|| "JAR".equalsIgnoreCase(source.type())) {
 				// Evict previously loaded providers for this source path
 				List<ToolJarLoader.LoadedProvider> old = scope.providers.remove(source.path());
 				if (old != null) {
-					old.forEach(lp -> scope.tools.values().removeIf(t -> t.name().equals(lp.provider().providerName())));
+					old.forEach(
+							lp -> scope.tools.values().removeIf(t -> t.name().equals(lp.provider().providerName())));
 					closeClassLoaders(old.stream().map(ToolJarLoader.LoadedProvider::classLoader).toList());
 				}
 
@@ -120,8 +126,10 @@ public class ToolRegistry {
 
 	/**
 	 * Registers a tool into the given agent's scope.
-	 * @deprecated prefer {@link #loadToolSources(String, List)} for agent-scoped loading;
-	 * kept for test compatibility and direct registration use cases.
+	 * 
+	 * @deprecated prefer {@link #loadToolSources(String, List)} for agent-scoped
+	 *             loading; kept for test compatibility and direct registration use
+	 *             cases.
 	 */
 	@Deprecated
 	public void register(Tool tool) {
@@ -131,7 +139,9 @@ public class ToolRegistry {
 
 	/**
 	 * Register all tools from a provider into the global builtin scope.
-	 * @deprecated prefer {@link #loadToolSources(String, List)} for agent-scoped loading.
+	 * 
+	 * @deprecated prefer {@link #loadToolSources(String, List)} for agent-scoped
+	 *             loading.
 	 */
 	@Deprecated
 	public void registerProvider(ToolProvider provider) {
@@ -143,12 +153,13 @@ public class ToolRegistry {
 	}
 
 	/**
-	 * Returns unmodifiable view of loaded JAR providers for the given agent,
-	 * mapped by source path.
+	 * Returns unmodifiable view of loaded JAR providers for the given agent, mapped
+	 * by source path.
 	 */
 	public Map<String, List<ToolJarLoader.LoadedProvider>> getLoadedProviders(String agentName) {
 		AgentToolScope scope = agentScopes.get(agentName);
-		if (scope == null) return Map.of();
+		if (scope == null)
+			return Map.of();
 		return Collections.unmodifiableMap(scope.providers);
 	}
 
@@ -158,11 +169,12 @@ public class ToolRegistry {
 	 */
 	public Map<String, ToolResult> executeActiveTools(String agentName, List<ToolDefinition> toolDefs,
 			String userInput) {
-		if (toolDefs == null || toolDefs.isEmpty()) return Map.of();
+		if (toolDefs == null || toolDefs.isEmpty())
+			return Map.of();
 
-		List<ToolDefinition> activeDefs = toolDefs.stream()
-				.filter(def -> Boolean.TRUE.equals(def.enabled())).toList();
-		if (activeDefs.isEmpty()) return Map.of();
+		List<ToolDefinition> activeDefs = toolDefs.stream().filter(def -> Boolean.TRUE.equals(def.enabled())).toList();
+		if (activeDefs.isEmpty())
+			return Map.of();
 
 		AgentToolScope scope = agentScopes.get(agentName);
 		Map<String, Tool> toolMap = scope != null ? scope.tools : builtinTools;
@@ -231,7 +243,9 @@ public class ToolRegistry {
 	/** Compiled-in tools (Calculator, Web Search, Weather). */
 	public static final class BuiltinToolProvider implements ToolProvider {
 		@Override
-		public String providerName() { return "builtin"; }
+		public String providerName() {
+			return "builtin";
+		}
 
 		@Override
 		public List<Tool> provideTools() {
