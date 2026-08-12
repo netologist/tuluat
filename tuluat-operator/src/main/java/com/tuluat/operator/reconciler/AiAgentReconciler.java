@@ -125,7 +125,7 @@ public class AiAgentReconciler implements Reconciler<AiAgent> {
 				.withOwnerReferences(ownerRef).endMetadata().withNewSpec().withReplicas(replicas).withNewSelector()
 				.withMatchLabels(labels).endSelector().withNewTemplate().withNewMetadata().withLabels(labels)
 				.endMetadata().withNewSpec().addNewContainer().withName("agent-runtime")
-				.withImage("tuluat-operator:latest").addNewEnv().withName("AGENT_NAME")
+				.withImage("tuluat-operator:latest").withImagePullPolicy("IfNotPresent").addNewEnv().withName("AGENT_NAME")
 				.withValue(agent.getMetadata().getName()).endEnv().endContainer().endSpec().endTemplate().endSpec()
 				.build();
 		Deployment existing = client.apps().deployments().inNamespace(ns).withName(deployName).get();
