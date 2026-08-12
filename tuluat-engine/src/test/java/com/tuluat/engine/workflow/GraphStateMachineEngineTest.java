@@ -67,7 +67,7 @@ class GraphStateMachineEngineTest {
 		EdgeDefinition edge1 = new EdgeDefinition("check-result", "success-node", "true");
 		EdgeDefinition edge2 = new EdgeDefinition("check-result", "retry-node", "false");
 
-		AiWorkflowSpec spec = new AiWorkflowSpec(null, null, null, List.of(edge1, edge2), null);
+		AiWorkflowSpec spec = new AiWorkflowSpec(null, null, null, List.of(edge1, edge2), null, null);
 
 		String nextNode = engine.resolveNextNodeId(spec, "check-result", true);
 		assertEquals("success-node", nextNode);

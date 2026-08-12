@@ -58,7 +58,7 @@ class WorkflowSessionReconcilerTest {
 	void testReconcilePendingSession() {
 		var workflow = new AiWorkflow();
 		workflow.setMetadata(new ObjectMetaBuilder().withName("research-wf").withNamespace("default").build());
-		workflow.setSpec(new AiWorkflowSpec(null, null, null, null, null));
+		workflow.setSpec(new AiWorkflowSpec(null, null, null, null, null, null));
 		when(workflowResourceMock.get()).thenReturn(workflow);
 
 		UUID sessionId = UUID.randomUUID();
@@ -88,7 +88,7 @@ class WorkflowSessionReconcilerTest {
 	void testReconcileCompletedSession() {
 		var session = new WorkflowSession();
 		session.setMetadata(new ObjectMetaBuilder().withName("session-1").withNamespace("default").build());
-		WorkflowSessionStatus status = new WorkflowSessionStatus(null, "COMPLETED", null, null, null, null);
+		WorkflowSessionStatus status = new WorkflowSessionStatus(null, "COMPLETED", null, null, null, null, 0L, 0L, 0L, java.math.BigDecimal.ZERO, 0L, java.util.List.of());
 		session.setStatus(status);
 
 		UpdateControl<WorkflowSession> control = reconciler.reconcile(session, null);

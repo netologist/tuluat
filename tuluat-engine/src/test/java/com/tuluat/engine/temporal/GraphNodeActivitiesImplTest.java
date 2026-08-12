@@ -18,7 +18,8 @@ class GraphNodeActivitiesImplTest {
 
 	@BeforeEach
 	void setUp() {
-		activities = new GraphNodeActivitiesImpl(null, Optional.empty(), Optional.empty(), Optional.empty());
+		activities = new GraphNodeActivitiesImpl(null, Optional.empty(), Optional.empty(), Optional.empty(),
+				Optional.empty(), Optional.empty());
 	}
 
 	@Test

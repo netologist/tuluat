@@ -68,9 +68,7 @@ class CrdDomainRecordsTest {
 		var workflow = new AiWorkflow();
 		workflow.setMetadata(new ObjectMetaBuilder().withName("wf-1").withNamespace("tuluat-system").build());
 
-		var spec = new AiWorkflowSpec("Multi-Agent Researcher", "node-1",
-				List.of(new NodeDefinition("node-1", "AGENT", "agent-1", "Prompt", "out", null, null)),
-				List.of(new EdgeDefinition("node-1", "node-2", "true")), new MemoryConfig(10, true, "vectors"));
+		var spec = new AiWorkflowSpec("Multi-Agent Researcher", "node-1", List.of(new NodeDefinition("node-1", "AGENT", "agent-1", "Prompt", "out", null, null)), List.of(new EdgeDefinition("node-1", "node-2", "true")), new MemoryConfig(10, true, "vectors"), null);
 		workflow.setSpec(spec);
 
 		assertEquals("wf-1", workflow.getMetadata().getName());

@@ -1,9 +1,14 @@
 package com.tuluat.engine.temporal;
 
+import com.tuluat.crd.agent.AiAgent;
 import com.tuluat.crd.workflow.NodeDefinition;
 import com.tuluat.engine.agent.AgentExecutionService;
+import com.tuluat.engine.agent.AgentResolver;
 import com.tuluat.engine.agent.AgentResponse;
+import com.tuluat.engine.agent.UsageStats;
+import com.tuluat.engine.entity.NodeExecutionEntity;
 import com.tuluat.engine.entity.WorkflowSessionLogEntity;
+import com.tuluat.engine.repository.NodeExecutionRepository;
 import com.tuluat.engine.repository.WorkflowSessionLogRepository;
 import com.tuluat.engine.telemetry.WorkflowTelemetryService;
 import com.tuluat.guardrails.GuardrailPipeline;
@@ -14,6 +19,8 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,15 +34,20 @@ public class GraphNodeActivitiesImpl implements GraphNodeActivities {
 	private final Optional<WorkflowSessionLogRepository> logRepository;
 	private final Optional<WorkflowTelemetryService> telemetryService;
 	private final Optional<GuardrailPipeline> guardrailPipeline;
+	private final Optional<NodeExecutionRepository> nodeExecutionRepository;
+	private final Optional<AgentResolver> agentResolver;
 	private final ExpressionParser parser = new SpelExpressionParser();
 
 	public GraphNodeActivitiesImpl(AgentExecutionService agentExecutionService,
 			Optional<WorkflowSessionLogRepository> logRepository, Optional<WorkflowTelemetryService> telemetryService,
-			Optional<GuardrailPipeline> guardrailPipeline) {
+			Optional<GuardrailPipeline> guardrailPipeline, Optional<NodeExecutionRepository> nodeExecutionRepository,
+			Optional<AgentResolver> agentResolver) {
 		this.agentExecutionService = agentExecutionService;
 		this.logRepository = logRepository;
 		this.telemetryService = telemetryService;
 		this.guardrailPipeline = guardrailPipeline;
+		this.nodeExecutionRepository = nodeExecutionRepository;
+		this.agentResolver = agentResolver;
 	}
 
 	@Override
@@ -43,10 +55,17 @@ public class GraphNodeActivitiesImpl implements GraphNodeActivities {
 		log.info("Temporal Activity: Executing Agent Node '{}' for session {}", node.id(), sessionId);
 		recordLog(sessionId, node.id(), "INFO", "Executing Agent Node: " + node.id());
 
+		OffsetDateTime startTime = OffsetDateTime.now();
 		String prompt = resolvePromptTemplate(node.inputTemplate(), contextData);
+
+		String provider = resolveProviderName(node.agentRef());
 		AgentResponse response = agentExecutionService.executeAgent(node.agentRef(), prompt, null);
+		OffsetDateTime endTime = OffsetDateTime.now();
 
 		contextData.put(node.outputKey(), response.answer());
+
+		// Persist node execution metrics
+		persistNodeExecution(sessionId, node.id(), prompt, provider, response, startTime, endTime);
 
 		if (guardrailPipeline.isPresent() && node.outputSchema() != null && !node.outputSchema().isBlank()) {
 			ValidationResult vr = guardrailPipeline.get().validateOutput(response.answer(), null, node.outputSchema());
@@ -71,38 +90,80 @@ public class GraphNodeActivitiesImpl implements GraphNodeActivities {
 		log.info("Temporal Activity: Evaluating Condition Node '{}' for session {}", node.id(), sessionId);
 		recordLog(sessionId, node.id(), "INFO", "Evaluating Condition Node: " + node.id());
 
-		if (node.expression() == null || node.expression().isBlank()) {
-			return true;
-		}
-		StandardEvaluationContext evalContext = new StandardEvaluationContext();
-		evalContext.setVariable("data", contextData);
-		contextData.forEach(evalContext::setVariable);
-		Boolean result = parser.parseExpression(node.expression()).getValue(evalContext, Boolean.class);
-		boolean finalResult = Boolean.TRUE.equals(result);
+		String expression = node.expression() != null ? node.expression() : "true";
+		StandardEvaluationContext evalCtx = new StandardEvaluationContext();
+		contextData.forEach(evalCtx::setVariable);
 
-		recordLog(sessionId, node.id(), "INFO", "Condition result: " + finalResult);
-		return finalResult;
+		Boolean result = parser.parseExpression(expression).getValue(evalCtx, Boolean.class);
+		boolean evaluated = result != null && result;
+		recordLog(sessionId, node.id(), "INFO",
+				"Condition Node '" + node.id() + "' evaluated to " + evaluated + " (expr: " + expression + ")");
+
+		telemetryService.ifPresent(ts -> ts.recordNodeExecuted("temporal-activity", node.type(), node.id()));
+		return evaluated;
 	}
 
 	@Override
 	public void recordLog(UUID sessionId, String nodeId, String level, String message) {
 		logRepository.ifPresent(repo -> {
-			WorkflowSessionLogEntity entity = new WorkflowSessionLogEntity();
-			entity.setSessionId(sessionId);
-			entity.setNodeId(nodeId);
-			entity.setLogLevel(level);
-			entity.setMessage(message);
-			repo.save(entity);
+			var logEntry = new WorkflowSessionLogEntity();
+			logEntry.setSessionId(sessionId);
+			logEntry.setNodeId(nodeId);
+			logEntry.setLogLevel(level);
+			logEntry.setMessage(message);
+			repo.save(logEntry);
 		});
 	}
 
 	private String resolvePromptTemplate(String template, Map<String, Object> contextData) {
-		if (template == null)
+		if (template == null || template.isBlank()) {
 			return "";
-		String result = template;
-		for (Map.Entry<String, Object> entry : contextData.entrySet()) {
-			result = result.replace("{{" + entry.getKey() + "}}", String.valueOf(entry.getValue()));
 		}
-		return result;
+		return template.replace("{{input}}", String.valueOf(contextData.getOrDefault("input", "")));
+	}
+
+	private void persistNodeExecution(UUID sessionId, String nodeId, String input, String provider,
+			AgentResponse response, OffsetDateTime startTime, OffsetDateTime endTime) {
+		nodeExecutionRepository.ifPresent(repo -> {
+			var execution = new NodeExecutionEntity();
+			execution.setSessionId(sessionId);
+			execution.setNodeId(nodeId);
+			execution.setAgentName(response.agentName());
+			execution.setProvider(provider);
+			execution.setModel(response.model());
+			execution.setInputPrompt(input);
+			execution.setOutputText(response.answer());
+			execution.setStartTime(startTime);
+			execution.setEndTime(endTime);
+			execution.setDurationMs(java.time.Duration.between(startTime, endTime).toMillis());
+
+			UsageStats usage = response.usage();
+			if (usage != null) {
+				execution.setTotalTokens(usage.totalTokens());
+				execution.setInputTokens(usage.inputTokens());
+				execution.setOutputTokens(usage.outputTokens());
+				execution.setCostUsd(BigDecimal.valueOf(usage.estimatedCostUsd()));
+			}
+
+			execution.setStatus(response.isBlocked() ? "BLOCKED" : "COMPLETED");
+			repo.save(execution);
+			log.debug("Persisted node execution for session={} node={} tokens={} cost={}",
+					sessionId, nodeId, execution.getTotalTokens(), execution.getCostUsd());
+		});
+	}
+
+	private String resolveProviderName(String agentRef) {
+		if (agentRef == null || agentRef.isBlank()) {
+			return "default";
+		}
+		return agentResolver.flatMap(r -> r.resolve(agentRef, null))
+				.map(agent -> {
+					var spec = agent.getSpec();
+					if (spec != null && spec.providerRef() != null && spec.providerRef().name() != null) {
+						return spec.providerRef().name();
+					}
+					return agentRef;
+				})
+				.orElse(agentRef);
 	}
 }

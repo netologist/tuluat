@@ -55,8 +55,7 @@ class GraphOutputSchemaValidationTest {
 
 		NodeDefinition done = new NodeDefinition("done-node", "AGENT", "writer-agent", null, "done", null, null);
 
-		return new AiWorkflowSpec(null, "writer-node", List.of(writer, done), List.of(edge("writer-node", "done-node")),
-				null);
+		return new AiWorkflowSpec(null, "writer-node", List.of(writer, done), List.of(edge("writer-node", "done-node")), null, null);
 	}
 
 	private EdgeDefinition edge(String from, String to) {
@@ -105,8 +104,7 @@ class GraphOutputSchemaValidationTest {
 		AiWorkflowSpec spec = specWithSchema();
 		NodeDefinition noSchemaNode = new NodeDefinition("writer-node", "AGENT", "writer-agent", null, "final_report",
 				null, null);
-		spec = new AiWorkflowSpec(spec.description(), spec.initialNode(), List.of(noSchemaNode, spec.nodes().get(1)),
-				spec.edges(), spec.memoryConfig());
+		spec = new AiWorkflowSpec(spec.description(), spec.initialNode(), List.of(noSchemaNode, spec.nodes().get(1)), spec.edges(), spec.memoryConfig(), null);
 
 		WorkflowSessionEntity result = engine().executeNextStep(spec, session(), 10);
 	}

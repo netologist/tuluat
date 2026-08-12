@@ -36,7 +36,7 @@ class WorkflowExecutionServiceTest {
 	@Test
 	@DisplayName("Should initialize and execute session through engine until COMPLETED")
 	void testStartSessionSuccess() {
-		AiWorkflowSpec spec = new AiWorkflowSpec(null, "node-1", null, null, null);
+		AiWorkflowSpec spec = new AiWorkflowSpec(null, "node-1", null, null, null, null);
 
 		when(engine.executeNextStep(eq(spec), any(WorkflowSessionEntity.class), eq(5))).thenAnswer(invocation -> {
 			WorkflowSessionEntity session = invocation.getArgument(1);

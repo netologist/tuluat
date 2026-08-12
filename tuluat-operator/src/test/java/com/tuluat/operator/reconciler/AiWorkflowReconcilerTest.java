@@ -25,7 +25,7 @@ class AiWorkflowReconcilerTest {
 		NodeDefinition n1 = new NodeDefinition("n1", null, null, null, null, null, null);
 		NodeDefinition n2 = new NodeDefinition("n2", null, null, null, null, null, null);
 
-		var spec = new AiWorkflowSpec(null, "n1", List.of(n1, n2), null, null);
+		var spec = new AiWorkflowSpec(null, "n1", List.of(n1, n2), null, null, null);
 		workflow.setSpec(spec);
 
 		UpdateControl<AiWorkflow> control = reconciler.reconcile(workflow, null);

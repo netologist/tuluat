@@ -80,7 +80,7 @@ class WorkflowSessionControllerTest {
 	@DisplayName("Should create session when AiWorkflow CR exists")
 	void testCreateSessionSuccess() {
 		AiWorkflow workflow = new AiWorkflow();
-		AiWorkflowSpec spec = new AiWorkflowSpec(null, "node-1", null, null, null);
+		AiWorkflowSpec spec = new AiWorkflowSpec(null, "node-1", null, null, null, null);
 		workflow.setSpec(spec);
 
 		when(workflowResMock.get()).thenReturn(workflow);

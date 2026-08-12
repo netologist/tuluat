@@ -69,6 +69,8 @@ spec:
                       type: boolean
                     vectorTableName:
                       type: string
+                budgetLimitUsd:
+                  type: number
             status:
               type: object
               properties:
@@ -76,3 +78,51 @@ spec:
                   type: string
                 nodeCount:
                   type: integer
+                costSpentUsd:
+                  type: number
+                budgetLimitUsd:
+                  type: number
+                sessionCount:
+                  type: integer
+                totalTokens:
+                  type: integer
+                  format: int64
+                inputTokens:
+                  type: integer
+                  format: int64
+                outputTokens:
+                  type: integer
+                  format: int64
+                agentNames:
+                  type: array
+                  items:
+                    type: string
+      additionalPrinterColumns:
+        - name: state
+          type: string
+          description: Workflow state
+          jsonPath: .status.state
+        - name: costSpent
+          type: number
+          description: Total cost spent in USD
+          jsonPath: .status.costSpentUsd
+        - name: budget
+          type: number
+          description: Budget limit in USD
+          jsonPath: .status.budgetLimitUsd
+        - name: sessions
+          type: integer
+          description: Number of sessions
+          jsonPath: .status.sessionCount
+        - name: totalTokens
+          type: integer
+          description: Total tokens used
+          jsonPath: .status.totalTokens
+        - name: inputTokens
+          type: integer
+          description: Total input tokens
+          jsonPath: .status.inputTokens
+        - name: outputTokens
+          type: integer
+          description: Total output tokens
+          jsonPath: .status.outputTokens

@@ -144,7 +144,7 @@ class HumanApprovalNodeExecutorTest {
 	}
 
 	private static AiWorkflowSpec spec(EdgeDefinition... edges) {
-		return new AiWorkflowSpec("test", "start", List.of(), List.of(edges), new MemoryConfig());
+		return new AiWorkflowSpec("test", "start", List.of(), List.of(edges), new MemoryConfig(), null);
 	}
 
 	private static EdgeDefinition edge(String from, String to, String condition) {
