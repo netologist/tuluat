@@ -27,6 +27,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -117,21 +119,25 @@ public class AiAgentReconciler implements Reconciler<AiAgent> {
 	private void reconcileDeployment(AiAgent agent, OwnerReference ownerRef, String ns) {
 		String deployName = agent.getMetadata().getName() + "-deployment";
 		int replicas = (agent.getSpec().replicas() != null) ? agent.getSpec().replicas() : 1;
+		Map<String, String> labels = Map.of("app", agent.getMetadata().getName(), "component", "ai-agent");
 
 		Deployment deployment = new DeploymentBuilder().withNewMetadata().withName(deployName).withNamespace(ns)
 				.withOwnerReferences(ownerRef).endMetadata().withNewSpec().withReplicas(replicas).withNewSelector()
-				.withMatchLabels(Map.of("app", agent.getMetadata().getName())).endSelector().withNewTemplate()
-				.withNewMetadata().withLabels(Map.of("app", agent.getMetadata().getName())).endMetadata().withNewSpec()
-				.addNewContainer().withName("agent-runtime").withImage("tuluat-operator:latest").addNewEnv()
-				.withName("AGENT_NAME").withValue(agent.getMetadata().getName()).endEnv().endContainer().endSpec()
-				.endTemplate().endSpec().build();
-
+				.withMatchLabels(labels).endSelector().withNewTemplate().withNewMetadata().withLabels(labels)
+				.endMetadata().withNewSpec().addNewContainer().withName("agent-runtime")
+				.withImage("tuluat-operator:latest").addNewEnv().withName("AGENT_NAME")
+				.withValue(agent.getMetadata().getName()).endEnv().endContainer().endSpec().endTemplate().endSpec()
+				.build();
 		Deployment existing = client.apps().deployments().inNamespace(ns).withName(deployName).get();
 		if (existing == null) {
 			client.apps().deployments().inNamespace(ns).resource(deployment).create();
+		} else if (!labels.equals(existing.getSpec().getSelector().getMatchLabels())) {
+			log.warn("Deployment {} selector drifted (immutable); deleting for recreation", deployName);
+			client.apps().deployments().inNamespace(ns).withName(deployName).delete();
+			client.apps().deployments().inNamespace(ns).withName(deployName)
+					.waitUntilCondition(Objects::isNull, 30, TimeUnit.SECONDS);
+			client.apps().deployments().inNamespace(ns).resource(deployment).create();
 		} else {
-			// spec.selector is immutable once set; preserve it and only replace mutable fields
-			deployment.getSpec().setSelector(existing.getSpec().getSelector());
 			deployment.getMetadata().setResourceVersion(existing.getMetadata().getResourceVersion());
 			client.apps().deployments().inNamespace(ns).resource(deployment).update();
 		}
