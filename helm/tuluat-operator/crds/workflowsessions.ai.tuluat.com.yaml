@@ -47,3 +47,90 @@ spec:
                   type: string
                 endTime:
                   type: string
+                totalTokens:
+                  type: integer
+                  format: int64
+                inputTokens:
+                  type: integer
+                  format: int64
+                outputTokens:
+                  type: integer
+                  format: int64
+                costUsd:
+                  type: string
+                durationSeconds:
+                  type: integer
+                nodeExecutions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      nodeId:
+                        type: string
+                      agentName:
+                        type: string
+                      provider:
+                        type: string
+                      model:
+                        type: string
+                      input:
+                        type: string
+                      output:
+                        type: string
+                      startTime:
+                        type: string
+                      endTime:
+                        type: string
+                      durationMs:
+                        type: integer
+                        format: int64
+                      totalTokens:
+                        type: integer
+                        format: int64
+                      inputTokens:
+                        type: integer
+                        format: int64
+                      outputTokens:
+                        type: integer
+                        format: int64
+                      costUsd:
+                        type: string
+                      status:
+                        type: string
+      additionalPrinterColumns:
+        - name: sessionId
+          type: string
+          description: Session ID
+          jsonPath: .status.sessionId
+        - name: phase
+          type: string
+          description: Session phase
+          jsonPath: .status.phase
+        - name: startTime
+          type: string
+          description: Start time
+          jsonPath: .status.startTime
+        - name: endTime
+          type: string
+          description: End time
+          jsonPath: .status.endTime
+        - name: totalTokens
+          type: integer
+          description: Total tokens used
+          jsonPath: .status.totalTokens
+        - name: inputTokens
+          type: integer
+          description: Input tokens
+          jsonPath: .status.inputTokens
+        - name: outputTokens
+          type: integer
+          description: Output tokens
+          jsonPath: .status.outputTokens
+        - name: cost
+          type: string
+          description: Cost in USD
+          jsonPath: .status.costUsd
+        - name: duration
+          type: integer
+          description: Duration in seconds
+          jsonPath: .status.durationSeconds

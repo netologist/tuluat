@@ -187,6 +187,10 @@ spec:
                   type: array
                   items:
                     type: string
+                activeMcpServers:
+                  type: array
+                  items:
+                    type: string
                 effectiveModel:
                   type: string
                 message:
