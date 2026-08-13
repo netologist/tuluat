@@ -220,6 +220,7 @@ metadata:
 data:
   openai-chat-completion.json: |
     {
+      "priority": 10,
       "request": {
         "method": "POST",
         "urlPathPattern": ".*chat/completions"
@@ -235,6 +236,34 @@ data:
           "choices": [{
             "index": 0,
             "message": { "role": "assistant", "content": "{\"summary\": \"WireMock stub LLM response: HIGH risk detected, payment SUCCESS.\", \"riskLevel\": \"HIGH\", \"paymentStatus\": \"SUCCESS\", \"riskScore\": 0.95}" },
+            "finish_reason": "stop"
+          }],
+          "usage": { "prompt_tokens": 20, "completion_tokens": 15, "total_tokens": 35 }
+        }
+      }
+    }
+
+  rag-chat-completion.json: |
+    {
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPathPattern": ".*chat/completions",
+        "bodyPatterns": [
+          { "contains": "Relevant Document Context (RAG):" }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "jsonBody": {
+          "id": "chatcmpl-rag-stub-001",
+          "object": "chat.completion",
+          "created": 1700000000,
+          "model": "wiremock-gpt-4o",
+          "choices": [{
+            "index": 0,
+            "message": { "role": "assistant", "content": "{\"summary\": \"RAG retrieval verified: document context injected into system prompt.\", \"ragRetrieved\": true}" },
             "finish_reason": "stop"
           }],
           "usage": { "prompt_tokens": 20, "completion_tokens": 15, "total_tokens": 35 }

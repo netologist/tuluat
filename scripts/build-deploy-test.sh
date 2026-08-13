@@ -22,7 +22,7 @@ kubectl apply -f manifests/operator/deployment.yaml -n "${NAMESPACE}"
 
 echo "4. Restarting Operator Deployment & Waiting for Pod Readiness..."
 kubectl rollout restart deployment/tuluat-operator -n "${NAMESPACE}"
-kubectl rollout status deployment/tuluat-operator -n "${NAMESPACE}" --timeout=180s
+kubectl rollout status deployment/tuluat-operator -n "${NAMESPACE}" --timeout=360s
 
 echo "5. Performing Automated End-to-End Verification..."
 

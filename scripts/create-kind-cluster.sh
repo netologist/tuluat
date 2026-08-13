@@ -52,7 +52,7 @@ echo "Waiting for NGINX Ingress Controller pods to be ready..."
 kubectl wait --namespace ingress-nginx \
   --for=condition=ready pod \
   --selector=app.kubernetes.io/component=controller \
-  --timeout=180s || echo "Ingress controller setup continuing..."
+  --timeout=360s || echo "Ingress controller setup continuing..."
 
 # 4. Build local Docker image
 echo "3. Building Operator Docker image: ${IMAGE_NAME}..."

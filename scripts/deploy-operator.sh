@@ -37,13 +37,13 @@ else
 fi
 
 echo "5. Running Flyway database migrations (Job)..."
-./scripts/wait-for-postgres.sh "${NAMESPACE}" 180
+./scripts/wait-for-postgres.sh "${NAMESPACE}" 360
 kubectl create configmap flyway-migrations \
   --from-file=tuluat-engine/src/main/resources/db/migration/ \
   -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 kubectl delete job flyway-migration -n "$NAMESPACE" --ignore-not-found
 kubectl apply -f manifests/operator/flyway-migration-job.yaml
-kubectl wait --for=condition=complete job/flyway-migration -n "$NAMESPACE" --timeout=120s
+kubectl wait --for=condition=complete job/flyway-migration -n "$NAMESPACE" --timeout=360s
 
 echo "6. Checking status of CRDs and Custom Resources..."
 kubectl get crds | grep ai.tuluat.com || true

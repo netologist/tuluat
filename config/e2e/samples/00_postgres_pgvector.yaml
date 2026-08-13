@@ -1,3 +1,8 @@
+# WARNING: This file exists in BOTH config/samples/ and config/e2e/samples/.
+# The two copies MUST remain byte-identical. Kustomize blocks ../ references,
+# so they cannot be merged into a single file. Any drift between them produces
+# two pod templates -> two ReplicaSets -> two Postgres pods mounting one PVC
+# (WAL corruption). Edit both together.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,7 +21,7 @@ spec:
       containers:
         - name: postgres
           image: pgvector/pgvector:pg16
-#          args: ["postgres", "-c", "max_connections=200"]
+          args: ["postgres", "-c", "max_connections=200"]
           readinessProbe:
             exec:
               command: ["pg_isready", "-U", "postgres", "-d", "ai_operator_db"]

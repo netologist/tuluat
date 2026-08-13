@@ -196,6 +196,17 @@ else
   assert_fail "Source attribution format incorrect or missing"
 fi
 
+# 7g. Assert the agent ANSWER reflects RAG retrieval (WireMock RAG branch).
+# The WireMock stub branches on the request body: when the system prompt carries
+# the RAG context header, it returns the ragRetrieved marker instead of the
+# static HIGH/SUCCESS payload used by the HITL workflow.
+ANSWER=$(echo "${CHAT_RESP}" | jq -r '.answer // empty' 2>/dev/null || true)
+if echo "${ANSWER}" | grep -q "ragRetrieved"; then
+  assert_ok "Agent answer reflects RAG retrieval (ragRetrieved marker present)"
+else
+  assert_fail "Agent answer does not reflect RAG retrieval: ${ANSWER}"
+fi
+
 # 8. Multi-Turn Session Memory E2E Test
 echo "8. Multi-Turn Conversation Memory via Session ID..."
 MEM_SESSION_ID=$(uuidgen 2>/dev/null || echo "e2e-mem-$(date +%s)")
