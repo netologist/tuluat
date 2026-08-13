@@ -173,7 +173,7 @@ public class WorkflowSessionReconciler implements Reconciler<WorkflowSession> {
 		String phase = sessionRepository.flatMap(repo -> repo.findById(sessionId)).map(e -> e.getStatus().name())
 				.orElse(current.phase());
 		return new WorkflowSessionStatus(current.sessionId(), phase, current.currentNode(), current.output(),
-				startTimeStr, endTimeStr, totalTokens, inputTokens, outputTokens,
-				costUsd.toPlainString(), durationSecs, nodeExecs);
+				startTimeStr, endTimeStr, totalTokens, inputTokens, outputTokens, costUsd.toPlainString(), durationSecs,
+				nodeExecs);
 	}
 }

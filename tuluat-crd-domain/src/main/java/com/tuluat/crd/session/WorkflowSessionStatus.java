@@ -8,7 +8,6 @@ public record WorkflowSessionStatus(String sessionId, String phase, String curre
 		List<NodeExecution> nodeExecutions) {
 
 	public static WorkflowSessionStatus pending() {
-		return new WorkflowSessionStatus(null, "PENDING", null, null, null, null, 0L, 0L, 0L, "0", 0L,
-				List.of());
+		return new WorkflowSessionStatus(null, "PENDING", null, null, null, null, 0L, 0L, 0L, "0", 0L, List.of());
 	}
 }
