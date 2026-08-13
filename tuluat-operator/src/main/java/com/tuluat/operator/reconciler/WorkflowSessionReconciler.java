@@ -22,8 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
-@ControllerConfiguration
+@ControllerConfiguration(maxReconciliationInterval = @MaxReconciliationInterval(interval = 30, timeUnit = TimeUnit.SECONDS))
 @Component
 @Slf4j
 public class WorkflowSessionReconciler implements Reconciler<WorkflowSession> {

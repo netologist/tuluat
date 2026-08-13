@@ -28,6 +28,12 @@ resources:
   # Sample AiWorkflow
   - samples/05_aiworkflow_sample.yaml
 
+  # HITL order-processing workflow + its agents (E2E human-in-the-loop scenario)
+  - samples/08_risk_analysis_agent.yaml
+  - samples/08_payment_agent.yaml
+  - samples/08_order_fulfillment_agent.yaml
+  - samples/08_order_processing_workflow.yaml
+
 secretGenerator:
   - name: openai-secret
     namespace: tuluat-system

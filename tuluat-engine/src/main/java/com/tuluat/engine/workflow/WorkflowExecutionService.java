@@ -61,18 +61,27 @@ public class WorkflowExecutionService {
 		WorkflowSessionEntity session = sessionRepository.findById(sessionId)
 				.orElseThrow(() -> new IllegalArgumentException("Session not found: " + sessionId));
 
-		String statusVal = approved ? "APPROVED" : "REJECTED";
-		String escapedFeedback = feedback != null ? feedback : "";
+		if (session.getStatus() != SessionStatus.WAITING_APPROVAL) {
+			log.warn("Ignoring approval for session {} in state {} (not WAITING_APPROVAL)", sessionId,
+					session.getStatus());
+			return session;
+		}
 
 		Map<String, Object> context = parseContext(session.getContextData());
-		context.put("approvalStatus", statusVal);
-		context.put("approvalFeedback", escapedFeedback);
+		context.put("approvalStatus", approved ? "APPROVED" : "REJECTED");
+		context.put("approvalFeedback", feedback != null ? feedback : "");
 		session.setContextData(toJson(context));
-		session.setStatus(SessionStatus.RUNNING);
-		session = sessionRepository.save(session);
 
-		while (session.getStatus() == SessionStatus.RUNNING) {
-			session = engine.executeNextStep(spec, session, maxLoops);
+		if (approved) {
+			session.setStatus(SessionStatus.RUNNING);
+			session = sessionRepository.save(session);
+
+			while (session.getStatus() == SessionStatus.RUNNING) {
+				session = engine.executeNextStep(spec, session, maxLoops);
+				session = sessionRepository.save(session);
+			}
+		} else {
+			session.setStatus(SessionStatus.REJECTED);
 			session = sessionRepository.save(session);
 		}
 
@@ -83,6 +92,10 @@ public class WorkflowExecutionService {
 		try {
 			UUID id = UUID.fromString(sessionId);
 			sessionRepository.findById(id).ifPresent(s -> {
+				if (s.getStatus() != SessionStatus.WAITING_APPROVAL) {
+					log.warn("Ignoring approval signal for session {} in state {}", sessionId, s.getStatus());
+					return;
+				}
 				String statusVal = signal.approved() ? "APPROVED" : "REJECTED";
 				Map<String, Object> ctx = parseContext(s.getContextData());
 				ctx.put("approvalStatus", statusVal);

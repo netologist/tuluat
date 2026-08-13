@@ -1,0 +1,14 @@
+apiVersion: ai.tuluat.com/v1alpha1
+kind: AiAgent
+metadata:
+  name: risk-analysis-agent
+  namespace: tuluat-system
+spec:
+  providerRef:
+    name: "wiremock-provider"
+    namespace: "tuluat-system"
+  model: "wiremock-gpt-4o"
+  systemPrompt: |
+    You are an automated Financial Risk & Fraud Detection Agent.
+    Analyze the transaction and assign a riskLevel: LOW, HIGH, or CRITICAL.
+  replicas: 1

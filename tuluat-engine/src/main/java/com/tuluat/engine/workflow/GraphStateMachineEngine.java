@@ -152,9 +152,16 @@ public class GraphStateMachineEngine {
 			if (contextData.containsKey("approvalStatus")) {
 				String approvalStatus = String.valueOf(contextData.get("approvalStatus"));
 				boolean approved = "APPROVED".equalsIgnoreCase(approvalStatus);
+				if (!approved) {
+					recordSessionLog(session.getSessionId(), currentNode.id(), "INFO",
+							"Workflow rejected at node '" + currentNode.id() + "'.");
+					session.setStatus(SessionStatus.REJECTED);
+					telemetryService.ifPresent(ts -> ts.recordSessionCompleted(session.getWorkflowName(), "REJECTED"));
+					return session;
+				}
 				recordSessionLog(session.getSessionId(), currentNode.id(), "INFO",
 						"Processing approval decision: " + approvalStatus + ". Advancing graph.");
-				String nextNodeId = resolveNextNodeId(workflowSpec, currentNode.id(), approved);
+				String nextNodeId = resolveNextNodeId(workflowSpec, currentNode.id(), true);
 				if (nextNodeId == null) {
 					session.setStatus(SessionStatus.COMPLETED);
 				} else {

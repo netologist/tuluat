@@ -90,17 +90,22 @@ public class ApprovalController {
 				: Collections.emptyMap();
 
 		ApprovalSignal signal = new ApprovalSignal(approved, feedback, metadata);
-		executionService.sendApprovalSignal(sessionId.toString(), signal);
 
-		// Resume the state machine if the workflow spec can be resolved
+		// Resume the state machine when the workflow spec can be resolved; otherwise
+		// fall
+		// back to recording a bare signal (e.g. for Temporal-backed sessions).
+		boolean resumed = false;
 		Optional<WorkflowSessionEntity> opt = sessionRepository.findById(sessionId);
 		if (opt.isPresent()) {
-			WorkflowSessionEntity session = opt.get();
 			AiWorkflow wf = resolver.get(AiWorkflow.class, KubernetesResourceResolver.DEFAULT_NAMESPACE,
-					session.getWorkflowName());
+					opt.get().getWorkflowName());
 			if (wf != null && wf.getSpec() != null) {
 				executionService.processApprovalSignal(sessionId, wf.getSpec(), approved, feedback, 10);
+				resumed = true;
 			}
+		}
+		if (!resumed) {
+			executionService.sendApprovalSignal(sessionId.toString(), signal);
 		}
 
 		if (eventPublisher != null) {

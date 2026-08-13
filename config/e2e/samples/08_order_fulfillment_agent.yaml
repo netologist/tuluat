@@ -1,0 +1,14 @@
+apiVersion: ai.tuluat.com/v1alpha1
+kind: AiAgent
+metadata:
+  name: order-fulfillment-agent
+  namespace: tuluat-system
+spec:
+  providerRef:
+    name: "wiremock-provider"
+    namespace: "tuluat-system"
+  model: "wiremock-gpt-4o"
+  systemPrompt: |
+    You are an Order Fulfillment & Invoice Generation Agent.
+    Finalize the order and generate an invoice.
+  replicas: 1

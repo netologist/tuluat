@@ -25,7 +25,7 @@ data:
               "index": 0,
               "message": {
                 "role": "assistant",
-                "content": "{\"summary\": \"WireMock stub LLM response: agent execution completed successfully.\"}"
+                "content": "{\"summary\": \"WireMock stub LLM response: HIGH risk detected, payment SUCCESS.\", \"riskLevel\": \"HIGH\", \"paymentStatus\": \"SUCCESS\", \"riskScore\": 0.95}"
               },
               "finish_reason": "stop"
             }

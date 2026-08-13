@@ -25,13 +25,13 @@ assert_fail() {
 echo "1. Asserting Operator Health Status..."
 HEALTH_OK=false
 HEALTH_RESP=""
-for i in {1..20}; do
+for i in {1..40}; do
   HEALTH_RESP=$(curl -s "${HOST}/actuator/health" 2>/dev/null || true)
   if echo "${HEALTH_RESP}" | grep -q '"status":"UP"'; then
     HEALTH_OK=true
     break
   fi
-  sleep 2
+  sleep 3
 done
 
 if [ "${HEALTH_OK}" = "true" ]; then
@@ -87,23 +87,50 @@ else
   assert_fail "Expected >= 5 log records, found: ${LOG_COUNT}"
 fi
 
-# 6. Human-in-the-Loop Approval Signal Acceptance Test
-echo "6. Executing Human-in-the-Loop (HITL) Approval Signal Test..."
-APPROVAL_RESP=$(curl -s -X POST "${HOST}/api/v1/sessions/${SESSION_ID}/approve" \
+# 6. Human-in-the-Loop (HITL) Approval Acceptance Test
+echo "6. Executing Human-in-the-Loop (HITL) Approval Acceptance Test..."
+
+# 6a. Create a session for the HITL workflow — it must pause at the HUMAN_APPROVAL gate
+HITL_CREATE_RESP=$(curl -s --max-time 120 -X POST "${HOST}/api/v1/workflows/order-processing-workflow/sessions" \
   -H "Content-Type: application/json" \
-  -d '{
-        "approved": true,
-        "feedback": "E2E Acceptance Test Signal Verified",
-        "metadata": {"source": "github-actions-kind-ci"}
-      }' || true)
+  -d '{"input": "Order 1234: $2500, high-velocity account", "maxLoops": 10}' || true)
 
-SIGNAL_STATUS=$(echo "${APPROVAL_RESP}" | jq -r '.status // empty' 2>/dev/null || true)
-APPROVED=$(echo "${APPROVAL_RESP}" | jq -r '.approved // false' 2>/dev/null || true)
+HITL_SESSION_ID=$(echo "${HITL_CREATE_RESP}" | jq -r '.sessionId // empty' 2>/dev/null || true)
+HITL_STATUS=$(echo "${HITL_CREATE_RESP}" | jq -r '.status // empty' 2>/dev/null || true)
 
-if [ "${SIGNAL_STATUS}" = "SIGNAL_SENT" ] && [ "${APPROVED}" = "true" ]; then
-  assert_ok "HITL Approval Signal delivered successfully (Status=${SIGNAL_STATUS})"
+# 6b. Assert the session paused at the human-approval gate
+if [ -n "${HITL_SESSION_ID}" ] && [ "${HITL_STATUS}" = "WAITING_APPROVAL" ]; then
+  assert_ok "HITL workflow paused at WAITING_APPROVAL (session ${HITL_SESSION_ID})"
 else
-  assert_fail "Approval signal failed: ${APPROVAL_RESP}"
+  assert_fail "HITL workflow did not pause at WAITING_APPROVAL (session=${HITL_SESSION_ID}, status=${HITL_STATUS})"
+fi
+
+# 6c. Approve the pending step via the resuming approval endpoint
+APPROVE_RESP=$(curl -s -X POST "${HOST}/api/v1/approvals/${HITL_SESSION_ID}/action" \
+  -H "Content-Type: application/json" \
+  -d '{"approved": true, "feedback": "E2E HITL approval verified", "metadata": {"source": "github-actions-kind-ci"}}' || true)
+
+APPROVE_STATUS=$(echo "${APPROVE_RESP}" | jq -r '.status // empty' 2>/dev/null || true)
+if [ "${APPROVE_STATUS}" = "SUCCESS" ]; then
+  assert_ok "HITL approval action accepted"
+else
+  assert_fail "HITL approval action failed (status=${APPROVE_STATUS})"
+fi
+
+# 6d. Poll the session until it resumes and completes
+HITL_FINAL_STATUS=""
+for i in $(seq 1 40); do
+  HITL_FINAL_STATUS=$(curl -s "${HOST}/api/v1/sessions/${HITL_SESSION_ID}" | jq -r '.status // empty' 2>/dev/null || true)
+  if [ "${HITL_FINAL_STATUS}" = "COMPLETED" ]; then
+    break
+  fi
+  sleep 3
+done
+
+if [ "${HITL_FINAL_STATUS}" = "COMPLETED" ]; then
+  assert_ok "HITL workflow resumed and COMPLETED after approval"
+else
+  assert_fail "HITL workflow did not COMPLETE after approval (final status=${HITL_FINAL_STATUS})"
 fi
 
 # 7. RAG E2E: Financial Document Ingestion + Retrieval + Source Attribution
