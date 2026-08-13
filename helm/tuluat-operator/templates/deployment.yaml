@@ -21,6 +21,20 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
+      initContainers:
+        - name: flyway-migrate
+          image: flyway/flyway:11-alpine
+          args:
+            - "-url=jdbc:postgresql://postgres-service:5432/{{ .Values.postgresql.credentials.database }}"
+            - "-user={{ .Values.postgresql.credentials.user }}"
+            - "-password={{ .Values.postgresql.credentials.password }}"
+            - "-schemas=public"
+            - "-connectRetries=60"
+            - "-connectRetriesInterval=5"
+            - "migrate"
+          volumeMounts:
+            - name: flyway-migrations
+              mountPath: /flyway/sql
       containers:
         - name: operator
           image: "{{ .Values.operator.image.repository }}:{{ .Values.operator.image.tag }}"
@@ -48,6 +62,10 @@ spec:
             failureThreshold: {{ .Values.operator.probe.readiness.failureThreshold }}
           resources:
             {{- toYaml .Values.operator.resources | nindent 12 }}
+      volumes:
+        - name: flyway-migrations
+          configMap:
+            name: flyway-migrations
 
 ---
 apiVersion: v1

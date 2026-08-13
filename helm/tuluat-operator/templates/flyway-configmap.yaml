@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flyway-migrations
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "tuluat-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: flyway
+data:
+{{- range $path, $bytes := .Files.Glob "files/migrations/*.sql" }}
+  {{ base $path }}: |-
+{{ $bytes | toString | indent 4 }}
+{{- end }}
