@@ -43,6 +43,7 @@ jobs:
               - 'manifests/**'
               - 'config/**'
               - 'scripts/**'
+              - 'helm/**'
             docs:
               - 'docs/**'
               - 'mkdocs.yml'
